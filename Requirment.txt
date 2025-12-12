@@ -1,0 +1,292 @@
+PRODUCT REQUIREMENTS DOCUMENT (PRD)
+Project: MathGPT — Verified Step-by-Step Math Solver
+Version: UI-Flow-Rev2
+
+========================================================
+1. PRODUCT OVERVIEW
+========================================================
+Goal:
+A platform where students ask math questions through a chat-style interface and get a structured, verified step-by-step answer. UI is similar to ChatGPT: left = chats, center = conversation, right = answer tab.
+
+Core Value:
+- AI gives steps like a teacher (clear, justified, school-friendly)
+- All steps are CAS-verified for correctness
+- Clean productivity UI: chat left, answer right
+- Easily review past solutions via sidebar history
+
+========================================================
+2. KEY SCREENS
+========================================================
+
+A. Landing Page (Public)
+- Hero title: "Master Math Step-by-Step"
+- Short description
+- CTA buttons: Login / Sign Up
+- Feature highlights: Verified steps, teacher-style solutions, history tracking
+
+B. Main App Layout (Logged In)
+UI structure (3 columns):
+---------------------------------------------------------
+| Sidebar (left) | Chat Window (center) | Answer Panel (right) |
+---------------------------------------------------------
+
+1. Sidebar (left panel)
+- Tabs:
+  - "New Chat"
+  - "History"
+  - "Profile"
+  - "Settings"
+- Displays chat threads similar to ChatGPT:
+  - Each chat = latest question or custom name
+  - Click to load conversation + answer
+- Persistent on all routes
+
+2. Chat Window (center panel)
+- Displays conversation with AI (messages stacked)
+- User prompt textarea at bottom
+- Send button
+- When user sends problem:
+  - The message appears in the center panel
+  - The right panel loads “Processing…” state
+- Chat format:
+  - User messages aligned right
+  - AI messages aligned left
+  - Smooth bubbles, math rendering with KaTeX
+
+3. Answer Panel (right panel)
+- Title: "Verified Solution"
+- Body:
+  - Each step displayed as:
+    Step number
+    Expression (LaTeX)
+    Justification
+    Status icon (verified / corrected)
+- Bottom actions:
+  - "Show Next Step" (hint mode)
+  - "Show Full Solution"
+  - "Export PDF"
+  - "View Explanation Summary"
+
+========================================================
+3. USER FLOWS
+========================================================
+
+Flow 1: Solve a Math Question
+1. User logs in → sees 3-panel interface.
+2. User types a math problem in chat window.
+3. Send → User message appears in center panel.
+4. Backend:
+   - Sends prompt to LLM
+   - LLM returns structured steps (JSON)
+   - Verification engine checks each step
+5. While backend works, right panel shows "working…"
+6. When done:
+   - Right panel shows the step-by-step verified solution.
+   - Center chat shows a short summary message from AI.
+
+Flow 2: View Past Solutions (History)
+1. User clicks “History” in sidebar.
+2. Sidebar shows a list of past problems.
+3. Clicking a history item:
+   - Loads chat thread in center panel
+   - Loads verified solution in right panel
+
+Flow 3: Profile Tab
+- Shows:
+  - Name
+  - Email
+  - Usage count
+  - Premium status (future)
+
+Flow 4: Settings Tab
+- Theme toggle (light/dark)
+- Clear history
+- Math rendering preferences
+- Notifications toggle
+
+========================================================
+4. FRONTEND REQUIREMENTS
+========================================================
+
+Tech Stack:
+- React + TypeScript + TailwindCSS
+- Hosted on Vercel free tier
+
+Frontend Responsibilities:
+- Full ChatGPT-style layout
+- Three-panel responsive design
+- Sidebar collapsible (mobile)
+- KaTeX math rendering
+- Smooth step transitions on right panel
+- Auto-scroll chat window
+- WebSocket or polling for solution status updates
+- Error UI (if verification fails)
+
+Components:
+1. Sidebar Component
+2. ChatWindow Component
+3. AnswerPanel Component
+4. StepCard Component
+5. PDF Export Dialog
+6. Auth Modal / Login Page
+
+State Management:
+- Zustand or Redux
+- “Active Chat ID” global state
+- “Active Solution Steps” state
+- “Loading / Verified / Error” states
+
+========================================================
+5. BACKEND REQUIREMENTS
+========================================================
+
+Tech Stack:
+- Backend API: Node/Express OR Motia orchestration
+- Python microservice for SymPy verification
+- Postgres (Supabase free tier)
+- Optional: Redis for rate limits
+- LLM: GPT or Claude
+
+API Endpoints:
+1. POST /api/chat/send
+   - input: { chatId, message }
+   - output: { messageId }
+
+2. GET /api/solution/status?chatId=
+   - polling or websocket for solution progress
+
+3. POST /api/solution/generate
+   - calls LLM
+   - returns JSON steps
+   - triggers verification
+
+4. POST /api/solution/verify
+   - Python/SymPy checks steps
+
+5. GET /api/history
+   - returns problem list
+
+6. GET /api/history/:id
+   - returns chat + solution data
+
+Additional Backend Tasks:
+- Save messages & solutions
+- Generate PDFs via HTML-to-PDF service
+- Step auto-correction loop with LLM
+
+========================================================
+6. VERIFICATION ENGINE DETAILS
+========================================================
+
+Verification Steps:
+1. Convert each step expression into SymPy
+2. Check:
+   - Algebraic equivalence
+   - Derivative correctness
+   - Integral correctness (differentiate result)
+3. If step invalid:
+   - Generate error explanation
+   - Ask LLM to regenerate only that step
+4. Re-check
+5. Mark steps:
+   - VERIFIED
+   - CORRECTED
+   - FAILED (rare → fallback explanation)
+
+Supported Problem Types:
+- Algebra (equations, simplification)
+- Differentiation
+- Integration
+- Limits (basic)
+- Trig transforms
+
+========================================================
+7. DATABASE SCHEMA (MVP)
+========================================================
+
+Tables:
+
+USERS
+- id
+- name
+- email
+- created_at
+
+CHATS
+- id
+- user_id
+- title
+- created_at
+- updated_at
+
+MESSAGES
+- id
+- chat_id
+- role (user/ai/system)
+- content (text)
+- created_at
+
+SOLUTIONS
+- id
+- chat_id
+- steps JSON
+- verified JSON
+- summary
+- created_at
+
+========================================================
+8. SYSTEM ARCHITECTURE SUMMARY
+========================================================
+
+[Frontend: React UI]
+   |
+   v
+[Backend API Gateway]
+   |
+   v
+[LLM Step Generator → JSON Steps]
+   |
+   v
+[SymPy Verification Service]
+   |
+   v
+[Database: Chats, Messages, Solutions]
+   |
+   v
+[Frontend updates Right Panel with steps]
+
+All heavy math done in Python, all chat logic in JS.
+
+========================================================
+9. MVP FEATURE LIST
+========================================================
+
+Must-Have:
+- Landing page
+- Auth system
+- ChatGPT-style UI (3 panels)
+- Chat messaging
+- Step-by-step verified solutions
+- History system
+- Profile page
+- Dark/light mode
+
+Nice-to-Have:
+- Step animations
+- Keyboard shortcuts
+- Export PDF
+- Mobile responsive sidebar
+
+========================================================
+10. FUTURE FEATURES
+========================================================
+- Hint-only learning mode
+- Teacher mode dashboard
+- AI evaluation of student steps
+- Handwriting OCR
+- Mobile app
+- Progress tracking & curriculum
+
+========================================================
+END OF DOCUMENT
+========================================================

@@ -1,0 +1,468 @@
+============================================================
+MATHGPT — FULL DEVELOPMENT ROADMAP (FRONTEND + MOTIA BACKEND)
+File: full-roadmap.txt
+Version: 2025-12-12
+============================================================
+
+GOAL
+====
+Build a ChatGPT-style math tutoring platform that:
+- Provides teacher-style, step-by-step math solutions
+- Verifies each step with SymPy
+- UI: Landing page; when logged in -> ChatGPT-style app with Sidebar (chats/history/profile/settings), center Chat Window, right Answer Panel (verified steps)
+- Backend: Motia orchestration (JS/TS Steps) + Python Steps for SymPy
+- Self-hosted infra (Postgres, Redis, MinIO), Traefik for TLS
+- Auth: Google OAuth -> JWT (no Supabase)
+
+PRINCIPLES
+==========
+- JS/TS: orchestration, API, DB, auth
+- Python: SymPy verification only
+- Strict JSON contracts between steps
+- Harden Python step runtime (no network, non-root, CPU/memory/time limits)
+- Frontend built in React + TypeScript + Tailwind
+- No arbitrary server-side execution of user code
+
+REPO LAYOUT
+===========
+math-solver/
+  README.md
+  Requirment.txt
+  Roadmap.txt
+  frontend/
+    package.json
+    bun.lock
+    index.html
+    vite.config.ts
+    tsconfig.json
+    tsconfig.app.json
+    tsconfig.node.json
+    eslint.config.js
+    public/
+    src/
+      main.tsx
+      App.tsx
+      index.css
+      pages/
+        Landing.tsx
+        AppLayout.tsx
+      components/
+        Sidebar.tsx
+        ChatWindow.tsx
+        AnswerPanel.tsx
+        StepCard.tsx
+        AuthModal.tsx
+      lib/
+        api.ts
+        auth.ts
+        store.ts
+      styles/
+      tests/
+  backend/
+    package.json
+    bun.lock
+    tsconfig.json
+    motia.config.ts
+    steps/
+      01-api-solve.step.ts
+      02-generate-manifest.step.ts
+      03-verify-manifest_step.py
+      04-save-solution.step.ts
+      05-export-pdf.step.ts
+      06-auth-google.step.ts
+      07-rate-limit.step.ts
+      cron/
+        daily-backups.step.ts
+    src/
+      utils/
+        validators.ts
+        schemas.ts
+      python_helpers/
+        sympy_helpers.py
+    requirements.txt
+    docker/
+      python-step.Dockerfile
+      motia-run.Dockerfile
+  infra/
+    docker-compose.yml     # local dev for Postgres, Redis, MinIO
+    traefik/
+    k8s/
+  .github/
+    workflows/
+      ci.yml
+
+KEY TECHNOLOGIES
+================
+- Frontend: React + TypeScript + TailwindCSS, Vite, KaTeX
+- Backend: Motia (JS Steps) + Python Steps (SymPy)
+- Package Manager: Bun
+- DB: Postgres (self-hosted)
+- Cache/Rate-limit: Redis
+- Object Storage: MinIO (S3-compatible)
+- Reverse Proxy/TLS: Traefik (Let's Encrypt)
+- CI: GitHub Actions
+- Monitoring: Prometheus + Grafana + Sentry
+- Frontend Deployment: Vercel
+
+HIGH-LEVEL FLOW
+===============
+User submits problem in Chat Window (frontend) ->
+Frontend POST /api/solve (Motia API step 01-api-solve) ->
+01-api-solve validates auth & quota -> calls 02-generate-manifest ->
+02 returns JSON manifest -> Motia runs 03-verify-manifest (Python) ->
+03 returns verification result -> 04-save-solution persists to Postgres & MinIO ->
+Frontend receives completion event or polls -> AnswerPanel displays verified steps.
+
+FRONTEND — DETAILED ROADMAP & FILES
+==================================
+
+FRONTEND GOALS
+- Landing page (marketing + login CTA)
+- Auth (Google OAuth) + JWT storage in httpOnly cookie
+- Main app layout after login: 3-column ChatGPT-style UI (Sidebar | Chat | Answer)
+- Chat: send math problems (text or LaTeX), show conversation
+- Answer Panel: verified steps (LaTeX via KaTeX), statuses, hint mode, export PDF
+- History list in Sidebar and profile/settings pages
+
+FRONTEND TASK LIST (ordered)
+1. Init project
+   - Command:
+     bunx create-vite frontend --template react-ts
+     cd frontend && bun install
+   - Commit: "chore(frontend): scaffold react-ts with vite"
+2. Setup Tailwind + KaTeX + Zustand + Axios
+   - bun add -D tailwindcss postcss autoprefixer
+   - bunx tailwindcss init -p
+   - bun add axios zustand katex jwt-decode
+   - Add KaTeX CSS import in src/index.css
+   - Commit: "chore(frontend): add tailwind, katex, zustand, axios"
+3. Create base layout
+   - Files:
+     src/pages/Landing.tsx (simple CTA + login)
+     src/pages/AppLayout.tsx (3-column layout)
+     src/components/Sidebar.tsx
+     src/components/ChatWindow.tsx
+     src/components/AnswerPanel.tsx
+   - App.tsx routes: "/" -> Landing, "/app" -> AppLayout (protected)
+   - Commit: "feat(frontend): add base 3-column layout"
+4. Implement Zustand store
+   - File: src/lib/store.ts
+   - State: user, activeChatId, chats[], messagesByChatId, currentSolution
+   - Methods: addMessage, setActiveChat, setSolution
+   - Commit: "feat(frontend): add global store (zustand)"
+5. ChatWindow UI
+   - Components:
+     - MessageList: render messages (user vs ai)
+     - Composer: textarea + Send button + mode selector (hint/step/full)
+   - On send:
+     - addMessage({role: 'user', content})
+     - call api.sendSolve({chatId, problem, mode})
+     - show loading indicator
+   - Commit: "feat(frontend): implement chat composer and message list"
+6. AnswerPanel UI
+   - Component StepCard.tsx renders:
+     - Step number, LaTeX (KaTeX), justification
+     - Status badge (VERIFIED / CORRECTED / FAILED)
+     - Expand/collapse detail + counterexample if failed
+   - Show processing state while verification running
+   - Add "Show Next Step" (progressive reveal) & "Show Full Solution"
+   - Commit: "feat(frontend): implement answer panel and step cards"
+7. API layer
+   - File: src/lib/api.ts
+   - Expose:
+     - async function sendSolve({chatId, problem, mode}) -> calls Motia /api/solve
+     - async function getHistory()
+     - async function getChat(chatId)
+     - async function exportPDF(chatId)
+   - Use axios instance; attach JWT cookie automatically (httpOnly cookies mean no manual header)
+   - Commit: "feat(frontend): add api client"
+8. Auth
+   - Implement Google OAuth flow:
+     - Frontend opens Google OAuth popup -> receives id_token -> POST to motia /auth/google
+     - motia returns app JWT in httpOnly cookie
+   - File: src/lib/auth.ts
+   - Commit: "feat(frontend): implement google oauth client flow"
+9. Sidebar (History & Profile)
+   - GET /api/history -> populate chats in Sidebar
+   - Clicking chat loads messages and solution
+   - Profile tab shows user info & logout
+   - Commit: "feat(frontend): sidebar history & profile"
+10. PDF export & Download
+    - Trigger export via API; get signed URL -> download
+    - Commit: "feat(frontend): pdf export"
+11. Responsive behavior
+    - Collapse sidebar on small screens; allow switching between chat/answer
+    - Commit: "ui(frontend): responsive layout"
+12. Tests
+    - Add Vitest + React Testing Library tests for key components (ChatWindow, AnswerPanel)
+    - Commit: "test(frontend): add component tests"
+13. Lint & CI
+    - Add ESLint + Prettier; GitHub Action to run tests + build preview
+    - Commit: "ci(frontend): add tests & lint"
+14. Deploy to Vercel
+    - Connect GitHub repo to Vercel
+    - Set environment variables (API_URL, etc.)
+    - Configure build command: bun run build
+    - Output directory: dist
+    - Commit: "ci(frontend): vercel deployment config"
+
+FRONTEND DEV NOTES
+- Use KaTeX to render LaTeX; if user submits plain text, convert to LaTeX for consistent rendering.
+- Show LaTeX rendering errors gracefully (fallback to plaintext).
+- Progressive reveal: client-side state controls which steps are visible; server still returns full verified steps.
+- Use websockets (optional) or polling to get verification progress. Motia supports emitting events — integrate websocket to receive `solutions.saved`.
+
+VERCEL DEPLOYMENT CONFIG
+========================
+- Framework: Vite
+- Build Command: bun run build
+- Output Directory: dist
+- Install Command: bun install
+- Environment Variables:
+  - VITE_API_URL: Backend API URL
+  - VITE_GOOGLE_CLIENT_ID: Google OAuth Client ID
+
+BACKEND (MOTIA) — DETAILED ROADMAP & FILES
+=========================================
+
+BACKEND GOALS
+- Steps:
+  - 01-api-solve.step.ts (API entry)
+  - 02-generate-manifest.step.ts (JS)
+  - 03-verify-manifest_step.py (Python SymPy)
+  - 04-save-solution.step.ts (JS DB write)
+  - 05-export-pdf.step.ts (JS)
+  - 06-auth-google.step.ts (API)
+  - 07-rate-limit.step.ts (middleware)
+- Run Motia Workbench locally during dev
+- Harden Python step container
+- Postgres for persistence, Redis for rate-limiting, MinIO for PDFs
+
+BACKEND TASK LIST (ordered)
+1. Initialize Motia project
+   - cd backend
+   - bunx create-motia@latest
+   - bun install
+   - Add scripts: dev, build, start in package.json
+   - Commit: "chore(motia): init motia project"
+2. Add root requirements.txt
+   - Contents: sympy==1.12 pydantic==1.10
+   - Commit: "chore(motia): add python requirements"
+3. Implement 01-api-solve.step.ts
+   - Validate JWT from httpOnly cookie or Authorization header
+   - Validate request body via Zod
+   - Check rate-limit via calling 07-rate-limit.step.ts (or internal middleware)
+   - Call 02-generate-manifest.step.ts (await)
+   - Option: return synchronous result (for MVP) or enqueue and return jobId (async)
+   - Commit: "feat(backend): add /api/solve entry step"
+4. Implement 02-generate-manifest.step.ts
+   - Accept: { problem, mode, userId, chatId? }
+   - For MVP: produce deterministic manifest (simple JS code)
+   - Later: plug in LLM adapter (abstracted with same interface)
+   - Emit event `manifest.generated`
+   - Commit: "feat(backend): add manifest generator (mock)"
+5. Implement 03-verify-manifest_step.py
+   - Use Motia Python Step pattern: export config + handler
+   - Implement:
+     - parse_expr: try latex parser, then sympify fallback
+     - check_equiv(a,b): symbolic simplify + numeric fallback
+     - derivative_check/integral_check conveniences
+     - step timeout and complexity guard (limit expression length, max_ops)
+   - Return VerificationResult JSON described earlier
+   - Commit: "feat(backend): add sympy verification step"
+6. Implement 04-save-solution.step.ts
+   - Persist chat/message/solution into Postgres. Use a DB client (pg or prisma)
+   - Store JSON steps (jsonb) in solutions table
+   - If PDF artifact exists, upload to MinIO and save URL
+   - Emit `solutions.saved` event
+   - Commit: "feat(backend): persist solution into db"
+7. Implement 05-export-pdf.step.ts
+   - Use Playwright or chrome-aws-lambda to render HTML to PDF
+   - Store result in MinIO and return signed URL
+   - Commit: "feat(backend): add export pdf step"
+8. Implement 06-auth-google.step.ts
+   - Endpoint to accept Google id_token
+   - Verify via Google's keys (jwt verify)
+   - Create user record if new
+   - Issue JWT signed with JWT_SECRET (short expiry + refresh)
+   - Commit: "feat(backend): google oauth auth step"
+9. Implement 07-rate-limit.step.ts
+   - Use Redis token bucket (lua script or sliding window)
+   - Hook into 01-api-solve as middleware
+   - Commit: "feat(backend): rate-limit step with redis"
+10. Cron & backups
+    - steps/cron/daily-backups.step.ts: run pg_dump, copy to MinIO
+    - Commit: "ops: add daily db backup cron step"
+
+BACKEND DEV NOTES (MOTIA-SPECIFIC)
+- Naming: ensure `.step.` or `_step.` is used in filenames to be discovered by Motia.
+- Each step should export `config` and `handler` per Motia docs.
+- Keep JS steps short; heavy compute in Python steps only.
+- Configure Motia step timeouts and resource limits in motia config or via docker options.
+- Use Motia Workbench to inspect step input/output locally during dev.
+
+DATABASE SCHEMA
+===============
+- USERS (id UUID PK, name TEXT, email TEXT UNIQUE, created_at)
+- CHATS (id UUID PK, user_id UUID FK, title TEXT, created_at)
+- MESSAGES (id SERIAL PK, chat_id UUID FK, role TEXT, content JSONB, created_at)
+- SOLUTIONS (id SERIAL PK, chat_id UUID FK, manifest JSONB, verified JSONB, pdf_url TEXT, created_at)
+- INDEXES: messages.chat_id, solutions.chat_id
+
+INFRA & DEPLOYMENT (SELF-HOSTED)
+================================
+Local dev (docker-compose)
+- infra/docker-compose.yml: services:
+  - postgres: image postgres:15
+  - redis
+  - minio
+  - traefik (for dev TLS optional)
+  - motia (run bun dev)
+  - frontend (bun dev)
+- Commit: "ops: add local docker-compose for dev"
+
+Production (recommend k8s)
+- Components: Traefik ingress, motia service (scaled), Python worker node pool, Postgres cluster (primary + replica, backups), Redis cluster, MinIO or S3, Prometheus & Grafana, Sentry
+- TLS: Traefik with Let's Encrypt
+- Secrets: use k8s secrets or Vault
+- CI/CD: GitHub Actions build images → push to registry → Helm deploy
+- Commit: "ops: add k8s helm charts"
+
+FRONTEND: Vercel (Recommended for frontend)
+- Zero-config deployment for Vite apps
+- Automatic preview deployments for PRs
+- Edge functions for SSR if needed
+- Built-in analytics and monitoring
+
+SECURITY CHECKLIST (must-do before prod)
+========================================
+- HTTPS everywhere (Traefik + Let's Encrypt)
+- Protect Motia Workbench UI (IP allowlist or VPN)
+- JWT secrets in secret store; short TTL + refresh tokens
+- Input validation at 01-api-solve.step.ts (Zod)
+- Rate limit per-user and global
+- Harden Python step Dockerfile:
+  - non-root user
+  - set ulimit, CPU/memory constraints
+  - disable outbound network
+  - example: python-step.Dockerfile uses python:3.11-slim, creates 'app' user, copies requirements, no shell access
+- Crash loop protection and queue DLQ for failing jobs
+- Daily DB backups + periodic restore testing
+- Implement data deletion API for GDPR/COPPA needs
+
+TESTING & QA
+============
+- Unit tests:
+  - Backend JS: vitest for validators, manifest generator
+  - Python: pytest for sympy_helpers, parse_expr edge cases
+- Integration:
+  - motia dev end-to-end run: POST /api/solve (mock) -> verify -> save
+- Load testing:
+  - simulate concurrent /api/solve requests; verify rate-limits + worker scaling
+- Fuzz tests:
+  - random math strings into sympy parser to detect hangs (use timeout guard)
+
+MONITORING & OBSERVABILITY
+==========================
+- Logs: structured JSON logs to Loki or Cloud logging
+- Errors: integrate Sentry in JS/Python steps
+- Metrics: expose Prometheus metrics from Motia steps: job duration, failure rate, queue depth, sympy timeouts
+- Dashboards: Grafana for SLA and cost monitoring
+
+PRIVACY & POLICY
+================
+- Store minimal PII; allow deletion via API
+- Terms of Service: academic integrity policy & allowed use
+- If minors targeted, implement parental consent flows and COPPA compliance
+
+DELIVERABLES (FILES TO CREATE FIRST)
+====================================
+1. frontend initial files (App + layout + store + ChatWindow + AnswerPanel)
+2. backend/steps/01-api-solve.step.ts (skeleton)
+3. backend/steps/02-generate-manifest.step.ts (mock)
+4. backend/steps/03-verify-manifest_step.py (SymPy starter)
+5. infra/docker-compose.yml for dev (Postgres/Redis/MinIO)
+6. docker/python-step.Dockerfile (hardened)
+7. docs/runbook.txt and docs/architecture.txt
+
+SUGGESTED COMMIT SEQUENCE (small commits)
+=========================================
+1. chore: scaffold repo with frontend and backend folders
+2. feat(frontend): scaffold vite react-ts app with bun
+3. feat(frontend): add tailwind, katex, zustand, axios
+4. feat(frontend): add base 3-column layout
+5. chore(motia): init motia backend with bun
+6. feat(backend): add /api/solve skeleton and mock manifest
+7. feat(backend): add sympy verification python step
+8. feat(backend): add db persistence step
+9. feat(frontend): wire chat to /api/solve
+10. feat(frontend): display verified steps in AnswerPanel
+11. feat(auth): google oauth auth endpoint + frontend flow
+12. sec: add python-step dockerfile and runtime limits
+13. ops: add docker-compose for dev infra
+14. ci: add github actions for tests and build
+15. deploy(frontend): configure vercel deployment
+16. chore(deploy): initial k8s helm + traefik for backend
+
+ESTIMATED TIMELINE (solo dev, approximate)
+==========================================
+- Day 0: Repo + frontend scaffold + motia init (commits 1–6)
+- Day 1: Python verify step + local integration (commits 7–8)
+- Day 2: DB persistence + frontend wiring (commits 9–10)
+- Day 3: Auth + rate-limits + tests (commits 11–14)
+- Day 4: Frontend Vercel deployment + PDF export (commits 15)
+- Day 5+: Backend k8s deploy, polish, monitoring, security hardening
+
+APPENDIX: BASIC API CONTRACTS
+============================
+POST /api/solve
+- Body: { chatId?: string, problem: string, mode: 'step_by_step'|'hint'|'full' }
+- Header: Authorization: Bearer <JWT> or httpOnly cookie
+- Response (202 queued sync):
+  { jobId: string, status: 'queued' }
+- Response (sync done):
+  { jobId: string, status: 'done', solution: VerificationResult }
+
+GET /api/history
+- Returns: [{ chatId, title, lastMessage, updatedAt }]
+
+GET /api/chat/:chatId
+- Returns: { chatId, messages[], solution? }
+
+POST /api/auth/google
+- Body: { id_token }
+- Returns: sets httpOnly JWT cookie; returns { userId, name, email }
+
+VerificationResult
+{
+  ok: boolean,
+  steps: [
+    { expr: string, justification: string, status: "VERIFIED"|"CORRECTED"|"FAILED", notes?: string }
+  ],
+  duration_ms: number
+}
+
+BUN COMMANDS QUICK REFERENCE
+============================
+# Install dependencies
+bun install
+
+# Add a package
+bun add <package>
+
+# Add dev dependency
+bun add -D <package>
+
+# Run scripts
+bun run dev
+bun run build
+bun run test
+
+# Create new project (similar to npx)
+bunx create-vite <project-name> --template react-ts
+
+# Run TypeScript directly
+bun run src/index.ts
+
+END OF FILE
+============================================================
