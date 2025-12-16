@@ -7,14 +7,23 @@
         "y": 44
       },
       "src/hello/hello-api.step.ts": {
-        "x": -409,
-        "y": 0,
+        "x": -412,
+        "y": -5,
         "sourceHandlePosition": "right"
       },
       "src/hello/process_greeting_step.py": {
-        "x": 0,
-        "y": 34,
+        "x": -9,
+        "y": 31,
         "sourceHandlePosition": "right"
+      }
+    }
+  },
+  {
+    "id": "auth-flow",
+    "config": {
+      "src/api/01-auth.step.ts": {
+        "x": -609,
+        "y": 6
       }
     }
   }
