@@ -21,11 +21,14 @@
     "@motiadev/plugin-logs": "^0.17.4-beta.185",
     "@motiadev/plugin-observability": "^0.17.4-beta.185",
     "@motiadev/plugin-states": "^0.17.4-beta.185",
+    "bcrypt": "^6.0.0",
+    "mongoose": "^9.0.1",
     "motia": "^0.17.4-beta.185",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@motiadev/workbench": "^0.17.4-beta.185",
+    "@types/bcrypt": "^6.0.0",
     "@types/react": "^19.1.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
