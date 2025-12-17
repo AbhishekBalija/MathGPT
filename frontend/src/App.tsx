@@ -26,7 +26,14 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        <Route path="/app" element={<AppLayout />} />
+        <Route
+          path="/app"
+          element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
