@@ -12,10 +12,9 @@ declare module 'motia' {
   }
 
   interface Handlers {
-    'LogGreeting': EventHandler<{ requestId: string; greeting: string; processedBy: string }, never>
-    'HelloAPI': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, { message: string; status: string; appName: string }>, { topic: 'process-greeting'; data: { timestamp: string; appName: string; greetingPrefix: string; requestId: string } }>
-    'AuthStep': ApiRouteHandler<{ email: string; password: string }, ApiResponse<200, { message: string; userId?: string }> | ApiResponse<401, { error: string }>, never>
-    'ProcessGreeting': EventHandler<{ timestamp: string; appName: string; greetingPrefix: string; requestId: string }, { topic: 'greeting-processed'; data: { requestId: string; greeting: string; processedBy: string } }>
+    'SendWelcomeEmail': EventHandler<{ userId?: string; email?: string; name?: string }, never>
+    'RegisterUser': ApiRouteHandler<{ email: string; password: string; name: string; isAdmin?: boolean }, ApiResponse<200, { message: string; accessToken: string; refreshToken: string; user: { id: string; email: string } }> | ApiResponse<400, { error: string }> | ApiResponse<409, { error: string }>, { topic: 'send-welcome-email'; data: { userId?: string; email?: string; name?: string } }>
+    'LoginUser': ApiRouteHandler<{ email: string; password: string }, ApiResponse<200, { email: string; refreshToken: string; accessToken: string; user: { id: string; email: string } }> | ApiResponse<401, { error: string }>, never>
   }
     
 }

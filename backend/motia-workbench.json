@@ -21,9 +21,17 @@
   {
     "id": "auth-flow",
     "config": {
-      "src/api/01-auth.step.ts": {
-        "x": -609,
-        "y": 6
+      "src/events/auth/send-welcome-email.step.ts": {
+        "x": -607,
+        "y": -48
+      },
+      "src/api/auth/register.step.ts": {
+        "x": -996,
+        "y": -20
+      },
+      "src/api/auth/login.step.ts": {
+        "x": -978,
+        "y": 190
       }
     }
   }
