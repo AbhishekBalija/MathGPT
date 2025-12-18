@@ -58,7 +58,7 @@ export const handler: Handlers["RegisterUser"] = async(req,{emit,logger}) => {
             body: {
                 error: user.error ?? "Registration failed",
             },
-        } as const;
+        };
     }
 
     // Step 4: Emit an event to send welcome email
@@ -85,5 +85,5 @@ export const handler: Handlers["RegisterUser"] = async(req,{emit,logger}) => {
                 email: user.user!.email,
             },
         },
-    } as const;
+    };
 };

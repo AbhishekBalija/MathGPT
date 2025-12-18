@@ -22,16 +22,41 @@
     "id": "auth-flow",
     "config": {
       "src/events/auth/send-welcome-email.step.ts": {
-        "x": -607,
-        "y": -48
+        "x": -892,
+        "y": 12
       },
       "src/api/auth/register.step.ts": {
-        "x": -996,
-        "y": -20
+        "x": -1370,
+        "y": -204
+      },
+      "src/api/auth/refresh-token.step.ts": {
+        "x": -544,
+        "y": -180
+      },
+      "src/api/auth/me.step.ts": {
+        "x": -546,
+        "y": 25
+      },
+      "src/api/auth/logout.step.ts": {
+        "x": -529,
+        "y": 217
       },
       "src/api/auth/login.step.ts": {
-        "x": -978,
-        "y": 190
+        "x": -1386,
+        "y": 260
+      },
+      "src/api/auth/google-oauth.step.ts": {
+        "x": -1386,
+        "y": 69
+      }
+    }
+  },
+  {
+    "id": "health-flow",
+    "config": {
+      "src/api/health.step.ts": {
+        "x": -285,
+        "y": -5
       }
     }
   }

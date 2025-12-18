@@ -1,68 +1,125 @@
-import { MongoClient, ObjectId } from 'mongodb';
-import { User, UserCreate } from '../types/user.types';
+import { MongoClient, ObjectId, Collection } from "mongodb";
+import { User, UserCreate, GoogleUserProfile } from "../types/user.types";
 
-// Step 1: Create a MongoDB. connection
-const client = new MongoClient(process.env.MONGODB_URI || "mongodb://localhost:27017");
-// log error if connection fails
-client.on("error", (error) => console.error(error));
-// Step 2: Create a database
-const db = client.db("MathGPTDB");
-// log error if database connection fails
-client.on("open", () => console.log("Database connected"));
-// Step 3: Create a collection
-const users = db.collection<User>("users");
+// Singleton pattern for MongoDB connection (serverless-friendly)
+let client: MongoClient | null = null;
+let usersCollection: Collection<User> | null = null;
 
+async function getCollection(): Promise<Collection<User>> {
+  if (usersCollection) {
+    return usersCollection;
+  }
+
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error("MONGODB_URI environment variable is not set");
+  }
+
+  if (!client) {
+    client = new MongoClient(uri);
+    await client.connect();
+    console.log("MongoDB connected successfully");
+  }
+
+  const db = client.db("MathGPTDB");
+  usersCollection = db.collection<User>("users");
+  return usersCollection;
+}
 
 export const userRepository = {
-    // Find by email (for login)
-    async findByEmail(email: string): Promise<User | null> {
-        return users.findOne({ email });
-    },
+  // Find by email (for login)
+  async findByEmail(email: string): Promise<User | null> {
+    const users = await getCollection();
+    return users.findOne({ email });
+  },
 
-    // Find by id(for token verification)
-    async findById(id: string): Promise<User | null> {
-        return users.findOne({ _id: new ObjectId(id) });
-    },
+  // Find by id(for token verification)
+  async findById(id: string): Promise<User | null> {
+    const users = await getCollection();
+    return users.findOne({ _id: new ObjectId(id) });
+  },
 
-    // Create a new user
-    async create(data: UserCreate): Promise<User> {
-        const now = new Date();
-        const user: Omit<User, '_id'> = {
-            name: data.name,
-            email: data.email,
-            password: data.password,
-            isAdmin: data.isAdmin || false,
-            createdAt: now,
-            updatedAt: now,
-        };
+  // Find by Google ID (for OAuth login)
+  async findByGoogleId(googleId: string): Promise<User | null> {
+    const users = await getCollection();
+    return users.findOne({ googleId });
+  },
 
-        const result = await users.insertOne(user as User);
-        return {
-            ...user,
-            _id: result.insertedId,
-        }as User;
-    },
+  // Find or create user by Google profile (for OAuth)
+  async findOrCreateByGoogle(profile: GoogleUserProfile): Promise<User> {
+    // First, try to find by googleId
+    let user = await this.findByGoogleId(profile.googleId);
+    if (user) {
+      return user;
+    }
 
-    // Update a user
-    async update(id:string, data: Partial<User>): Promise<User | null> {
-        const result = await users.findOneAndUpdate(
-            { _id: new ObjectId(id) },
-            { $set: { ...data, updatedAt: new Date() } },
-            { returnDocument: "after" }
-        );
-        return result;
-    },
+    // Then, try to find by email (link existing account)
+    user = await this.findByEmail(profile.email);
+    if (user) {
+      // Link Google account to existing user
+      const updated = await this.update(user._id.toString(), {
+        googleId: profile.googleId,
+        avatar: profile.avatar || user.avatar,
+      });
+      return updated || user;
+    }
 
-    // Delete a user
-    async delete(id:string): Promise<boolean> {
-        const result = await users.deleteOne({ _id: new ObjectId(id) });
-        return result.deletedCount === 1;
-    },
+    // Create new OAuth user
+    return this.create({
+      email: profile.email,
+      name: profile.name,
+      googleId: profile.googleId,
+      avatar: profile.avatar,
+      provider: "google",
+      isAdmin: false,
+    });
+  },
 
-    //Check if email is already in use (for registration validation)
+  // Create a new user
+  async create(data: UserCreate): Promise<User> {
+    const users = await getCollection();
+    const now = new Date();
+    const user: Omit<User, "_id"> = {
+      name: data.name,
+      email: data.email,
+      password: data.password,
+      isAdmin: data.isAdmin || false,
+      provider: data.provider || "email",
+      googleId: data.googleId,
+      avatar: data.avatar,
+      createdAt: now,
+      updatedAt: now,
+    };
 
-    async checkEmail(email: string): Promise<boolean> {
-        const count = await users.countDocuments({ email });
-        return count > 0;
-    },
+    const result = await users.insertOne(user as User);
+    return {
+      ...user,
+      _id: result.insertedId,
+    } as User;
+  },
+
+  // Update a user
+  async update(id: string, data: Partial<User>): Promise<User | null> {
+    const users = await getCollection();
+    const result = await users.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: { ...data, updatedAt: new Date() } },
+      { returnDocument: "after" }
+    );
+    return result;
+  },
+
+  // Delete a user
+  async delete(id: string): Promise<boolean> {
+    const users = await getCollection();
+    const result = await users.deleteOne({ _id: new ObjectId(id) });
+    return result.deletedCount === 1;
+  },
+
+  //Check if email is already in use (for registration validation)
+  async checkEmail(email: string): Promise<boolean> {
+    const users = await getCollection();
+    const count = await users.countDocuments({ email });
+    return count > 0;
+  },
 };

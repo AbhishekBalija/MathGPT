@@ -54,7 +54,7 @@ export const handler: Handlers["LoginUser"] = async(req,{emit,logger}) => {
             body: {
                 error: user.error ?? "Login failed",
             },
-        } as const;
+        };
     }
 
     // // Step 4: Emit an event to notify other services
@@ -83,5 +83,5 @@ export const handler: Handlers["LoginUser"] = async(req,{emit,logger}) => {
                 email: user.user!.email,
             },
         },
-    } as const;
+    };
 }
