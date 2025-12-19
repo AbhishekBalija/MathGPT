@@ -112,9 +112,9 @@ const Sidebar = () => {
             {/* User Profile Card */}
             {user && (
               <div className="flex items-center gap-3 px-3 py-2 bg-gray-800 rounded-lg mb-2">
-                {user.picture ? (
+                {user.avatar ? (
                   <img
-                    src={user.picture}
+                    src={user.avatar}
                     alt={user.name}
                     className="w-8 h-8 rounded-full"
                     referrerPolicy="no-referrer"

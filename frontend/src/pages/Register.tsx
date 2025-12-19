@@ -1,12 +1,16 @@
 import { Link, useNavigate } from "react-router-dom";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { useAuthStore } from "../stores/authStore";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
+import axios from "axios";
 
 const Register = () => {
   const navigate = useNavigate();
-  const { loginWithGoogle, isLoading } = useAuthStore();
+  const { loginWithGoogle, registerWithEmail, isLoading } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleGoogleSuccess = async (
     credentialResponse: CredentialResponse
@@ -16,14 +20,44 @@ const Register = () => {
       try {
         await loginWithGoogle(credentialResponse.credential);
         navigate("/app", { replace: true });
-      } catch {
-        setError("Failed to sign up with Google. Please try again.");
+      } catch (err) {
+        if (axios.isAxiosError(err) && err.response?.data?.error) {
+          setError(err.response.data.error);
+        } else {
+          setError("Failed to sign up with Google. Please try again.");
+        }
       }
     }
   };
 
   const handleGoogleError = () => {
     setError("Google sign-up was cancelled or failed. Please try again.");
+  };
+
+  const handleEmailRegister = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!name || !email || !password) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    try {
+      await registerWithEmail(email, password, name);
+      navigate("/app", { replace: true });
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else {
+        setError("Registration failed. Please try again.");
+      }
+    }
   };
 
   return (
@@ -90,8 +124,7 @@ const Register = () => {
           </div>
         </div>
 
-        <form className="mt-8 space-y-6" action="#" method="POST">
-          <input type="hidden" name="remember" value="true" />
+        <form className="mt-8 space-y-6" onSubmit={handleEmailRegister}>
           <div className="-space-y-px rounded-md shadow-sm">
             <div>
               <label htmlFor="full-name" className="sr-only">
@@ -103,7 +136,10 @@ const Register = () => {
                 type="text"
                 autoComplete="name"
                 required
-                className="relative block w-full rounded-t-md border-0 py-2.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700 dark:placeholder:text-gray-500"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={isLoading}
+                className="relative block w-full rounded-t-md border-0 py-2.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700 dark:placeholder:text-gray-500 disabled:opacity-50"
                 placeholder="Full Name"
               />
             </div>
@@ -117,7 +153,10 @@ const Register = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="relative block w-full border-0 py-2.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700 dark:placeholder:text-gray-500"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
+                className="relative block w-full border-0 py-2.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700 dark:placeholder:text-gray-500 disabled:opacity-50"
                 placeholder="Email address"
               />
             </div>
@@ -131,8 +170,11 @@ const Register = () => {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="relative block w-full rounded-b-md border-0 py-2.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700 dark:placeholder:text-gray-500"
-                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
+                className="relative block w-full rounded-b-md border-0 py-2.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700 dark:placeholder:text-gray-500 disabled:opacity-50"
+                placeholder="Password (min 8 characters)"
               />
             </div>
           </div>
@@ -140,9 +182,10 @@ const Register = () => {
           <div>
             <button
               type="submit"
-              className="group relative flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-colors"
+              disabled={isLoading}
+              className="group relative flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Create account
+              {isLoading ? "Creating account..." : "Create account"}
             </button>
           </div>
         </form>
