@@ -17,7 +17,8 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true,
+  // Note: withCredentials is NOT needed since we use JWT tokens in Authorization header
+  // withCredentials: true causes CORS issues with AWS API Gateway's wildcard origin
 });
 
 // Request interceptor to attach auth token
