@@ -13,7 +13,7 @@ declare module 'motia' {
 
   interface Handlers {
     'SendWelcomeEmail': EventHandler<{ userId?: string; email?: string; name?: string }, never>
-    'HealthCheck': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, { status: string; timestamp: string }> | ApiResponse<500, { error: string }>, never>
+    'HealthCheck': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, { status: string; timestamp: string }>, never>
     'RegisterUser': ApiRouteHandler<{ email: string; password: string; name: string; isAdmin?: boolean }, ApiResponse<200, { message: string; accessToken: string; refreshToken: string; user: { id: string; email: string } }> | ApiResponse<400, { error: string }> | ApiResponse<409, { error: string }>, { topic: 'send-welcome-email'; data: { userId?: string; email?: string; name?: string } }>
     'RefreshToken': ApiRouteHandler<{ refreshToken: string }, ApiResponse<200, { accessToken: string; refreshToken: string }> | ApiResponse<401, { error: string }>, never>
     'GetCurrentUser': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, { user: { id: string; email: string; name: string; avatar?: string; isAdmin: boolean } }> | ApiResponse<401, { error: string }>, never>
