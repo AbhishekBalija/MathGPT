@@ -59,5 +59,39 @@
         "y": -5
       }
     }
+  },
+  {
+    "id": "SolutionFlow",
+    "config": {
+      "src/events/solution/track-analytics.step.ts": {
+        "x": 702,
+        "y": 31
+      },
+      "src/events/solution/save-solution.step.ts": {
+        "x": 209,
+        "y": -132
+      },
+      "src/events/solution/handle-solve-error.step.ts": {
+        "x": 211,
+        "y": 199
+      },
+      "src/api/solve.step.ts": {
+        "x": -281,
+        "y": 1
+      }
+    }
+  },
+  {
+    "id": "admin-flow",
+    "config": {
+      "src/api/admin/admin-resolve-error.step.ts": {
+        "x": 9,
+        "y": 0
+      },
+      "src/api/admin/admin-errors.step.ts": {
+        "x": 0,
+        "y": 203
+      }
+    }
   }
 ]
