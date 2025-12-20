@@ -61,6 +61,19 @@
     }
   },
   {
+    "id": "admin-flow",
+    "config": {
+      "src/api/admin/admin-resolve-error.step.ts": {
+        "x": 9,
+        "y": 0
+      },
+      "src/api/admin/admin-errors.step.ts": {
+        "x": 0,
+        "y": 203
+      }
+    }
+  },
+  {
     "id": "SolutionFlow",
     "config": {
       "src/events/solution/track-analytics.step.ts": {
@@ -78,19 +91,22 @@
       "src/api/solve.step.ts": {
         "x": -281,
         "y": 1
-      }
-    }
-  },
-  {
-    "id": "admin-flow",
-    "config": {
-      "src/api/admin/admin-resolve-error.step.ts": {
-        "x": 9,
-        "y": 0
       },
-      "src/api/admin/admin-errors.step.ts": {
+      "src/api/solution.step.ts": {
+        "x": -263,
+        "y": 230
+      },
+      "src/api/history.step.ts": {
+        "x": 725,
+        "y": 219
+      },
+      "src/api/delete-solution.step.ts": {
+        "x": 246,
+        "y": 365
+      },
+      "src/api/clear-history.step.ts": {
         "x": 0,
-        "y": 203
+        "y": 0
       }
     }
   }

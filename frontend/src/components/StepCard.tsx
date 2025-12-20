@@ -11,19 +11,12 @@ const StepCard = ({ step }: StepCardProps) => {
   const [expanded, setExpanded] = useState(false);
 
   const renderLatex = (text: string) => {
-    console.log("[StepCard] renderLatex input:", JSON.stringify(text));
     const cleanedText = cleanExpression(text);
-    console.log("[StepCard] After cleaning:", JSON.stringify(cleanedText));
     try {
-      const html = katex.renderToString(cleanedText, {
+      return katex.renderToString(cleanedText, {
         throwOnError: false,
         displayMode: true,
       });
-      console.log(
-        "[StepCard] KaTeX output preview:",
-        html.substring(0, 100) + "..."
-      );
-      return html;
     } catch (e) {
       console.error("[StepCard] KaTeX error:", e);
       return cleanedText;
@@ -37,14 +30,9 @@ const StepCard = ({ step }: StepCardProps) => {
   const renderExplanation = (text: string): string => {
     if (!text) return text;
 
-    // Match LaTeX patterns more comprehensively:
-    // 1. $...$ inline math
-    // 2. \command{...}{...} patterns (handles nested braces)
-    // 3. Simple patterns like x^2, x_1
-
     let result = text;
 
-    // First, handle $...$ inline math
+    // Handle $...$ inline math
     result = result.replace(/\$([^$]+)\$/g, (_, latex) => {
       try {
         return katex.renderToString(latex, {
@@ -57,7 +45,6 @@ const StepCard = ({ step }: StepCardProps) => {
     });
 
     // Handle \frac{...}{...} and similar with nested braces
-    // This regex uses a simple approach: match \command followed by balanced braces
     const fracPattern =
       /\\frac\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}/g;
     result = result.replace(fracPattern, (match) => {
@@ -110,7 +97,7 @@ const StepCard = ({ step }: StepCardProps) => {
       }
     });
 
-    // Handle simple x^n patterns (single character exponent)
+    // Handle simple x^n patterns
     result = result.replace(/([a-zA-Z])\^(\d)/g, (match) => {
       try {
         return katex.renderToString(match, {
@@ -129,25 +116,37 @@ const StepCard = ({ step }: StepCardProps) => {
     switch (status) {
       case "VERIFIED":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 text-xs font-medium rounded-full border border-green-200">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full border border-green-200 shadow-sm">
+            <svg
+              className="w-3.5 h-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
               <path
-                fillRule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clipRule="evenodd"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2.5}
+                d="M5 13l4 4L19 7"
               />
             </svg>
-            Verified
+            Verified Step
           </span>
         );
       case "CORRECTED":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 text-xs font-medium rounded-full border border-amber-200">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 text-xs font-semibold rounded-full border border-amber-200 shadow-sm">
+            <svg
+              className="w-3.5 h-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
               <path
-                fillRule="evenodd"
-                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92z"
-                clipRule="evenodd"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
               />
             </svg>
             Corrected
@@ -155,12 +154,18 @@ const StepCard = ({ step }: StepCardProps) => {
         );
       case "FAILED":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-700 text-xs font-medium rounded-full border border-red-200">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-700 text-xs font-semibold rounded-full border border-red-200 shadow-sm">
+            <svg
+              className="w-3.5 h-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
               <path
-                fillRule="evenodd"
-                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                clipRule="evenodd"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
               />
             </svg>
             Failed
@@ -168,50 +173,67 @@ const StepCard = ({ step }: StepCardProps) => {
         );
       case "PENDING":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-50 text-gray-600 text-xs font-medium rounded-full border border-gray-200">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-50 text-gray-600 text-xs font-semibold rounded-full border border-gray-200 shadow-sm">
             <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" />
-            Pending
+            Processing
           </span>
         );
     }
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
+    <div className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
       {/* Step Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
-        <div className="flex items-center gap-3">
-          <span className="w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+      <div className="flex items-center justify-between px-5 py-4 bg-white border-b border-gray-50">
+        <div className="flex items-center gap-4">
+          <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-bold shadow-sm ring-1 ring-blue-100">
             {step.stepNumber}
-          </span>
-          <span className="text-sm font-medium text-gray-700">
+          </div>
+          <span className="text-sm font-semibold text-gray-800 tracking-tight">
             {step.justification}
           </span>
         </div>
         {getStatusBadge(step.status)}
       </div>
 
-      {/* Expression - Notebook style (cleaned to only show LaTeX) */}
-      <div className="px-4 py-4">
+      {/* Expression - Main Content */}
+      <div className="px-6 py-6 bg-white flex justify-center">
         <div
-          className="text-lg text-gray-900 overflow-x-auto"
+          className="text-xl text-gray-900 overflow-x-auto py-2 scroll-smooth"
           dangerouslySetInnerHTML={{ __html: renderLatex(step.expression) }}
         />
       </div>
 
       {/* Expandable Explanation */}
       {step.explanation && (
-        <div className="border-t border-gray-100">
+        <div className="bg-gray-50/50 border-t border-gray-100">
           <button
             onClick={() => setExpanded(!expanded)}
-            className="w-full px-4 py-2 flex items-center justify-between text-sm text-blue-600 hover:bg-blue-50 transition-colors"
+            className="w-full px-5 py-3 flex items-center justify-between text-sm text-blue-700 bg-blue-50/50 shadow-[0_0_10px_rgba(37,99,235,0.05)] hover:bg-blue-50 hover:shadow-[0_0_15px_rgba(37,99,235,0.15)] transition-all group/btn relative z-10"
           >
-            <span className="font-medium">
-              {expanded ? "Hide explanation" : "Why this step?"}
+            <span className="font-semibold flex items-center gap-2 decoration-blue-500/60 underline underline-offset-4 group-hover/btn:decoration-blue-600 transition-all">
+              <svg
+                className={`w-4 h-4 text-blue-500 transition-opacity ${
+                  expanded ? "opacity-100" : "opacity-0"
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              {expanded ? "Explanation" : "Show explanation"}
             </span>
             <svg
-              className={`w-4 h-4 transition-transform ${
-                expanded ? "rotate-180" : ""
+              className={`w-4 h-4 transition-transform duration-300 ${
+                expanded
+                  ? "rotate-180 text-blue-500"
+                  : "text-gray-400 group-hover/btn:text-blue-500"
               }`}
               fill="none"
               stroke="currentColor"
@@ -226,20 +248,37 @@ const StepCard = ({ step }: StepCardProps) => {
             </svg>
           </button>
 
-          {expanded && (
+          <div
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              expanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+            }`}
+          >
             <div
-              className="px-4 py-3 bg-blue-50 text-sm text-gray-700 leading-relaxed"
+              className="px-5 pb-5 pt-1 text-sm text-gray-600 leading-relaxed border-t border-blue-100/50 bg-blue-50/30"
               dangerouslySetInnerHTML={{
                 __html: renderExplanation(step.explanation),
               }}
             />
-          )}
+          </div>
         </div>
       )}
 
       {step.notes && (
-        <div className="px-4 py-2 bg-amber-50 text-xs text-amber-700 italic border-t border-amber-100">
-          Note: {step.notes}
+        <div className="px-5 py-3 bg-amber-50 text-xs text-amber-700 italic border-t border-amber-100 flex items-start gap-2">
+          <svg
+            className="w-4 h-4 text-amber-500 shrink-0 mt-0.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          <span>{step.notes}</span>
         </div>
       )}
     </div>

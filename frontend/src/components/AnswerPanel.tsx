@@ -6,15 +6,12 @@ import { cleanFinalAnswer } from "../utils/latexUtils";
 
 // Helper to render LaTeX safely
 const renderLatex = (text: string): string => {
-  console.log("[AnswerPanel] renderLatex input:", JSON.stringify(text));
   const cleanedText = cleanFinalAnswer(text);
-  console.log("[AnswerPanel] After cleaning:", JSON.stringify(cleanedText));
   try {
     const rendered = katex.renderToString(cleanedText, {
       throwOnError: false,
       displayMode: false,
     });
-    console.log("[AnswerPanel] KaTeX output length:", rendered.length);
     return rendered;
   } catch (e) {
     console.error("[AnswerPanel] KaTeX error:", e);
@@ -36,13 +33,13 @@ const AnswerPanel = () => {
   }, [solution]);
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 border-l border-gray-200">
+    <div className="h-full flex flex-col bg-gray-50/50 border-l border-white/50 backdrop-blur-sm shadow-xl shadow-gray-200/50 relative z-10 w-full overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+      <div className="flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-20">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-linear-to-tr from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-900/10 text-white">
             <svg
-              className="w-5 h-5 text-green-600"
+              className="w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -50,16 +47,23 @@ const AnswerPanel = () => {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
           </div>
-          <h2 className="font-semibold text-gray-900">Solution</h2>
+          <div>
+            <h2 className="font-bold text-gray-900 leading-tight">
+              Verified Solution
+            </h2>
+            <p className="text-xs text-gray-500 font-medium tracking-wide uppercase">
+              Step-by-step breakdown
+            </p>
+          </div>
         </div>
         <button
           onClick={() => setShowAnswerPanel(false)}
-          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
           aria-label="Close panel"
         >
           <svg
@@ -79,87 +83,117 @@ const AnswerPanel = () => {
       </div>
 
       {/* Content */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 scroll-smooth">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4" />
-            <p className="text-gray-600 font-medium">Solving...</p>
-            <p className="text-sm text-gray-400 mt-1">
-              Working through each step
+            <div className="relative w-16 h-16 mb-6">
+              <div className="absolute inset-0 border-4 border-gray-200 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Solving Problem
+            </h3>
+            <p className="text-gray-500 mt-2 max-w-xs">
+              Analyzing math structure and generating verified steps...
             </p>
           </div>
         ) : solution ? (
-          <div className="space-y-4">
-            {/* Final Answer - Top (rendered with KaTeX, cleaned) */}
-            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
-              <div className="flex items-center gap-2 mb-2">
+          <div className="space-y-6 max-w-2xl mx-auto">
+            {/* Final Answer - Top (Hero Section) */}
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-linear-to-r from-green-300 to-emerald-400 rounded-2xl opacity-50 blur-sm group-hover:opacity-75 transition-opacity"></div>
+              <div className="relative p-6 bg-white rounded-xl border border-green-100 shadow-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-bold uppercase tracking-wider rounded-md">
+                    Final Answer
+                  </span>
+                </div>
+                <div
+                  className="text-2xl sm:text-3xl font-bold text-gray-900 leading-normal"
+                  dangerouslySetInnerHTML={{
+                    __html: renderLatex(solution.finalAnswer),
+                  }}
+                />
+              </div>
+            </div>
+            {/* Problem Type Badge + Stats */}
+            <div className="flex items-center justify-between px-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full border border-gray-200 uppercase tracking-wide">
                 <svg
-                  className="w-5 h-5 text-green-600"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
                   <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
                   />
                 </svg>
-                <span className="text-sm font-semibold text-green-800">
-                  Final Answer
-                </span>
-              </div>
-              <div
-                className="text-xl font-bold text-green-900"
-                dangerouslySetInnerHTML={{
-                  __html: renderLatex(solution.finalAnswer),
-                }}
-              />
-            </div>
-
-            {/* Problem Type Badge + Stats */}
-            <div className="flex items-center justify-between text-xs text-gray-500">
-              <span className="px-2 py-1 bg-gray-100 rounded-full capitalize">
                 {solution.problemType.replace("_", " ")}
               </span>
-              <span>
-                {solution.steps.length} steps •{" "}
-                {(solution.processingTimeMs / 1000).toFixed(1)}s
+              <span className="text-xs font-medium text-gray-400 font-mono">
+                {solution.steps.length} STEPS •{" "}
+                {(solution.processingTimeMs / 1000).toFixed(2)}s
               </span>
             </div>
-
             {/* Steps */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               {solution.steps.map((step) => (
                 <StepCard key={step.stepNumber} step={step} />
               ))}
             </div>
-
             {/* Summary */}
             {solution.summary && (
-              <div className="mt-4 p-4 bg-white rounded-xl border border-gray-200">
-                <h3 className="font-semibold text-gray-800 mb-1 text-sm">
-                  Summary
-                </h3>
-                <p className="text-gray-600 text-sm">{solution.summary}</p>
+              <div className="mt-8 p-6 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <svg
+                    className="w-5 h-5 text-blue-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <h3 className="font-semibold text-gray-900">Summary</h3>
+                </div>
+                <p className="text-gray-600 leading-relaxed text-sm">
+                  {solution.summary}
+                </p>
               </div>
             )}
+            <div className="h-10"></div> {/* Spacer */}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center text-gray-400">
-            <svg
-              className="w-12 h-12 mb-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-              />
-            </svg>
-            <p>Ask a math problem to see the solution</p>
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+              <svg
+                className="w-10 h-10 text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-500 mb-1">
+              No Solution Yet
+            </h3>
+            <p className="text-sm">
+              Ask a specific math problem to see details
+            </p>
           </div>
         )}
       </div>

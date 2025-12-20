@@ -4,50 +4,57 @@ import Sidebar from "../components/Sidebar";
 import ChatWindow from "../components/ChatWindow";
 import AnswerPanel from "../components/AnswerPanel";
 import PanelResizer from "../components/PanelResizer";
+import LoadingOverlay from "../components/LoadingOverlay";
 
 const AppLayout = () => {
   const { sidebarOpen, showAnswerPanel } = useChatStore();
   const [answerPanelWidth, setAnswerPanelWidth] = useState(400);
 
   return (
-    <div className="h-screen flex overflow-hidden bg-gray-50">
-      {/* Sidebar */}
-      <Sidebar />
+    <>
+      {/* Global Loading Overlay */}
+      <LoadingOverlay />
 
-      {/* Main Content Area */}
-      <div
-        className="flex-1 flex transition-all duration-300"
-        style={{
-          marginLeft: sidebarOpen ? "280px" : "0",
-        }}
-      >
-        {/* Chat Window */}
+      <div className="h-screen w-screen flex overflow-hidden bg-gray-50">
+        {/* Sidebar */}
+        <Sidebar />
+
+        {/* Main Content Area - takes remaining space */}
         <div
-          className={`flex-1 transition-all duration-300 min-w-0 ${
-            showAnswerPanel ? "" : "w-full"
-          }`}
+          className="flex-1 flex overflow-hidden transition-all duration-300"
+          style={{
+            marginLeft: sidebarOpen ? "280px" : "0",
+          }}
         >
-          <ChatWindow />
-        </div>
+          {/* Chat Window Container - scrolls internally */}
+          <div
+            className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${
+              showAnswerPanel ? "" : "w-full"
+            }`}
+          >
+            <ChatWindow />
+          </div>
 
-        {/* Resizer + Answer Panel - Only visible after solution */}
-        {showAnswerPanel && (
-          <>
-            <PanelResizer
-              onResize={setAnswerPanelWidth}
-              minWidth={300}
-              maxWidth={800}
-            />
-            <div
-              className="shrink-0"
-              style={{ width: `${answerPanelWidth}px` }}
-            >
-              <AnswerPanel />
-            </div>
-          </>
-        )}
+          {/* Resizer + Answer Panel - Only visible after solution */}
+          {showAnswerPanel && (
+            <>
+              <PanelResizer
+                onResize={setAnswerPanelWidth}
+                minWidth={300}
+                maxWidth={800}
+              />
+              {/* Answer Panel Container - scrolls internally */}
+              <div
+                className="flex flex-col overflow-hidden"
+                style={{ width: `${answerPanelWidth}px` }}
+              >
+                <AnswerPanel />
+              </div>
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

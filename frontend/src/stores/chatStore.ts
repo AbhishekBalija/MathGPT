@@ -44,6 +44,7 @@ export interface Chat {
   title: string;
   messages: Message[];
   solution?: Solution;
+  solutionId?: string; // For history items - used to fetch full solution on demand
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,6 +54,7 @@ interface ChatState {
   chats: Chat[];
   activeChatId: string | null;
   isLoading: boolean;
+  globalLoading: boolean; // For app-wide loading overlay
   error: string | null;
   sidebarOpen: boolean;
   showAnswerPanel: boolean;
@@ -70,6 +72,7 @@ interface ChatState {
   toggleSidebar: () => void;
   setShowAnswerPanel: (show: boolean) => void;
   setLoading: (loading: boolean) => void;
+  setGlobalLoading: (loading: boolean) => void;
   loadHistory: (
     history: Array<{
       id: string;
@@ -82,12 +85,16 @@ interface ChatState {
       createdAt: string;
     }>
   ) => void;
+  fetchSolution: (chatId: string, solutionId: string) => Promise<void>;
+  deleteChat: (chatId: string, solutionId?: string) => Promise<boolean>;
+  clearAllChats: () => Promise<boolean>;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
   chats: [],
   activeChatId: null,
   isLoading: false,
+  globalLoading: false,
   error: null,
   sidebarOpen: true,
   showAnswerPanel: false,
@@ -115,6 +122,41 @@ export const useChatStore = create<ChatState>((set, get) => ({
       activeChatId: chatId,
       showAnswerPanel: chat?.solution ? true : false,
     });
+  },
+
+  fetchSolution: async (chatId, solutionId) => {
+    set({ globalLoading: true });
+    try {
+      // Dynamic import to avoid circular dependency
+      const { getSolutionById } = await import("../services/history.service");
+      const solutionData = await getSolutionById(solutionId);
+
+      if (solutionData) {
+        // Convert to Solution type
+        const solution = {
+          id: solutionData.id,
+          problem: solutionData.problem,
+          problemType: solutionData.problemType as Solution["problemType"],
+          steps: solutionData.steps.map((s) => ({
+            ...s,
+            status: s.status as Step["status"],
+          })),
+          finalAnswer: solutionData.finalAnswer,
+          summary: solutionData.summary,
+          processingTimeMs: solutionData.processingTimeMs,
+          createdAt: new Date(solutionData.createdAt),
+        };
+
+        set((state) => ({
+          chats: state.chats.map((chat) =>
+            chat.id === chatId ? { ...chat, solution } : chat
+          ),
+          showAnswerPanel: true,
+        }));
+      }
+    } finally {
+      set({ globalLoading: false });
+    }
   },
 
   addMessage: (chatId, message) => {
@@ -161,6 +203,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ isLoading: loading });
   },
 
+  setGlobalLoading: (loading) => {
+    set({ globalLoading: loading });
+  },
+
   setError: (error) => {
     set({ error });
   },
@@ -185,6 +231,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           timestamp: new Date(item.createdAt),
         },
       ],
+      solutionId: item.id, // Store solution ID for on-demand fetching
       createdAt: new Date(item.createdAt),
       updatedAt: new Date(item.createdAt),
     }));
@@ -196,5 +243,53 @@ export const useChatStore = create<ChatState>((set, get) => ({
       ],
       historyLoaded: true,
     }));
+  },
+
+  deleteChat: async (chatId, solutionId) => {
+    set({ globalLoading: true });
+    try {
+      // If there's a solutionId, delete from backend
+      if (solutionId) {
+        const { deleteSolution } = await import("../services/history.service");
+        const success = await deleteSolution(solutionId);
+        if (!success) {
+          return false;
+        }
+      }
+
+      // Remove from local state
+      set((state) => {
+        const newChats = state.chats.filter((c) => c.id !== chatId);
+        const isActiveDeleted = state.activeChatId === chatId;
+        return {
+          chats: newChats,
+          activeChatId: isActiveDeleted
+            ? newChats[0]?.id || null
+            : state.activeChatId,
+          showAnswerPanel: isActiveDeleted ? false : state.showAnswerPanel,
+        };
+      });
+      return true;
+    } finally {
+      set({ globalLoading: false });
+    }
+  },
+
+  clearAllChats: async () => {
+    set({ globalLoading: true });
+    try {
+      const { clearAllHistory } = await import("../services/history.service");
+      const success = await clearAllHistory();
+      if (success) {
+        set({
+          chats: [],
+          activeChatId: null,
+          showAnswerPanel: false,
+        });
+      }
+      return success;
+    } finally {
+      set({ globalLoading: false });
+    }
   },
 }));
