@@ -1,19 +1,34 @@
+import { useEffect } from "react";
 import { useChatStore } from "../stores/chatStore";
 import { useAuthStore } from "../stores/authStore";
 import { useNavigate } from "react-router-dom";
+import { getUserHistory } from "../services/history.service";
 
 const Sidebar = () => {
   const {
     chats,
     activeChatId,
     sidebarOpen,
+    historyLoaded,
     createNewChat,
     setActiveChat,
     toggleSidebar,
+    loadHistory,
   } = useChatStore();
 
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+
+  // Load history from backend on mount
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!historyLoaded && user) {
+        const history = await getUserHistory();
+        loadHistory(history);
+      }
+    };
+    fetchHistory();
+  }, [user, historyLoaded, loadHistory]);
 
   const handleLogout = () => {
     logout();

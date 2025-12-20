@@ -7,18 +7,35 @@ export interface Message {
   timestamp: Date;
 }
 
+// Problem types from backend
+export type ProblemType =
+  | "algebra"
+  | "calculus_derivative"
+  | "calculus_integral"
+  | "calculus_limit"
+  | "trigonometry"
+  | "linear_algebra"
+  | "geometry"
+  | "statistics"
+  | "unknown";
+
 export interface Step {
   stepNumber: number;
   expression: string;
   justification: string;
-  status: "VERIFIED" | "CORRECTED" | "FAILED";
+  explanation: string; // Detailed explanation (expandable)
+  status: "VERIFIED" | "CORRECTED" | "FAILED" | "PENDING";
   notes?: string;
 }
 
 export interface Solution {
   id: string;
+  problem: string;
+  problemType: ProblemType;
   steps: Step[];
-  summary?: string;
+  finalAnswer: string;
+  summary: string;
+  processingTimeMs: number;
   createdAt: Date;
 }
 
@@ -36,25 +53,45 @@ interface ChatState {
   chats: Chat[];
   activeChatId: string | null;
   isLoading: boolean;
+  error: string | null;
   sidebarOpen: boolean;
   showAnswerPanel: boolean;
+  historyLoaded: boolean;
 
   // Actions
   createNewChat: () => string;
   setActiveChat: (chatId: string) => void;
-  addMessage: (chatId: string, message: Omit<Message, "id" | "timestamp">) => void;
+  addMessage: (
+    chatId: string,
+    message: Omit<Message, "id" | "timestamp">
+  ) => void;
   setSolution: (chatId: string, solution: Solution) => void;
+  setError: (error: string | null) => void;
   toggleSidebar: () => void;
   setShowAnswerPanel: (show: boolean) => void;
   setLoading: (loading: boolean) => void;
+  loadHistory: (
+    history: Array<{
+      id: string;
+      chatId?: string;
+      problem: string;
+      problemType: string;
+      finalAnswer: string;
+      summary: string;
+      stepsCount: number;
+      createdAt: string;
+    }>
+  ) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
   chats: [],
   activeChatId: null,
   isLoading: false,
+  error: null,
   sidebarOpen: true,
   showAnswerPanel: false,
+  historyLoaded: false,
 
   createNewChat: () => {
     const newChat: Chat = {
@@ -122,5 +159,42 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   setLoading: (loading) => {
     set({ isLoading: loading });
+  },
+
+  setError: (error) => {
+    set({ error });
+  },
+
+  loadHistory: (history) => {
+    // Convert history items to Chat objects
+    const historyChats: Chat[] = history.map((item) => ({
+      id: item.chatId || item.id,
+      title:
+        item.problem.slice(0, 40) + (item.problem.length > 40 ? "..." : ""),
+      messages: [
+        {
+          id: "1",
+          role: "user" as const,
+          content: item.problem,
+          timestamp: new Date(item.createdAt),
+        },
+        {
+          id: "2",
+          role: "assistant" as const,
+          content: `Answer: ${item.finalAnswer}`,
+          timestamp: new Date(item.createdAt),
+        },
+      ],
+      createdAt: new Date(item.createdAt),
+      updatedAt: new Date(item.createdAt),
+    }));
+
+    set((state) => ({
+      chats: [
+        ...historyChats,
+        ...state.chats.filter((c) => !historyChats.find((h) => h.id === c.id)),
+      ],
+      historyLoaded: true,
+    }));
   },
 }));

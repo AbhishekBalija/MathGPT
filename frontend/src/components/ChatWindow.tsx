@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { useChatStore, type Solution, type Step } from "../stores/chatStore";
+import { useChatStore } from "../stores/chatStore";
+import { solveProblem } from "../services/solve.service";
 import katex from "katex";
 
 // Helper to render LaTeX
@@ -24,6 +25,7 @@ const ChatWindow = () => {
     addMessage,
     setSolution,
     setLoading,
+    setError,
     createNewChat,
   } = useChatStore();
 
@@ -46,54 +48,45 @@ const ChatWindow = () => {
     }
 
     // Add user message
+    const problemText = input;
     addMessage(chatId, { role: "user", content: input });
     setInput("");
     setLoading(true);
+    setError(null);
 
-    // Simulate AI response (mock for now)
-    setTimeout(() => {
-      addMessage(chatId!, {
-        role: "assistant",
-        content:
-          "I'll solve this step by step. Check the solution panel on the right.",
+    try {
+      const result = await solveProblem({
+        problem: problemText,
+        chatId: chatId,
       });
 
-      // Mock solution
-      const mockSolution: Solution = {
-        id: crypto.randomUUID(),
-        steps: [
-          {
-            stepNumber: 1,
-            expression: "x^2 + 2x + 1 = 0",
-            justification: "Original equation",
-            status: "VERIFIED",
-          },
-          {
-            stepNumber: 2,
-            expression: "(x + 1)^2 = 0",
-            justification: "Factor the perfect square trinomial",
-            status: "VERIFIED",
-          },
-          {
-            stepNumber: 3,
-            expression: "x + 1 = 0",
-            justification: "Take square root of both sides",
-            status: "VERIFIED",
-          },
-          {
-            stepNumber: 4,
-            expression: "x = -1",
-            justification: "Subtract 1 from both sides",
-            status: "VERIFIED",
-          },
-        ] as Step[],
-        summary: "The solution is x = -1",
-        createdAt: new Date(),
-      };
-
-      setSolution(chatId!, mockSolution);
+      if (result.success && result.solution) {
+        addMessage(chatId!, {
+          role: "assistant",
+          content:
+            "I've solved this step by step. Check the solution panel for the detailed solution.",
+        });
+        setSolution(chatId!, result.solution);
+      } else {
+        // Handle error
+        const errorMessage = result.error || "Failed to solve problem";
+        addMessage(chatId!, {
+          role: "assistant",
+          content: `Sorry, I couldn't solve this problem. ${errorMessage}`,
+        });
+        setError(errorMessage);
+      }
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred";
+      addMessage(chatId!, {
+        role: "assistant",
+        content: `Sorry, something went wrong. ${errorMessage}`,
+      });
+      setError(errorMessage);
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -104,9 +97,9 @@ const ChatWindow = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full min-h-0 bg-gray-50">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto min-h-0 p-6">
         {!activeChat || activeChat.messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="w-16 h-16 bg-linear-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6">

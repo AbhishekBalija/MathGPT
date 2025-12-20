@@ -26,7 +26,7 @@ export async function solveMathProblem(problem: string): Promise<Solution> {
   try {
     // Get the Gemini model
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       generationConfig: {
         temperature: 0.3, // Lower temperature for more consistent math
         topP: 0.8,
@@ -47,8 +47,25 @@ export async function solveMathProblem(problem: string): Promise<Solution> {
     const response = result.response;
     const text = response.text();
 
+    // DEBUG: Log raw AI response
+    console.log("\n========== RAW AI RESPONSE ==========");
+    console.log(text);
+    console.log("========== END RAW AI RESPONSE ==========\n");
+
     // Parse the JSON response
     const aiResponse = parseAIResponse(text);
+
+    // DEBUG: Log parsed response (especially expressions and finalAnswer)
+    console.log("\n========== PARSED AI RESPONSE ==========");
+    console.log("Problem Type:", aiResponse.problemType);
+    console.log("Final Answer:", JSON.stringify(aiResponse.finalAnswer));
+    console.log("Steps:");
+    aiResponse.steps.forEach((step, i) => {
+      console.log(
+        `  Step ${i + 1}: expression = ${JSON.stringify(step.expression)}`
+      );
+    });
+    console.log("========== END PARSED RESPONSE ==========\n");
 
     // Transform to our Solution format
     const solution = transformToSolution(
@@ -151,7 +168,7 @@ function validateProblemType(type: string): ProblemType {
  */
 export async function checkAIServiceHealth(): Promise<boolean> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
     await model.generateContent('Say "OK" if you are working.');
     return true;
   } catch {
