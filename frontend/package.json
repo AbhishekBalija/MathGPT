@@ -7,13 +7,20 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "dependencies": {
     "@react-oauth/google": "^0.12.2",
     "@tailwindcss/vite": "^4.1.18",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
     "axios": "^1.13.2",
+    "dompurify": "^3.3.1",
     "framer-motion": "^12.23.26",
+    "jsdom": "^27.3.0",
     "jwt-decode": "^4.0.0",
     "katex": "^0.16.27",
     "lucide-react": "^0.562.0",
@@ -21,10 +28,12 @@
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.10.1",
     "tailwindcss": "^4.1.18",
+    "vitest": "^4.0.16",
     "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@types/dompurify": "^3.2.0",
     "@types/katex": "^0.16.7",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",

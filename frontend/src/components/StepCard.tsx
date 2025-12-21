@@ -2,6 +2,7 @@ import { useState } from "react";
 import katex from "katex";
 import type { Step } from "../stores/chatStore";
 import { cleanExpression } from "../utils/latexUtils";
+import { sanitizeHtml, escapeHtml } from "../utils/sanitize";
 
 interface StepCardProps {
   step: Step;
@@ -13,13 +14,16 @@ const StepCard = ({ step }: StepCardProps) => {
   const renderLatex = (text: string) => {
     const cleanedText = cleanExpression(text);
     try {
-      return katex.renderToString(cleanedText, {
+      const html = katex.renderToString(cleanedText, {
         throwOnError: false,
         displayMode: true,
       });
+      // Sanitize KaTeX output for extra safety
+      return sanitizeHtml(html);
     } catch (e) {
       console.error("[StepCard] KaTeX error:", e);
-      return cleanedText;
+      // Escape HTML in fallback to prevent XSS
+      return escapeHtml(cleanedText);
     }
   };
 

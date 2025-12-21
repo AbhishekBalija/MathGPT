@@ -88,7 +88,7 @@ export async function solveProblem(request: SolveRequest): Promise<{
       error: response.data.error || "Unknown error",
     };
   } catch (error) {
-    // Handle axios errors
+    // Handle axios errors - always sanitize before passing to UI
     if (error && typeof error === "object" && "response" in error) {
       const axiosError = error as {
         response?: { status: number; data?: { error?: string } };
@@ -101,9 +101,12 @@ export async function solveProblem(request: SolveRequest): Promise<{
         };
       }
 
+      // Get error from response but it will be sanitized in ChatWindow
+      const rawError =
+        axiosError.response?.data?.error || "Failed to solve problem";
       return {
         success: false,
-        error: axiosError.response?.data?.error || "Failed to solve problem",
+        error: rawError,
       };
     }
 

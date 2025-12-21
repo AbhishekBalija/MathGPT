@@ -83,7 +83,8 @@ export const AuthService = {
     if (existingUser) {
       return {
         success: false,
-        error: "User already exists",
+        error:
+          "Registration failed. Please try again or use a different email.",
       };
     }
 

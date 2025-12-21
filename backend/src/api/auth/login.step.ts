@@ -1,5 +1,5 @@
 import type { ApiRouteConfig, Handlers } from "motia";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { AuthService } from "../../services/auth/auth.service";
 
 // Defining body schema
@@ -30,6 +30,9 @@ export const config: ApiRouteConfig = {
         email: z.string().email(),
       }),
     }),
+    400: z.object({
+      error: z.string(),
+    }),
     401: z.object({
       error: z.string(),
     }),
@@ -39,7 +42,25 @@ export const config: ApiRouteConfig = {
 // Step 2: Define the handlers
 
 export const handler: Handlers["LoginUser"] = async (req, { emit, logger }) => {
-  const { email, password } = LoginSchema.parse(req.body);
+  // Validate input with proper error handling
+  let email: string;
+  let password: string;
+  try {
+    const parsed = LoginSchema.parse(req.body);
+    email = parsed.email;
+    password = parsed.password;
+  } catch (error) {
+    if (error instanceof ZodError) {
+      logger.warn("Login validation failed", { errors: error.issues });
+      return {
+        status: 400,
+        body: {
+          error: "Invalid email or password format",
+        },
+      };
+    }
+    throw error;
+  }
 
   logger.info(`Login attempt for ${email}`);
 

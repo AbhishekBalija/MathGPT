@@ -3,8 +3,9 @@ import katex from "katex";
 import { useChatStore } from "../stores/chatStore";
 import StepCard from "./StepCard";
 import { cleanFinalAnswer } from "../utils/latexUtils";
+import { sanitizeHtml, escapeHtml } from "../utils/sanitize";
 
-// Helper to render LaTeX safely
+// Helper to render LaTeX safely with XSS protection
 const renderLatex = (text: string): string => {
   const cleanedText = cleanFinalAnswer(text);
   try {
@@ -12,10 +13,12 @@ const renderLatex = (text: string): string => {
       throwOnError: false,
       displayMode: false,
     });
-    return rendered;
+    // Sanitize KaTeX output for extra safety
+    return sanitizeHtml(rendered);
   } catch (e) {
     console.error("[AnswerPanel] KaTeX error:", e);
-    return cleanedText;
+    // Escape HTML in fallback to prevent XSS
+    return escapeHtml(cleanedText);
   }
 };
 

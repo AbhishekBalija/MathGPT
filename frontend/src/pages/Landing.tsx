@@ -129,9 +129,9 @@ const Landing = () => {
                 {/* Browser Toolbar (Keep it minimal) */}
                 <div className="absolute top-0 left-0 right-0 h-8 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800 flex items-center px-4 z-20">
                   <div className="flex gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-gray-200 dark:bg-gray-700"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-gray-200 dark:bg-gray-700"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
                   </div>
                 </div>
 

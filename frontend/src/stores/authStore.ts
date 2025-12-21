@@ -124,6 +124,11 @@ export const useAuthStore = create<AuthState>()(
           console.error("Logout API error:", error);
         }
 
+        // Clear any legacy token keys from localStorage (security)
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("token");
+
         set({
           isAuthenticated: false,
           isLoading: false,

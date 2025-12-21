@@ -10,8 +10,11 @@
  */
 
 import { ApiRouteConfig, Handlers } from "motia";
-import { z } from "zod";
-import { solveMathProblem } from "../services/ai/ai.service";
+import { z, ZodError } from "zod";
+import {
+  solveMathProblem,
+  UnsolvableProblemError,
+} from "../services/ai/ai.service";
 import { requireAuth } from "../middlewares/auth.middleware";
 import type { SolveResponse } from "../types/solve.types";
 
@@ -41,13 +44,52 @@ export const config: ApiRouteConfig = {
     { topic: "problem-error", label: "Error", conditional: true },
   ],
   bodySchema: solveRequestSchema,
+  responseSchema: {
+    200: z.object({
+      success: z.boolean(),
+      solution: z.any(),
+    }),
+    400: z.object({
+      error: z.string(),
+    }),
+    401: z.object({
+      error: z.string(),
+    }),
+    500: z.object({
+      success: z.boolean().optional(),
+      error: z.string(),
+    }),
+  },
 };
 
 export const handler: Handlers["SolveMath"] = async (
   req,
   { emit, logger, state }
-): Promise<{ status: number; body: SolveResponse | { error: string } }> => {
+) => {
   const startTime = Date.now();
+
+  // VALIDATION FIRST - Validate input before auth to return proper 400 for invalid data
+  let problem: string;
+  let mode: "step_by_step" | "hint" | "full";
+  let chatId: string | undefined;
+
+  try {
+    const parsed = solveRequestSchema.parse(req.body);
+    problem = parsed.problem;
+    mode = parsed.mode;
+    chatId = parsed.chatId;
+  } catch (error) {
+    if (error instanceof ZodError) {
+      logger.warn("Solve validation failed", { errors: error.issues });
+      return {
+        status: 400 as const,
+        body: {
+          error: error.issues[0]?.message || "Invalid request body",
+        },
+      };
+    }
+    throw error;
+  }
 
   // AUTHENTICATION - Require valid access token
   let user;
@@ -61,14 +103,13 @@ export const handler: Handlers["SolveMath"] = async (
       error: authError instanceof Error ? authError.message : "Unknown",
     });
     return {
-      status: 401,
+      status: 401 as const,
       body: {
         error: "Authentication required. Please login to use MathGPT.",
       },
     };
   }
 
-  const { problem, mode, chatId } = req.body;
   const userId = user.id; // Extract from authenticated user
 
   logger.info("Solve request received", {
@@ -97,7 +138,7 @@ export const handler: Handlers["SolveMath"] = async (
       });
 
       return {
-        status: 500,
+        status: 500 as const,
         body: {
           success: false,
           error: "AI service not configured",
@@ -142,13 +183,28 @@ export const handler: Handlers["SolveMath"] = async (
     }
 
     return {
-      status: 200,
+      status: 200 as const,
       body: {
         success: true,
         solution,
       },
     };
   } catch (error) {
+    // Handle unsolvable problems with 400, not 500
+    if (error instanceof UnsolvableProblemError) {
+      logger.warn("Unsolvable problem", {
+        problem: problem.slice(0, 100),
+        error: error.message,
+        userId,
+      });
+      return {
+        status: 400 as const,
+        body: {
+          error: error.message,
+        },
+      };
+    }
+
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred";
     const errorCode = error instanceof Error ? error.name : "UNKNOWN_ERROR";
@@ -175,7 +231,7 @@ export const handler: Handlers["SolveMath"] = async (
     });
 
     return {
-      status: 500,
+      status: 500 as const,
       body: {
         success: false,
         error: errorMessage,

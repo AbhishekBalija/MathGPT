@@ -14,6 +14,24 @@ import {
 } from "../../types/solve.types";
 import { MATH_TUTOR_SYSTEM_PROMPT, buildSolvePrompt } from "./prompts";
 
+// Custom error for problems that cannot be solved (not server errors)
+export class UnsolvableProblemError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnsolvableProblemError";
+  }
+}
+
+// Patterns that indicate an unsolvable or mathematically invalid problem
+const UNSOLVABLE_PATTERNS = [
+  /divide\s*by\s*zero/i,
+  /1\s*\/\s*0\b/,
+  /\b0\s*\/\s*0\b/,
+  /\binfinity\b/i,
+  /\bundefined\b/i,
+  /\bno\s*solution\b/i,
+];
+
 // Initialize Gemini client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_MATH_AI_API || "");
 
@@ -23,10 +41,19 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_MATH_AI_API || "");
 export async function solveMathProblem(problem: string): Promise<Solution> {
   const startTime = Date.now();
 
+  // Check for obviously unsolvable problems before calling AI
+  for (const pattern of UNSOLVABLE_PATTERNS) {
+    if (pattern.test(problem)) {
+      throw new UnsolvableProblemError(
+        "This problem involves undefined or unsolvable mathematical operations."
+      );
+    }
+  }
+
   try {
     // Get the Gemini model
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-2.5-flash",
       generationConfig: {
         temperature: 0.3, // Lower temperature for more consistent math
         topP: 0.8,
@@ -76,6 +103,11 @@ export async function solveMathProblem(problem: string): Promise<Solution> {
 
     return solution;
   } catch (error) {
+    // Re-throw UnsolvableProblemError without wrapping
+    if (error instanceof UnsolvableProblemError) {
+      throw error;
+    }
+
     console.error("Error solving math problem:", error);
     throw new Error(
       `Failed to solve problem: ${
@@ -168,7 +200,7 @@ function validateProblemType(type: string): ProblemType {
  */
 export async function checkAIServiceHealth(): Promise<boolean> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     await model.generateContent('Say "OK" if you are working.');
     return true;
   } catch {

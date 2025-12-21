@@ -2,16 +2,21 @@ import { useState, useRef, useEffect } from "react";
 import { useChatStore } from "../stores/chatStore";
 import { solveProblem } from "../services/solve.service";
 import katex from "katex";
+import { sanitizeHtml, escapeHtml } from "../utils/sanitize";
+import { getUserFriendlyError } from "../utils/errorMessages";
 
-// Helper to render LaTeX
+// Helper to render LaTeX with XSS protection
 const renderLatex = (text: string) => {
   try {
-    return katex.renderToString(text, {
+    const html = katex.renderToString(text, {
       throwOnError: false,
       displayMode: true,
     });
+    // Sanitize KaTeX output for extra safety
+    return sanitizeHtml(html);
   } catch {
-    return text;
+    // Escape HTML in fallback to prevent XSS
+    return escapeHtml(text);
   }
 };
 
@@ -74,22 +79,24 @@ const ChatWindow = () => {
         });
         setSolution(chatId!, result.solution);
       } else {
-        // Handle error
-        const errorMessage = result.error || "Failed to solve problem";
+        // Handle error - sanitize message for user display
+        const userMessage = getUserFriendlyError(
+          result.error || "Failed to solve problem"
+        );
         addMessage(chatId!, {
           role: "assistant",
-          content: `Sorry, I couldn't solve this problem. ${errorMessage}`,
+          content: `Sorry, I couldn't solve this problem. ${userMessage}`,
         });
-        setError(errorMessage);
+        setError(userMessage);
       }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "An error occurred";
+      // Sanitize error message - never show raw API errors to users
+      const userMessage = getUserFriendlyError(err);
       addMessage(chatId!, {
         role: "assistant",
-        content: `Sorry, something went wrong. ${errorMessage}`,
+        content: `Sorry, something went wrong. ${userMessage}`,
       });
-      setError(errorMessage);
+      setError(userMessage);
     } finally {
       setLoading(false);
     }

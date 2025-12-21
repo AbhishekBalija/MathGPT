@@ -15,7 +15,7 @@ export const config: ApiRouteConfig = {
   type: "api",
   name: "ClearAllHistory",
   description: "Delete all solutions for the authenticated user",
-  path: "/api/history",
+  path: "/api/clear-history",
   method: "DELETE",
   emits: [],
   flows: ["SolutionFlow"],
