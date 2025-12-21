@@ -106,32 +106,33 @@ const ChatWindow = () => {
   ];
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-white relative">
+    <div className="flex flex-col h-full min-h-0 bg-white dark:bg-[#0a0a0a] relative transition-colors duration-300">
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 scroll-smooth">
         {!activeChat || activeChat.messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8 animate-in fade-in duration-500">
-            <div className="w-20 h-20 bg-linear-to-tr from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-8 shadow-xl shadow-blue-500/20 rotate-3 transform hover:rotate-6 transition-transform">
-              <svg
-                className="w-10 h-10 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+            {/* NEO Avatar - Centered & Blue/Cyan Theme */}
+            <div className="flex justify-center mb-8">
+              <div className="w-24 h-24 rounded-full bg-linear-to-br from-blue-500 via-cyan-400 to-blue-600 p-1 shadow-xl shadow-cyan-500/20 hover:scale-105 transition-transform flex items-center justify-center overflow-hidden">
+                <img
+                  src="/neo-avatar.png"
+                  alt="NEO"
+                  className="w-full h-full rounded-full object-cover bg-gray-900 scale-160"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
                 />
-              </svg>
+              </div>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-3 tracking-tight">
-              Math Solver AI
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
+              Meet{" "}
+              <span className="bg-linear-to-r from-blue-600 via-cyan-500 to-blue-600 bg-clip-text text-transparent">
+                NEO
+              </span>
             </h2>
-            <p className="text-gray-500 max-w-sm mb-8 leading-relaxed">
-              Snap a photo or type a problem. I'll provide verified step-by-step
-              solutions instantly.
+            <p className="text-gray-500 dark:text-gray-400 max-w-sm mb-8 leading-relaxed">
+              Your personal math assistant. Type a problem or snap a photo, and
+              I'll break it down step-by-step.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
@@ -139,7 +140,7 @@ const ChatWindow = () => {
                 <button
                   key={suggestion}
                   onClick={() => handleSend(suggestion)}
-                  className="px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-blue-300 text-sm text-gray-600 rounded-xl transition-all text-left flex items-center justify-between group"
+                  className="px-4 py-3 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 text-sm text-gray-600 dark:text-gray-300 rounded-xl transition-all text-left flex items-center justify-between group"
                 >
                   <span className="truncate">{suggestion}</span>
                   <svg
@@ -173,7 +174,7 @@ const ChatWindow = () => {
                   className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                     message.role === "user"
                       ? "bg-blue-600 text-white"
-                      : "bg-indigo-100 text-indigo-700"
+                      : "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
                   }`}
                 >
                   {message.role === "user" ? (
@@ -191,19 +192,16 @@ const ChatWindow = () => {
                       />
                     </svg>
                   ) : (
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 10V3L4 14h7v7l9-11h-7z"
-                      />
-                    </svg>
+                    <img
+                      src="/neo-avatar.png"
+                      alt="NEO"
+                      className="w-full h-full rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                        e.currentTarget.parentElement!.innerHTML =
+                          '<span class="text-xs font-bold">N</span>';
+                      }}
+                    />
                   )}
                 </div>
 
@@ -211,7 +209,7 @@ const ChatWindow = () => {
                   className={`max-w-[85%] px-5 py-4 rounded-2xl shadow-sm ${
                     message.role === "user"
                       ? "bg-blue-600 text-white rounded-tr-sm"
-                      : "bg-gray-50 border border-gray-100 text-gray-800 rounded-tl-sm"
+                      : "bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-sm"
                   }`}
                 >
                   {message.content.includes("\\") ? (
@@ -232,23 +230,20 @@ const ChatWindow = () => {
             {/* Loading Indicator */}
             {isLoading && (
               <div className="flex gap-4">
-                <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
-                  <svg
-                    className="w-5 h-5 animate-pulse"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-linear-to-br from-blue-500 via-cyan-400 to-blue-600 flex items-center justify-center shrink-0 animate-pulse">
+                  <img
+                    src="/neo-avatar.png"
+                    alt="NEO"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                      e.currentTarget.parentElement!.innerHTML =
+                        '<span class="text-xs font-bold text-white">N</span>';
+                    }}
+                  />
                 </div>
-                <div className="px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-2">
-                  <span className="text-sm text-gray-500 font-medium">
+                <div className="px-5 py-4 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-2">
+                  <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
                     Thinking
                   </span>
                   <div className="flex gap-1">
@@ -274,18 +269,18 @@ const ChatWindow = () => {
       </div>
 
       {/* Input Area - Floating at bottom */}
-      <div className="p-4 sm:p-6 bg-white/80 backdrop-blur-lg border-t border-gray-100 absolute bottom-0 left-0 right-0 z-10">
+      <div className="p-4 sm:p-6 bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-lg border-t border-gray-100 dark:border-gray-800 absolute bottom-0 left-0 right-0 z-10 transition-colors duration-300">
         <div className="max-w-3xl mx-auto relative">
           {/* Show input only if no solution exists yet */}
           {!activeChat?.solution ? (
             <>
-              <div className="flex items-end gap-2 bg-gray-50 rounded-2xl border border-gray-200 p-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400 transition-all">
+              <div className="flex items-end gap-2 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900 focus-within:border-blue-400 dark:focus-within:border-blue-600 transition-all">
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask a math problem..."
-                  className="flex-1 bg-transparent border-none outline-none resize-none text-gray-900 placeholder-gray-400 min-h-[44px] max-h-[120px] py-2.5 px-3"
+                  className="flex-1 bg-transparent border-none outline-none resize-none text-gray-900 dark:text-white placeholder-gray-400 min-h-[44px] max-h-[120px] py-2.5 px-3"
                   rows={1}
                 />
                 <button
@@ -309,15 +304,15 @@ const ChatWindow = () => {
                 </button>
               </div>
               <div className="text-center mt-2">
-                <span className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">
-                  AI Powered • Verified Steps
+                <span className="text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-semibold">
+                  Powered by NEO • Verified Steps
                 </span>
               </div>
             </>
           ) : (
             /* Solution exists - show new chat prompt */
             <div className="text-center py-2">
-              <p className="text-sm text-gray-500 mb-3">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                 This problem has been solved. Start a new chat for another
                 problem.
               </p>

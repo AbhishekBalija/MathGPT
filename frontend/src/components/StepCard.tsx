@@ -116,7 +116,7 @@ const StepCard = ({ step }: StepCardProps) => {
     switch (status) {
       case "VERIFIED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full border border-green-200 shadow-sm">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full border border-green-200 dark:border-green-800 shadow-sm">
             <svg
               className="w-3.5 h-3.5"
               viewBox="0 0 24 24"
@@ -135,7 +135,7 @@ const StepCard = ({ step }: StepCardProps) => {
         );
       case "CORRECTED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 text-xs font-semibold rounded-full border border-amber-200 shadow-sm">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-semibold rounded-full border border-amber-200 dark:border-amber-800 shadow-sm">
             <svg
               className="w-3.5 h-3.5"
               viewBox="0 0 24 24"
@@ -154,7 +154,7 @@ const StepCard = ({ step }: StepCardProps) => {
         );
       case "FAILED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-700 text-xs font-semibold rounded-full border border-red-200 shadow-sm">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-semibold rounded-full border border-red-200 dark:border-red-800 shadow-sm">
             <svg
               className="w-3.5 h-3.5"
               viewBox="0 0 24 24"
@@ -173,7 +173,7 @@ const StepCard = ({ step }: StepCardProps) => {
         );
       case "PENDING":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-50 text-gray-600 text-xs font-semibold rounded-full border border-gray-200 shadow-sm">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-semibold rounded-full border border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" />
             Processing
           </span>
@@ -182,14 +182,14 @@ const StepCard = ({ step }: StepCardProps) => {
   };
 
   return (
-    <div className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
+    <div className="group bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
       {/* Step Header */}
-      <div className="flex items-center justify-between px-5 py-4 bg-white border-b border-gray-50">
+      <div className="flex items-center justify-between px-5 py-4 bg-white dark:bg-gray-900 border-b border-gray-50 dark:border-gray-800">
         <div className="flex items-center gap-4">
-          <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-bold shadow-sm ring-1 ring-blue-100">
+          <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm font-bold shadow-sm ring-1 ring-blue-100 dark:ring-blue-900/50">
             {step.stepNumber}
           </div>
-          <span className="text-sm font-semibold text-gray-800 tracking-tight">
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 tracking-tight">
             {step.justification}
           </span>
         </div>
@@ -197,19 +197,19 @@ const StepCard = ({ step }: StepCardProps) => {
       </div>
 
       {/* Expression - Main Content */}
-      <div className="px-6 py-6 bg-white flex justify-center">
+      <div className="px-6 py-6 bg-white dark:bg-gray-900 flex justify-center">
         <div
-          className="text-xl text-gray-900 overflow-x-auto py-2 scroll-smooth"
+          className="text-xl text-gray-900 dark:text-white overflow-x-auto py-2 scroll-smooth"
           dangerouslySetInnerHTML={{ __html: renderLatex(step.expression) }}
         />
       </div>
 
       {/* Expandable Explanation */}
       {step.explanation && (
-        <div className="bg-gray-50/50 border-t border-gray-100">
+        <div className="bg-gray-50/50 dark:bg-black/20 border-t border-gray-100 dark:border-gray-800">
           <button
             onClick={() => setExpanded(!expanded)}
-            className="w-full px-5 py-3 flex items-center justify-between text-sm text-blue-700 bg-blue-50/50 shadow-[0_0_10px_rgba(37,99,235,0.05)] hover:bg-blue-50 hover:shadow-[0_0_15px_rgba(37,99,235,0.15)] transition-all group/btn relative z-10"
+            className="w-full px-5 py-3 flex items-center justify-between text-sm text-blue-700 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20 shadow-[0_0_10px_rgba(37,99,235,0.05)] hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:shadow-[0_0_15px_rgba(37,99,235,0.15)] transition-all group/btn relative z-10"
           >
             <span className="font-semibold flex items-center gap-2 decoration-blue-500/60 underline underline-offset-4 group-hover/btn:decoration-blue-600 transition-all">
               <svg
@@ -233,7 +233,7 @@ const StepCard = ({ step }: StepCardProps) => {
               className={`w-4 h-4 transition-transform duration-300 ${
                 expanded
                   ? "rotate-180 text-blue-500"
-                  : "text-gray-400 group-hover/btn:text-blue-500"
+                  : "text-gray-400 dark:text-gray-500 group-hover/btn:text-blue-500"
               }`}
               fill="none"
               stroke="currentColor"
@@ -254,7 +254,7 @@ const StepCard = ({ step }: StepCardProps) => {
             }`}
           >
             <div
-              className="px-5 pb-5 pt-1 text-sm text-gray-600 leading-relaxed border-t border-blue-100/50 bg-blue-50/30"
+              className="px-5 pb-5 pt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed border-t border-blue-100/50 dark:border-blue-900/30 bg-blue-50/30 dark:bg-blue-900/10"
               dangerouslySetInnerHTML={{
                 __html: renderExplanation(step.explanation),
               }}
@@ -264,7 +264,7 @@ const StepCard = ({ step }: StepCardProps) => {
       )}
 
       {step.notes && (
-        <div className="px-5 py-3 bg-amber-50 text-xs text-amber-700 italic border-t border-amber-100 flex items-start gap-2">
+        <div className="px-5 py-3 bg-amber-50 dark:bg-amber-900/20 text-xs text-amber-700 dark:text-amber-300 italic border-t border-amber-100 dark:border-amber-900/30 flex items-start gap-2">
           <svg
             className="w-4 h-4 text-amber-500 shrink-0 mt-0.5"
             fill="none"

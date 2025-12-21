@@ -1,172 +1,236 @@
 import Navbar from "../components/Navbar";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  CheckCircle2,
+  BookOpen,
+  Clock,
+  ArrowRight,
+  Play,
+  Sparkles,
+} from "lucide-react";
 
 const Landing = () => {
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+    <div className="min-h-screen bg-[#fafafa] dark:bg-[#0a0a0a] bg-grid-white font-sans text-gray-900 dark:text-white selection:bg-gray-200 dark:selection:bg-gray-800 selection:text-black dark:selection:text-white overflow-x-hidden transition-colors duration-300">
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-16 pb-20 lg:pt-32 lg:pb-28">
-        <div className="container mx-auto px-6 lg:px-12">
-          <div className="flex flex-col-reverse lg:flex-row items-center gap-12 lg:gap-20">
-            {/* Left Column: Text */}
-            <div className="flex-1 text-center lg:text-left z-10">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-gray-900 mb-6 leading-tight">
-                Master Math <br className="hidden lg:block" />
-                <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-indigo-600">
-                  Step-by-Step
+      <section className="relative pt-32 pb-24 lg:pt-48 lg:pb-40 overflow-hidden">
+        {/* Subtle Background Gradient - Lower Z-index */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-gray-100 via-[#fafafa] to-[#fafafa] dark:from-gray-900 dark:via-[#0a0a0a] dark:to-[#0a0a0a] opacity-80 pointer-events-none"></div>
+
+        {/* --- Grid Light Beads (The "Roaming Dots" Effect) --- 
+            Strictly aligned to 50px increments to match background-size 
+            Updated colors for Light Mode visibility
+        */}
+
+        {/* Vertical Bead 1 - Left: 150px */}
+        <div
+          className="absolute top-0 w-[3px] h-full overflow-hidden z-0 pointer-events-none hidden md:block"
+          style={{ left: "150px" }}
+        >
+          <div
+            className="absolute top-0 left-0 w-[3px] h-[3px] rounded-full bg-blue-600 dark:bg-blue-400 animate-grid-bead-v shadow-[0_0_10px_2px_rgba(37,99,235,0.5)] dark:shadow-[0_0_10px_2px_rgba(96,165,250,0.8)]"
+            style={{ animationDuration: "4s", animationDelay: "1s" }}
+          ></div>
+        </div>
+
+        {/* Vertical Bead 2 - Left: 450px */}
+        <div
+          className="absolute top-0 w-[3px] h-full overflow-hidden z-0 pointer-events-none hidden md:block"
+          style={{ left: "450px" }}
+        >
+          <div
+            className="absolute top-0 left-0 w-[3px] h-[3px] rounded-full bg-indigo-600 dark:bg-indigo-400 animate-grid-bead-v shadow-[0_0_10px_2px_rgba(79,70,229,0.5)] dark:shadow-[0_0_10px_2px_rgba(129,140,248,0.8)]"
+            style={{ animationDuration: "6s", animationDelay: "0s" }}
+          ></div>
+        </div>
+
+        {/* Vertical Bead 3 - Left: 800px (Multiples of 50) */}
+        <div
+          className="absolute top-0 w-[3px] h-full overflow-hidden z-0 pointer-events-none hidden lg:block"
+          style={{ left: "800px" }}
+        >
+          <div
+            className="absolute top-0 left-0 w-[3px] h-[3px] rounded-full bg-purple-600 dark:bg-purple-400 animate-grid-bead-v shadow-[0_0_10px_2px_rgba(147,51,234,0.5)] dark:shadow-[0_0_10px_2px_rgba(192,132,252,0.8)]"
+            style={{ animationDuration: "7s", animationDelay: "2s" }}
+          ></div>
+        </div>
+
+        {/* Horizontal Bead 1 - Top: 150px */}
+        <div
+          className="absolute left-0 h-[3px] w-full overflow-hidden z-0 pointer-events-none hidden md:block"
+          style={{ top: "150px" }}
+        >
+          <div
+            className="absolute top-0 left-0 w-[3px] h-[3px] rounded-full bg-cyan-600 dark:bg-cyan-400 animate-grid-bead-h shadow-[0_0_10px_2px_rgba(8,145,178,0.5)] dark:shadow-[0_0_10px_2px_rgba(34,211,238,0.8)]"
+            style={{ animationDuration: "5s", animationDelay: "3s" }}
+          ></div>
+        </div>
+
+        {/* Horizontal Bead 2 - Top: 400px */}
+        <div
+          className="absolute left-0 h-[3px] w-full overflow-hidden z-0 pointer-events-none hidden md:block"
+          style={{ top: "400px" }}
+        >
+          <div
+            className="absolute top-0 left-0 w-[3px] h-[3px] rounded-full bg-blue-600 dark:bg-blue-500 animate-grid-bead-h shadow-[0_0_10px_2px_rgba(37,99,235,0.5)] dark:shadow-[0_0_10px_2px_rgba(59,130,246,0.8)]"
+            style={{ animationDuration: "8s", animationDelay: "0.5s" }}
+          ></div>
+        </div>
+
+        <div className="container mx-auto px-6 lg:px-12 relative z-10">
+          <div className="flex flex-col lg:flex-col items-center gap-16 text-center">
+            {/* Hero Text */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              className="max-w-4xl mx-auto"
+            >
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-8 shadow-sm">
+                <Sparkles className="w-3 h-3 text-gray-400" />
+                <span>AI-Powered Precision</span>
+              </div>
+
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-semibold tracking-tighter text-gray-900 dark:text-white mb-8 leading-none">
+                Master Math, <br />
+                <span className="text-gray-400 dark:text-gray-600">
+                  Step by Step.
                 </span>
               </h1>
-              <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                Get verified, teacher-style solutions for any math problem. Our
-                AI ensures correctness with symbolic verification, so you can
-                learn with confidence.
+
+              <p className="text-xl md:text-2xl text-gray-500 dark:text-gray-400 mb-10 max-w-2xl mx-auto font-light leading-relaxed">
+                Teacher-quality explanations verified by symbolic AI. Understand
+                the "why", not just the "what".
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link
                   to="/login"
-                  className="w-full sm:w-auto px-8 py-4 text-center text-white bg-blue-600 rounded-xl font-semibold shadow-lg hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+                  className="group relative px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-full font-medium text-lg overflow-hidden transition-all hover:pr-10"
                 >
-                  Get Started
-                </Link>
-                <Link
-                  to="/demo"
-                  className="w-full sm:w-auto px-8 py-4 text-center text-gray-700 bg-white border border-gray-200 rounded-xl font-semibold shadow-sm hover:bg-gray-50 hover:border-gray-300 transition-all duration-300"
-                >
-                  View Demo
+                  <span className="relative z-10">Start Learning Free</span>
+                  <ArrowRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white dark:text-black opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
                 </Link>
               </div>
-            </div>
+            </motion.div>
 
-            {/* Right Column: Image */}
-            <div className="flex-1 relative w-full max-w-lg lg:max-w-xl">
-              <div className="relative z-10 animate-float">
-                <img
-                  src="/hero-math.png"
-                  alt="Math Verification Illustration"
-                  className="w-full h-auto drop-shadow-2xl rounded-2xl"
-                />
+            {/* Hero Video Container */}
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-5xl mx-auto"
+            >
+              {/* Taller Aspect Ratio for Cinematic Feel */}
+              <div className="relative aspect-16/10 md:aspect-21/9 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden group">
+                {/* Browser Toolbar (Keep it minimal) */}
+                <div className="absolute top-0 left-0 right-0 h-8 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800 flex items-center px-4 z-20">
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+                  </div>
+                </div>
+
+                {/* Video Placeholder Content */}
+                <div className="absolute inset-0 pt-8 bg-gray-50 dark:bg-gray-950 flex items-center justify-center group-hover:bg-gray-100/50 dark:group-hover:bg-gray-900/50 transition-colors duration-500">
+                  <div className="text-center">
+                    <button className="w-20 h-20 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg border border-gray-100 dark:border-gray-700 mb-4 mx-auto group-hover:scale-105 transition-transform duration-300">
+                      <Play
+                        className="w-8 h-8 text-black dark:text-white ml-1"
+                        fill="currentColor"
+                      />
+                    </button>
+                    <p className="text-sm text-gray-400 font-mono uppercase tracking-widest">
+                      Watch Demo
+                    </p>
+                  </div>
+                </div>
               </div>
-              {/* Decorative Background Elements */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-linear-to-tr from-blue-100/50 to-indigo-100/50 rounded-full blur-3xl -z-10 opacity-70" />
-            </div>
+
+              {/* Glow effect behind */}
+              <div className="absolute -inset-1 bg-linear-to-t from-gray-200 via-gray-100 to-transparent dark:from-gray-800 dark:via-gray-900 dark:to-transparent blur-3xl opacity-40 -z-10"></div>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Feature Highlights */}
-      <section className="py-20 bg-white">
+      {/* Features Section */}
+      <section className="py-32 bg-white dark:bg-[#0a0a0a]">
         <div className="container mx-auto px-6 lg:px-12">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Why MathGPT?
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              We don't just give answers. We help you understand the "why" and
-              "how" with tools designed for learning.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-10">
-            {/* Feature 1 */}
-            <div className="p-8 bg-gray-50 rounded-2xl transition-hover hover:shadow-lg hover:bg-blue-50/30 border border-transparent hover:border-blue-100">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-6 text-blue-600">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Verified Accuracy
-              </h3>
-              <p className="text-gray-600 leading-relaxed">
-                Every step is checked by a symbolic math engine. Say goodbye to
-                AI hallucinations and confident wrong answers.
-              </p>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="p-8 bg-gray-50 rounded-2xl transition-hover hover:shadow-lg hover:bg-indigo-50/30 border border-transparent hover:border-indigo-100">
-              <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-6 text-indigo-600">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Teacher-Style Explanations
-              </h3>
-              <p className="text-gray-600 leading-relaxed">
-                We break down problems into logical steps with clear
-                justifications, just like a tutor would explain it.
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="p-8 bg-gray-50 rounded-2xl transition-hover hover:shadow-lg hover:bg-purple-50/30 border border-transparent hover:border-purple-100">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-6 text-purple-600">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                History Tracking
-              </h3>
-              <p className="text-gray-600 leading-relaxed">
-                Review your past problems and solutions anytime. Your personal
-                math library grows as you learn.
-              </p>
-            </div>
+          <div className="grid md:grid-cols-3 gap-12 lg:gap-16">
+            <MinimalFeatureCard
+              icon={<CheckCircle2 className="w-5 h-5" />}
+              title="Verified Accuracy"
+              description="Zero hallucinations. Every step is mathematically verified by our symbolic engine."
+            />
+            <MinimalFeatureCard
+              icon={<BookOpen className="w-5 h-5" />}
+              title="Teacher Explanations"
+              description="Logic-based breakdowns that teach you the underlying concepts, not just the answer."
+            />
+            <MinimalFeatureCard
+              icon={<Clock className="w-5 h-5" />}
+              title="Smart History"
+              description="Your personal library of problems. Review, retry, and master topics over time."
+            />
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-50 border-t border-gray-200 py-12">
-        <div className="container mx-auto px-6 text-center text-gray-500 text-sm">
-          <p>&copy; {new Date().getFullYear()} MathGPT. All rights reserved.</p>
-          <div className="mt-4 space-x-4">
+      <footer className="bg-white dark:bg-[#0a0a0a] border-t border-gray-100 dark:border-gray-800 py-12">
+        <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+          <p>&copy; {new Date().getFullYear()} MathGPT</p>
+          <div className="flex space-x-8 mt-4 md:mt-0">
             <Link
               to="/privacy"
-              className="hover:text-gray-900 transition-colors"
+              className="hover:text-black dark:hover:text-white transition-colors"
             >
-              Privacy Policy
+              Privacy
             </Link>
-            <Link to="/terms" className="hover:text-gray-900 transition-colors">
-              Terms of Service
+            <Link
+              to="/terms"
+              className="hover:text-black dark:hover:text-white transition-colors"
+            >
+              Terms
+            </Link>
+            <Link
+              to="#"
+              className="hover:text-black dark:hover:text-white transition-colors"
+            >
+              Twitter
             </Link>
           </div>
         </div>
       </footer>
+    </div>
+  );
+};
+
+const MinimalFeatureCard = ({
+  icon,
+  title,
+  description,
+}: {
+  icon: any;
+  title: string;
+  description: string;
+}) => {
+  return (
+    <div className="group flex flex-col items-start p-2">
+      <div className="mb-6 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 text-gray-900 dark:text-white group-hover:bg-black dark:group-hover:bg-white group-hover:text-white dark:group-hover:text-black transition-colors duration-300">
+        {icon}
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 tracking-tight">
+        {title}
+      </h3>
+      <p className="text-base text-gray-500 dark:text-gray-400 leading-relaxed font-light">
+        {description}
+      </p>
     </div>
   );
 };

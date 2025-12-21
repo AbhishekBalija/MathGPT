@@ -15,7 +15,7 @@ const AppLayout = () => {
       {/* Global Loading Overlay */}
       <LoadingOverlay />
 
-      <div className="h-screen w-screen flex overflow-hidden bg-gray-50">
+      <div className="h-screen w-screen flex overflow-hidden bg-gray-50 dark:bg-[#0a0a0a] transition-colors duration-300">
         {/* Sidebar */}
         <Sidebar />
 
@@ -45,7 +45,7 @@ const AppLayout = () => {
               />
               {/* Answer Panel Container - scrolls internally */}
               <div
-                className="flex flex-col overflow-hidden"
+                className="flex flex-col overflow-hidden bg-white dark:bg-[#0a0a0a] border-l border-gray-100 dark:border-gray-800"
                 style={{ width: `${answerPanelWidth}px` }}
               >
                 <AnswerPanel />

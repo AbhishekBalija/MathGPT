@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useChatStore } from "../stores/chatStore";
 import { useAuthStore } from "../stores/authStore";
 import { useNavigate } from "react-router-dom";
 import { getUserHistory } from "../services/history.service";
+import { Moon, Sun } from "lucide-react";
 
 const Sidebar = () => {
   const {
@@ -22,6 +23,7 @@ const Sidebar = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const setGlobalLoading = useChatStore((s) => s.setGlobalLoading);
+  const [isDark, setIsDark] = useState(false);
 
   // Load history from backend on mount
   useEffect(() => {
@@ -38,6 +40,35 @@ const Sidebar = () => {
     };
     fetchHistory();
   }, [user, historyLoaded, loadHistory, setGlobalLoading]);
+
+  // Theme Toggle Logic
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    const systemPrefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+
+    // Default to dark if no preference, or if system prefers dark
+    if (savedTheme === "dark" || (!savedTheme && systemPrefersDark)) {
+      setIsDark(true);
+      document.documentElement.classList.add("dark");
+    } else {
+      setIsDark(false);
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    if (isDark) {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+      setIsDark(false);
+    } else {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+      setIsDark(true);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -62,7 +93,7 @@ const Sidebar = () => {
       {!sidebarOpen && (
         <button
           onClick={toggleSidebar}
-          className="fixed top-4 left-4 z-50 p-2.5 bg-white text-gray-700 hover:text-gray-900 rounded-xl shadow-lg hover:shadow-xl border border-gray-100 transition-all active:scale-95"
+          className="fixed top-4 left-4 z-50 p-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white rounded-xl shadow-lg hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all active:scale-95"
           aria-label="Open sidebar"
         >
           <svg
@@ -83,7 +114,7 @@ const Sidebar = () => {
 
       {/* Sidebar Panel */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-[#0f1117]/98 backdrop-blur-2xl border-r border-white/5 text-gray-300 transition-transform duration-300 z-40 ${
+        className={`fixed top-0 left-0 h-full bg-white dark:bg-[#0f1117]/98 backdrop-blur-2xl border-r border-gray-100 dark:border-white/5 text-gray-800 dark:text-gray-300 transition-transform duration-300 z-40 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ width: "280px" }}
@@ -91,36 +122,49 @@ const Sidebar = () => {
         <div className="flex flex-col h-full">
           {/* Header Area */}
           <div className="flex items-center justify-between p-4 pt-5 pb-2">
-            <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest px-2">
+            <h2 className="text-sm font-bold text-gray-900 dark:text-gray-400 uppercase tracking-widest px-2">
               Math Solver
             </h2>
-            {/* Close Button - Integrated */}
-            <button
-              onClick={toggleSidebar}
-              className="p-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-              aria-label="Close sidebar"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <div className="flex items-center gap-1">
+              {/* Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12" /* X icon */
-                />
-              </svg>
-            </button>
+                {isDark ? (
+                  <Sun className="w-5 h-5" />
+                ) : (
+                  <Moon className="w-5 h-5" />
+                )}
+              </button>
+              {/* Close Button - Integrated */}
+              <button
+                onClick={toggleSidebar}
+                className="p-2 text-gray-500 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+                aria-label="Close sidebar"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12" /* X icon */
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* New Chat Button */}
           <div className="px-4 pb-4 pt-2">
             <button
               onClick={createNewChat}
-              className="group w-full flex items-center gap-3 px-4 py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-900/20 transition-all active:scale-[0.98]"
+              className="group w-full flex items-center gap-3 px-4 py-3.5 bg-black dark:bg-blue-600 hover:bg-gray-800 dark:hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-gray-200 dark:shadow-blue-900/20 transition-all active:scale-[0.98]"
             >
               <div className="p-1 bg-white/20 rounded-lg group-hover:rotate-90 transition-transform duration-300">
                 <svg
@@ -144,8 +188,8 @@ const Sidebar = () => {
           </div>
 
           {/* History List */}
-          <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent">
-            <div className="flex items-center justify-between px-3 pb-2 mt-2 border-b border-white/5 mb-2">
+          <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-800 scrollbar-track-transparent">
+            <div className="flex items-center justify-between px-3 pb-2 mt-2 border-b border-gray-100 dark:border-white/5 mb-2">
               <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
                 Recent History
               </span>
@@ -160,7 +204,7 @@ const Sidebar = () => {
                       clearAllChats();
                     }
                   }}
-                  className="text-xs text-gray-500 hover:text-red-400 transition-colors px-2 py-1 rounded hover:bg-red-500/10"
+                  className="text-xs text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-500/10"
                 >
                   Clear All
                 </button>
@@ -168,7 +212,7 @@ const Sidebar = () => {
             </div>
 
             {chats.length === 0 ? (
-              <div className="px-3 py-8 text-center text-sm text-gray-600">
+              <div className="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-600">
                 No calculations yet
               </div>
             ) : (
@@ -177,24 +221,24 @@ const Sidebar = () => {
                   key={chat.id}
                   className={`relative group/item rounded-xl transition-all duration-200 ${
                     chat.id === activeChatId
-                      ? "bg-white/10 shadow-md shadow-black/20"
-                      : "hover:bg-white/5"
+                      ? "bg-gray-100 dark:bg-white/10 shadow-sm"
+                      : "hover:bg-gray-50 dark:hover:bg-white/5"
                   }`}
                 >
                   <button
                     onClick={() => handleChatClick(chat)}
                     className={`w-full text-left px-3 py-3 pr-10 ${
                       chat.id === activeChatId
-                        ? "text-white"
-                        : "text-gray-400 hover:text-gray-200"
+                        ? "text-gray-900 dark:text-white"
+                        : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-gray-200"
                     }`}
                   >
                     <div className="flex items-center gap-3 relative z-10">
                       <svg
                         className={`w-4 h-4 shrink-0 transition-colors ${
                           chat.id === activeChatId
-                            ? "text-blue-400"
-                            : "text-gray-600 group-hover/item:text-gray-500"
+                            ? "text-black dark:text-blue-400"
+                            : "text-gray-400 dark:text-gray-600 group-hover/item:text-gray-600 dark:group-hover/item:text-gray-500"
                         }`}
                         fill="none"
                         viewBox="0 0 24 24"
@@ -220,7 +264,7 @@ const Sidebar = () => {
                         deleteChat(chat.id, chat.solutionId);
                       }
                     }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-500 opacity-0 group-hover/item:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 dark:text-gray-500 opacity-0 group-hover/item:opacity-100 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
                     title="Delete chat"
                   >
                     <svg
@@ -243,20 +287,20 @@ const Sidebar = () => {
           </div>
 
           {/* User Profile Footer */}
-          <div className="p-4 border-t border-white/5 bg-black/20 mt-auto backdrop-blur-sm">
+          <div className="p-4 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-black/20 mt-auto backdrop-blur-sm">
             <div className="flex items-center gap-3 px-2">
-              <div className="w-10 h-10 rounded-full bg-linear-to-tr from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold shadow-inner ring-2 ring-white/10">
+              <div className="w-10 h-10 rounded-full bg-black dark:bg-linear-to-tr dark:from-purple-500 dark:to-blue-500 flex items-center justify-center text-white font-bold shadow-inner ring-2 ring-gray-100 dark:ring-white/10">
                 {user?.email?.[0].toUpperCase() || "U"}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {user?.email?.split("@")[0]}
                 </p>
                 <p className="text-xs text-gray-500 truncate">{user?.email}</p>
               </div>
               <button
                 onClick={handleLogout}
-                className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                className="p-2 text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
                 title="Log out"
               >
                 <svg

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
 
 html,
 body,
@@ -7,13 +8,19 @@ body,
   width: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Critical for preventing double scroll */
 }
 
 body {
   font-family: "Inter", sans-serif;
   -webkit-font-smoothing: antialiased;
   background-color: #f9fafb;
+  color: #111827;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+:is(.dark body) {
+  background-color: #0a0a0a;
+  color: #ffffff;
 }
 
 /* Custom Scrollbar for premium feel */
@@ -35,7 +42,6 @@ body {
   background: #94a3b8;
 }
 
-/* Dark mode scrollbar for sidebar */
 .dark-scroll::-webkit-scrollbar-thumb {
   background: #334155;
 }
@@ -46,8 +52,14 @@ body {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-in {
@@ -55,6 +67,51 @@ body {
 }
 
 .fade-in {
-  opacity: 0; 
+  opacity: 0;
   animation-fill-mode: forwards;
+}
+
+/* Background Texture */
+.bg-grid-white {
+  background-size: 50px 50px;
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.15) 1px, transparent 1px);
+}
+
+@media (prefers-color-scheme: dark) {
+  .bg-grid-white {
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  }
+}
+
+:is(.dark .bg-grid-white) {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+}
+
+/* Grid Bead Animation */
+@keyframes grid-bead-vert {
+  0% { top: -20px; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+@keyframes grid-bead-horiz {
+  0% { left: -20px; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+.animate-grid-bead-v {
+  animation: grid-bead-vert 4s linear infinite;
+}
+
+.animate-grid-bead-h {
+  animation: grid-bead-horiz 4s linear infinite;
 }

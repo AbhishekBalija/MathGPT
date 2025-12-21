@@ -61,73 +61,67 @@ const Register = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8 dark:bg-gray-900">
-      <div className="w-full max-w-md space-y-8">
-        <div>
-          <div className="mx-auto w-12 h-12 bg-linear-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mb-4">
-            <svg
-              className="w-7 h-7 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-              />
-            </svg>
-          </div>
-          <h2 className="text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-            Create your account
+    <div className="flex min-h-screen items-center justify-center bg-[#fafafa] dark:bg-[#0a0a0a] bg-grid-white px-4 py-12 sm:px-6 lg:px-8 transition-colors duration-300">
+      <div className="w-full max-w-[500px] space-y-8 bg-white dark:bg-gray-900 p-10 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800">
+        <div className="text-center">
+          <Link to="/" className="inline-flex items-center gap-3 mb-8 group">
+            <img
+              src="/MathGPT-logo1.png"
+              alt="MathGPT Logo"
+              className="h-12 w-auto object-contain transition-transform group-hover:scale-110"
+            />
+            <span className="text-3xl font-normal tracking-wider font-['Rye'] text-gray-900 dark:text-white">
+              MathGPT
+            </span>
+          </Link>
+
+          <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
+            Create an account
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-            Start solving math problems step-by-step
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Start solving smarter today
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm font-medium">
             {error}
           </div>
         )}
 
-        {/* Google Sign-Up Button */}
-        <div className="flex flex-col items-center gap-4">
-          {isLoading ? (
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <div className="w-5 h-5 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin" />
-              Creating account...
+        <div className="space-y-4">
+          <div className="flex justify-center w-full">
+            <div className="w-full flex justify-center">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                theme="outline"
+                width="320"
+                text="signup_with"
+                shape="circle"
+              />
             </div>
-          ) : (
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleError}
-              theme="outline"
-              size="large"
-              width="320"
-              text="signup_with"
-            />
-          )}
-        </div>
-
-        {/* Divider */}
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300 dark:border-gray-700" />
           </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="bg-gray-50 px-2 text-gray-500 dark:bg-gray-900 dark:text-gray-400">
-              Or sign up with email
-            </span>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-100 dark:border-gray-800" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white dark:bg-gray-900 px-2 text-gray-400 font-medium">
+                or
+              </span>
+            </div>
           </div>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleEmailRegister}>
-          <div className="-space-y-px rounded-md shadow-sm">
+        <form className="space-y-5" onSubmit={handleEmailRegister}>
+          <div className="space-y-4">
             <div>
-              <label htmlFor="full-name" className="sr-only">
+              <label
+                htmlFor="full-name"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+              >
                 Full Name
               </label>
               <input
@@ -139,13 +133,16 @@ const Register = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 disabled={isLoading}
-                className="relative block w-full rounded-t-md border-0 py-2.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700 dark:placeholder:text-gray-500 disabled:opacity-50"
-                placeholder="Full Name"
+                className="block w-full rounded-xl border-gray-200 dark:border-gray-700 py-3 px-4 text-gray-900 dark:text-white shadow-sm placeholder:text-gray-400 focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent sm:text-sm bg-gray-50/50 dark:bg-gray-800 transition-all font-medium"
+                placeholder="John Doe"
               />
             </div>
             <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email address
+              <label
+                htmlFor="email-address"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+              >
+                Email
               </label>
               <input
                 id="email-address"
@@ -156,12 +153,15 @@ const Register = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
-                className="relative block w-full border-0 py-2.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700 dark:placeholder:text-gray-500 disabled:opacity-50"
-                placeholder="Email address"
+                className="block w-full rounded-xl border-gray-200 dark:border-gray-700 py-3 px-4 text-gray-900 dark:text-white shadow-sm placeholder:text-gray-400 focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent sm:text-sm bg-gray-50/50 dark:bg-gray-800 transition-all font-medium"
+                placeholder="name@example.com"
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+              >
                 Password
               </label>
               <input
@@ -173,28 +173,26 @@ const Register = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
-                className="relative block w-full rounded-b-md border-0 py-2.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700 dark:placeholder:text-gray-500 disabled:opacity-50"
-                placeholder="Password (min 8 characters)"
+                className="block w-full rounded-xl border-gray-200 dark:border-gray-700 py-3 px-4 text-gray-900 dark:text-white shadow-sm placeholder:text-gray-400 focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent sm:text-sm bg-gray-50/50 dark:bg-gray-800 transition-all font-medium"
+                placeholder="Min 8 chars"
               />
             </div>
           </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="group relative flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? "Creating account..." : "Create account"}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="group relative flex w-full justify-center rounded-xl bg-black dark:bg-white px-3 py-3.5 text-sm font-semibold text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black transition-all shadow-lg active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {isLoading ? "Creating account..." : "Create account"}
+          </button>
         </form>
 
-        <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400">
           Already have an account?{" "}
           <Link
             to="/login"
-            className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+            className="font-semibold text-black dark:text-white hover:underline underline-offset-4"
           >
             Sign in
           </Link>
