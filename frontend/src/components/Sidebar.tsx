@@ -119,9 +119,16 @@ const Sidebar = () => {
         <div className="flex flex-col h-full">
           {/* Header Area */}
           <div className="flex items-center justify-between p-4 pt-5 pb-2">
-            <h2 className="text-sm font-bold text-gray-900 dark:text-gray-400 uppercase tracking-widest px-2">
-              Math Solver
-            </h2>
+            <div className="flex items-center gap-2 px-2">
+              <img
+                src="/MathGPT-logo1.png"
+                alt="MathGPT"
+                className="w-8 h-8 object-contain"
+              />
+              <span className="text-base font-['Rye'] font-normal text-gray-900 dark:text-white tracking-tight">
+                MathGPT
+              </span>
+            </div>
             <div className="flex items-center gap-1">
               {/* Theme Toggle */}
               <button
@@ -301,7 +308,7 @@ const Sidebar = () => {
             <div className="flex items-center gap-3 px-2">
               <button
                 onClick={toggleProfileModal}
-                className="w-10 h-10 rounded-full bg-black dark:bg-linear-to-tr dark:from-purple-500 dark:to-blue-500 flex items-center justify-center text-white font-bold shadow-inner ring-2 ring-gray-100 dark:ring-white/10 hover:ring-blue-500 dark:hover:ring-blue-400 transition-all cursor-pointer"
+                className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-200 font-medium ring-2 ring-gray-100 dark:ring-white/10 hover:ring-gray-300 dark:hover:ring-gray-500 transition-all cursor-pointer"
                 title="View Profile"
               >
                 {user?.email?.[0].toUpperCase() || "U"}

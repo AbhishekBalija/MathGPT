@@ -112,7 +112,7 @@ const ChatWindow = () => {
   return (
     <div className="flex flex-col h-full min-h-0 bg-white dark:bg-[#0a0a0a] relative transition-colors duration-300">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 scroll-smooth">
+      <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 pb-32 scroll-smooth">
         {!activeChat || activeChat.messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8 animate-in fade-in duration-500">
             {/* NEO Avatar - Centered & Blue/Cyan Theme */}
@@ -175,10 +175,8 @@ const ChatWindow = () => {
               >
                 {/* Avatar */}
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                    message.role === "user"
-                      ? "bg-blue-600 text-white"
-                      : "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
+                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${
+                    message.role === "user" ? "bg-blue-600 text-white" : ""
                   }`}
                 >
                   {message.role === "user" ? (
@@ -199,7 +197,7 @@ const ChatWindow = () => {
                     <img
                       src="/neo-avatar.png"
                       alt="NEO"
-                      className="w-full h-full rounded-full object-cover"
+                      className="w-full h-full rounded-full object-cover scale-[1.8]"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
                         e.currentTarget.parentElement!.innerHTML =
@@ -234,11 +232,11 @@ const ChatWindow = () => {
             {/* Loading Indicator */}
             {isLoading && (
               <div className="flex gap-4">
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-linear-to-br from-blue-500 via-cyan-400 to-blue-600 flex items-center justify-center shrink-0 animate-pulse">
+                <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center shrink-0 animate-pulse">
                   <img
                     src="/neo-avatar.png"
                     alt="NEO"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover scale-[1.6]"
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                       e.currentTarget.parentElement!.innerHTML =
@@ -274,7 +272,7 @@ const ChatWindow = () => {
 
       {/* Input Area - Floating at bottom */}
       <div className="p-4 sm:p-6 bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-lg border-t border-gray-100 dark:border-gray-800 absolute bottom-0 left-0 right-0 z-10 transition-colors duration-300">
-        <div className="max-w-3xl mx-auto relative">
+        <div className="max-w-3xl mx-auto">
           {/* Show input only if no solution exists yet */}
           {!activeChat?.solution && !solutionLoading ? (
             <>
@@ -319,71 +317,57 @@ const ChatWindow = () => {
               </div>
             </>
           ) : (
-            /* Solution exists - show new chat prompt */
-            <div className="text-center py-2">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                This problem has been solved. Start a new chat for another
-                problem.
+            /* Solution exists - show action buttons together */
+            <div className="flex flex-col items-center gap-3">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Problem solved! View the solution or start fresh.
               </p>
-              <button
-                onClick={createNewChat}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-900/20 transition-all active:scale-95 font-semibold"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              <div className="flex items-center gap-3">
+                {!showAnswerPanel && (
+                  <button
+                    onClick={() => setShowAnswerPanel(true)}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl transition-all active:scale-95 font-medium"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    View Solution
+                  </button>
+                )}
+                <button
+                  onClick={createNewChat}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all active:scale-95 font-medium"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-                New Problem
-              </button>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  New Problem
+                </button>
+              </div>
             </div>
           )}
         </div>
       </div>
-
-      {/* Floating Show Solution Button - appears when solution exists but panel is closed */}
-      {activeChat?.solution && !showAnswerPanel && (
-        <button
-          onClick={() => setShowAnswerPanel(true)}
-          className="fixed bottom-24 right-6 px-4 py-3 bg-green-600 hover:bg-green-500 text-white rounded-full shadow-lg shadow-green-900/30 hover:shadow-xl transition-all active:scale-95 flex items-center gap-2 z-20 group"
-        >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span className="font-semibold">View Solution</span>
-          <svg
-            className="w-4 h-4 transform group-hover:translate-x-1 transition-transform"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
-      )}
     </div>
   );
 };
