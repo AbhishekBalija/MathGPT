@@ -90,7 +90,7 @@ export const handler: Handlers["SaveSolution"] = async (
       finalAnswer: solution.finalAnswer,
       summary: solution.summary,
       processingTimeMs: solution.processingTimeMs,
-      createdAt: new Date(solution.createdAt),
+      createdAt: solution.createdAt,
     };
 
     // Save to MongoDB via SolutionService

@@ -138,7 +138,7 @@ function transformToSolution(
     finalAnswer: aiResponse.finalAnswer,
     summary: aiResponse.summary,
     processingTimeMs,
-    createdAt: new Date(),
+    createdAt: new Date().toISOString(),
   };
 }
 

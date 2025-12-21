@@ -71,7 +71,7 @@ export interface Solution {
   processingTimeMs: number;
 
   /** Timestamp */
-  createdAt: Date;
+  createdAt: string;
 }
 
 /**

@@ -123,7 +123,7 @@ export const handler: Handlers["SolveMath"] = async (
         userId,
         solution: {
           ...solution,
-          createdAt: solution.createdAt.toISOString(),
+          createdAt: solution.createdAt,
         },
         problemType: solution.problemType,
         stepsCount: solution.steps.length,
