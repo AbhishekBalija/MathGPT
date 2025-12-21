@@ -59,6 +59,7 @@ interface ChatState {
   sidebarOpen: boolean;
   showAnswerPanel: boolean;
   historyLoaded: boolean;
+  isProfileOpen: boolean;
 
   // Actions
   createNewChat: () => string;
@@ -88,6 +89,7 @@ interface ChatState {
   fetchSolution: (chatId: string, solutionId: string) => Promise<void>;
   deleteChat: (chatId: string, solutionId?: string) => Promise<boolean>;
   clearAllChats: () => Promise<boolean>;
+  toggleProfileModal: () => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -125,14 +127,45 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   fetchSolution: async (chatId, solutionId) => {
+    // First check if solution is already cached (instant)
+    const { useAppDataStore } = await import("./appDataStore");
+    const cachedSolution = useAppDataStore
+      .getState()
+      .getCachedSolution(solutionId);
+
+    if (cachedSolution) {
+      // Use cached solution - instant!
+      const solution = {
+        id: cachedSolution.id,
+        problem: cachedSolution.problem,
+        problemType: cachedSolution.problemType as Solution["problemType"],
+        steps: cachedSolution.steps.map((s) => ({
+          ...s,
+          status: s.status as Step["status"],
+        })),
+        finalAnswer: cachedSolution.finalAnswer,
+        summary: cachedSolution.summary,
+        processingTimeMs: cachedSolution.processingTimeMs,
+        createdAt: new Date(cachedSolution.createdAt),
+      };
+
+      set((state) => ({
+        chats: state.chats.map((chat) =>
+          chat.id === chatId ? { ...chat, solution } : chat
+        ),
+        showAnswerPanel: true,
+      }));
+      return;
+    }
+
+    // Not cached - fetch and cache
     set({ globalLoading: true });
     try {
-      // Dynamic import to avoid circular dependency
-      const { getSolutionById } = await import("../services/history.service");
-      const solutionData = await getSolutionById(solutionId);
+      const solutionData = await useAppDataStore
+        .getState()
+        .fetchAndCacheSolution(solutionId);
 
       if (solutionData) {
-        // Convert to Solution type
         const solution = {
           id: solutionData.id,
           problem: solutionData.problem,
@@ -206,6 +239,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setGlobalLoading: (loading) => {
     set({ globalLoading: loading });
   },
+
+  isProfileOpen: false,
+  toggleProfileModal: () =>
+    set((state) => ({ isProfileOpen: !state.isProfileOpen })),
 
   setError: (error) => {
     set({ error });

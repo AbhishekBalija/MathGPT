@@ -84,17 +84,21 @@
         "x": -969,
         "y": -227
       },
+      "src/api/profile.step.ts": {
+        "x": -674,
+        "y": 129
+      },
       "src/api/auth/register.step.ts": {
         "x": -1370,
         "y": -204
       },
       "src/api/auth/refresh-token.step.ts": {
-        "x": -664,
-        "y": -154
+        "x": -669,
+        "y": -238
       },
       "src/api/auth/me.step.ts": {
-        "x": -664,
-        "y": 70
+        "x": -673,
+        "y": -58
       },
       "src/api/auth/logout.step.ts": {
         "x": -966,

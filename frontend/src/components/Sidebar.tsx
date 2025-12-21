@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useChatStore } from "../stores/chatStore";
 import { useAuthStore } from "../stores/authStore";
+import { useAppDataStore } from "../stores/appDataStore";
 import { useNavigate } from "react-router-dom";
-import { getUserHistory } from "../services/history.service";
 import { Moon, Sun } from "lucide-react";
 
 const Sidebar = () => {
@@ -18,28 +18,25 @@ const Sidebar = () => {
     fetchSolution,
     deleteChat,
     clearAllChats,
+    toggleProfileModal,
   } = useChatStore();
 
   const { user, logout } = useAuthStore();
+  // Use cached history from appDataStore
+  const {
+    history: cachedHistory,
+    isInitialized,
+    historyLoading,
+  } = useAppDataStore();
   const navigate = useNavigate();
-  const setGlobalLoading = useChatStore((s) => s.setGlobalLoading);
   const [isDark, setIsDark] = useState(false);
 
-  // Load history from backend on mount
+  // Sync cached history to chatStore when appDataStore updates
   useEffect(() => {
-    const fetchHistory = async () => {
-      if (!historyLoaded && user) {
-        setGlobalLoading(true);
-        try {
-          const history = await getUserHistory();
-          loadHistory(history);
-        } finally {
-          setGlobalLoading(false);
-        }
-      }
-    };
-    fetchHistory();
-  }, [user, historyLoaded, loadHistory, setGlobalLoading]);
+    if (isInitialized && cachedHistory.length > 0 && !historyLoaded) {
+      loadHistory(cachedHistory);
+    }
+  }, [isInitialized, cachedHistory, historyLoaded, loadHistory]);
 
   // Theme Toggle Logic
   useEffect(() => {
@@ -211,7 +208,20 @@ const Sidebar = () => {
               )}
             </div>
 
-            {chats.length === 0 ? (
+            {historyLoading && !historyLoaded ? (
+              // Loading skeleton
+              <div className="space-y-2 px-1">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div
+                    key={i}
+                    className="animate-pulse flex items-center gap-3 px-3 py-3 rounded-xl"
+                  >
+                    <div className="w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded" />
+                    <div className="flex-1 h-4 bg-gray-200 dark:bg-gray-700 rounded" />
+                  </div>
+                ))}
+              </div>
+            ) : chats.length === 0 ? (
               <div className="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-600">
                 No calculations yet
               </div>
@@ -289,15 +299,23 @@ const Sidebar = () => {
           {/* User Profile Footer */}
           <div className="p-4 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-black/20 mt-auto backdrop-blur-sm">
             <div className="flex items-center gap-3 px-2">
-              <div className="w-10 h-10 rounded-full bg-black dark:bg-linear-to-tr dark:from-purple-500 dark:to-blue-500 flex items-center justify-center text-white font-bold shadow-inner ring-2 ring-gray-100 dark:ring-white/10">
+              <button
+                onClick={toggleProfileModal}
+                className="w-10 h-10 rounded-full bg-black dark:bg-linear-to-tr dark:from-purple-500 dark:to-blue-500 flex items-center justify-center text-white font-bold shadow-inner ring-2 ring-gray-100 dark:ring-white/10 hover:ring-blue-500 dark:hover:ring-blue-400 transition-all cursor-pointer"
+                title="View Profile"
+              >
                 {user?.email?.[0].toUpperCase() || "U"}
-              </div>
-              <div className="flex-1 min-w-0">
+              </button>
+              <button
+                onClick={toggleProfileModal}
+                className="flex-1 min-w-0 text-left hover:opacity-80 transition-opacity cursor-pointer"
+                title="View Profile"
+              >
                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {user?.email?.split("@")[0]}
                 </p>
                 <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-              </div>
+              </button>
               <button
                 onClick={handleLogout}
                 className="p-2 text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
