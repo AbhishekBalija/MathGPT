@@ -19,11 +19,54 @@ const renderLatex = (text: string): string => {
   }
 };
 
+// Skeleton loader component for solution
+const SolutionSkeleton = () => (
+  <div className="space-y-6 max-w-2xl mx-auto animate-pulse">
+    {/* Final Answer skeleton */}
+    <div className="p-6 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800">
+      <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded mb-4" />
+      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+    </div>
+
+    {/* Problem type badge skeleton */}
+    <div className="flex items-center justify-between px-2">
+      <div className="h-6 w-28 bg-gray-200 dark:bg-gray-700 rounded-full" />
+      <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
+    </div>
+
+    {/* Step skeletons */}
+    {[1, 2, 3].map((i) => (
+      <div
+        key={i}
+        className="p-5 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800"
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full" />
+          <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 const AnswerPanel = () => {
-  const { chats, activeChatId, isLoading, setShowAnswerPanel } = useChatStore();
+  const {
+    chats,
+    activeChatId,
+    isLoading,
+    solutionLoading,
+    setShowAnswerPanel,
+  } = useChatStore();
   const activeChat = chats.find((c) => c.id === activeChatId);
   const solution = activeChat?.solution;
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Show skeleton when fetching a solution from history
+  const showSkeleton = solutionLoading && !solution;
 
   // Scroll to top when solution changes
   useEffect(() => {
@@ -97,6 +140,8 @@ const AnswerPanel = () => {
               Analyzing math structure and generating verified steps...
             </p>
           </div>
+        ) : showSkeleton ? (
+          <SolutionSkeleton />
         ) : solution ? (
           <div className="space-y-6 max-w-2xl mx-auto">
             {/* Final Answer - Top (Hero Section) */}

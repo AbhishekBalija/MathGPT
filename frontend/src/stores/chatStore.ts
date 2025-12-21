@@ -55,6 +55,7 @@ interface ChatState {
   activeChatId: string | null;
   isLoading: boolean;
   globalLoading: boolean; // For app-wide loading overlay
+  solutionLoading: boolean; // For solution fetch (shows skeleton, not overlay)
   error: string | null;
   sidebarOpen: boolean;
   showAnswerPanel: boolean;
@@ -97,6 +98,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   activeChatId: null,
   isLoading: false,
   globalLoading: false,
+  solutionLoading: false,
   error: null,
   sidebarOpen: true,
   showAnswerPanel: false,
@@ -158,8 +160,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return;
     }
 
-    // Not cached - fetch and cache
-    set({ globalLoading: true });
+    // Not cached - fetch and cache (use solutionLoading for skeleton, not globalLoading)
+    set({ solutionLoading: true, showAnswerPanel: true });
     try {
       const solutionData = await useAppDataStore
         .getState()
@@ -188,7 +190,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }));
       }
     } finally {
-      set({ globalLoading: false });
+      set({ solutionLoading: false });
     }
   },
 

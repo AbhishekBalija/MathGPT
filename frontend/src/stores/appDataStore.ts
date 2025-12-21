@@ -31,9 +31,8 @@ interface AppDataState {
   historyLoading: boolean;
   historyError: string | null;
 
-  // Solutions cache - Pre-fetched full solutions by ID
+  // Solutions cache - Only cache solutions AFTER they're fetched on-demand
   solutionsCache: Map<string, FullSolution>;
-  solutionsFetching: Set<string>;
 
   // Sync state
   isInitialized: boolean;
@@ -43,17 +42,12 @@ interface AppDataState {
   initializeData: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   refreshHistory: () => Promise<void>;
-  refreshAll: () => Promise<void>;
   clearData: () => void;
 
   // Solution cache actions
   getCachedSolution: (solutionId: string) => FullSolution | null;
   fetchAndCacheSolution: (solutionId: string) => Promise<FullSolution | null>;
-  prefetchSolutions: (solutionIds: string[]) => Promise<void>;
 }
-
-// Number of recent solutions to pre-fetch
-const PREFETCH_COUNT = 10;
 
 export const useAppDataStore = create<AppDataState>((set, get) => ({
   // Initial state
@@ -66,7 +60,6 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
   historyError: null,
 
   solutionsCache: new Map(),
-  solutionsFetching: new Set(),
 
   isInitialized: false,
   lastSyncAt: null,
@@ -76,26 +69,16 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
     return get().solutionsCache.get(solutionId) || null;
   },
 
-  // Fetch and cache a single solution
+  // Fetch and cache a single solution (on-demand only)
   fetchAndCacheSolution: async (solutionId) => {
+    // Check cache first
     const cached = get().solutionsCache.get(solutionId);
     if (cached) return cached;
-
-    // Check if already fetching
-    if (get().solutionsFetching.has(solutionId)) {
-      // Wait a bit and check again
-      await new Promise((r) => setTimeout(r, 100));
-      return get().solutionsCache.get(solutionId) || null;
-    }
-
-    // Mark as fetching
-    set((state) => ({
-      solutionsFetching: new Set([...state.solutionsFetching, solutionId]),
-    }));
 
     try {
       const solution = await getSolutionById(solutionId);
       if (solution) {
+        // Cache the solution for future use
         set((state) => {
           const newCache = new Map(state.solutionsCache);
           newCache.set(solutionId, solution);
@@ -104,29 +87,13 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
         return solution;
       }
       return null;
-    } finally {
-      set((state) => {
-        const newFetching = new Set(state.solutionsFetching);
-        newFetching.delete(solutionId);
-        return { solutionsFetching: newFetching };
-      });
+    } catch (error) {
+      console.error("Failed to fetch solution:", error);
+      return null;
     }
   },
 
-  // Pre-fetch multiple solutions in background
-  prefetchSolutions: async (solutionIds) => {
-    const cache = get().solutionsCache;
-    const toFetch = solutionIds.filter((id) => !cache.has(id));
-
-    // Fetch in parallel but limit concurrency
-    const batchSize = 3;
-    for (let i = 0; i < toFetch.length; i += batchSize) {
-      const batch = toFetch.slice(i, i + batchSize);
-      await Promise.all(batch.map((id) => get().fetchAndCacheSolution(id)));
-    }
-  },
-
-  // Initialize all data on login
+  // Initialize data on login - ONLY profile and history (lightweight)
   initializeData: async () => {
     const state = get();
     if (state.isInitialized) return;
@@ -134,14 +101,11 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
     set({ profileLoading: true, historyLoading: true });
 
     try {
-      // Fetch profile and history in parallel
+      // Fetch profile and history in parallel (just 2 calls)
       const [profileResult, historyResult] = await Promise.allSettled([
         getUserProfile(),
         getUserHistory(),
       ]);
-
-      const history =
-        historyResult.status === "fulfilled" ? historyResult.value : [];
 
       set({
         profile:
@@ -152,7 +116,8 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
             : null,
         profileLoading: false,
 
-        history,
+        history:
+          historyResult.status === "fulfilled" ? historyResult.value : [],
         historyError:
           historyResult.status === "rejected"
             ? historyResult.reason?.message
@@ -163,12 +128,7 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
         lastSyncAt: new Date(),
       });
 
-      // Pre-fetch solutions for recent history items in background
-      if (history.length > 0) {
-        const recentIds = history.slice(0, PREFETCH_COUNT).map((h) => h.id);
-        // Don't await - let it happen in background
-        get().prefetchSolutions(recentIds);
-      }
+      // NO solution pre-fetching - Motia can't handle multiple concurrent requests
     } catch (error) {
       set({
         profileLoading: false,
@@ -209,26 +169,6 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
     }
   },
 
-  // Refresh all data (for polling)
-  refreshAll: async () => {
-    const [profileResult, historyResult] = await Promise.allSettled([
-      getUserProfile(),
-      getUserHistory(),
-    ]);
-
-    set({
-      profile:
-        profileResult.status === "fulfilled"
-          ? profileResult.value
-          : get().profile,
-      history:
-        historyResult.status === "fulfilled"
-          ? historyResult.value
-          : get().history,
-      lastSyncAt: new Date(),
-    });
-  },
-
   // Clear all data on logout
   clearData: () => {
     set({
@@ -239,7 +179,6 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
       historyLoading: false,
       historyError: null,
       solutionsCache: new Map(),
-      solutionsFetching: new Set(),
       isInitialized: false,
       lastSyncAt: null,
     });

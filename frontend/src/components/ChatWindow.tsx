@@ -22,6 +22,7 @@ const ChatWindow = () => {
     chats,
     activeChatId,
     isLoading,
+    solutionLoading,
     showAnswerPanel,
     addMessage,
     setSolution,
@@ -32,6 +33,9 @@ const ChatWindow = () => {
   } = useChatStore();
 
   const activeChat = chats.find((c) => c.id === activeChatId);
+
+  // Disable input when loading or fetching solution
+  const inputDisabled = isLoading || solutionLoading;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -272,20 +276,25 @@ const ChatWindow = () => {
       <div className="p-4 sm:p-6 bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-lg border-t border-gray-100 dark:border-gray-800 absolute bottom-0 left-0 right-0 z-10 transition-colors duration-300">
         <div className="max-w-3xl mx-auto relative">
           {/* Show input only if no solution exists yet */}
-          {!activeChat?.solution ? (
+          {!activeChat?.solution && !solutionLoading ? (
             <>
-              <div className="flex items-end gap-2 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900 focus-within:border-blue-400 dark:focus-within:border-blue-600 transition-all">
+              <div
+                className={`flex items-end gap-2 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900 focus-within:border-blue-400 dark:focus-within:border-blue-600 transition-all ${
+                  inputDisabled ? "opacity-50" : ""
+                }`}
+              >
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask a math problem..."
-                  className="flex-1 bg-transparent border-none outline-none resize-none text-gray-900 dark:text-white placeholder-gray-400 min-h-[44px] max-h-[120px] py-2.5 px-3"
+                  disabled={inputDisabled}
+                  className="flex-1 bg-transparent border-none outline-none resize-none text-gray-900 dark:text-white placeholder-gray-400 min-h-[44px] max-h-[120px] py-2.5 px-3 disabled:cursor-not-allowed"
                   rows={1}
                 />
                 <button
                   onClick={() => handleSend()}
-                  disabled={!input.trim() || isLoading}
+                  disabled={!input.trim() || inputDisabled}
                   className="p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shadow-md shadow-blue-500/20"
                 >
                   <svg
