@@ -28,19 +28,6 @@
     }
   },
   {
-    "id": "admin-flow",
-    "config": {
-      "src/api/admin/admin-resolve-error.step.ts": {
-        "x": 9,
-        "y": 0
-      },
-      "src/api/admin/admin-errors.step.ts": {
-        "x": 0,
-        "y": 203
-      }
-    }
-  },
-  {
     "id": "SolutionFlow",
     "config": {
       "src/events/solution/track-analytics.step.ts": {
@@ -111,6 +98,43 @@
       "src/api/auth/google-oauth.step.ts": {
         "x": -1375,
         "y": 22
+      }
+    }
+  },
+  {
+    "id": "admin-flow",
+    "config": {
+      "src/api/admin/verify-passcode.step.ts": {
+        "x": -844,
+        "y": 575
+      },
+      "src/api/admin/users.step.ts": {
+        "x": -481,
+        "y": 337
+      },
+      "src/api/admin/update-user-role.step.ts": {
+        "x": -92,
+        "y": 347
+      },
+      "src/api/admin/stats.step.ts": {
+        "x": -449,
+        "y": 583
+      },
+      "src/api/admin/delete-user.step.ts": {
+        "x": -63,
+        "y": 572
+      },
+      "src/api/admin/analytics.step.ts": {
+        "x": -457,
+        "y": 805
+      },
+      "src/api/admin/admin-resolve-error.step.ts": {
+        "x": -845,
+        "y": 342
+      },
+      "src/api/admin/admin-errors.step.ts": {
+        "x": -855,
+        "y": 790
       }
     }
   }

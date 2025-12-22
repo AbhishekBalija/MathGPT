@@ -1,13 +1,16 @@
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Moon, Sun, Menu, X } from "lucide-react";
+import { useThemeStore } from "../stores/themeStore";
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
-  const [isDark, setIsDark] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const isLanding = location.pathname === "/";
+
+  // Use centralized theme store
+  const { isDark, initTheme, toggleTheme } = useThemeStore();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -34,34 +37,10 @@ const Navbar = () => {
     };
   }, [mobileMenuOpen]);
 
-  // Theme Toggle Logic
+  // Initialize theme on mount
   useEffect(() => {
-    // Check local storage or system preference on mount
-    const savedTheme = localStorage.getItem("theme");
-    const systemPrefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
-
-    if (savedTheme === "dark" || (!savedTheme && systemPrefersDark)) {
-      setIsDark(true);
-      document.documentElement.classList.add("dark");
-    } else {
-      setIsDark(false);
-      document.documentElement.classList.remove("dark");
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    if (isDark) {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-      setIsDark(false);
-    } else {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-      setIsDark(true);
-    }
-  };
+    initTheme();
+  }, [initTheme]);
 
   return (
     <>

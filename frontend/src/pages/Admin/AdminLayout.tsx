@@ -1,14 +1,28 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
 import { useAdminStore } from "../../stores/adminStore";
+import { useThemeStore } from "../../stores/themeStore";
+import { useState, useEffect } from "react";
+import { Menu, X, Moon, Sun } from "lucide-react";
 
 const AdminLayout = () => {
   const { user, logout } = useAuthStore();
   const { clearAdminVerification } = useAdminStore();
+  const { isDark, toggleTheme } = useThemeStore();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, []);
 
   const handleLogout = async () => {
     clearAdminVerification();
     await logout();
+  };
+
+  const handleNavClick = () => {
+    setSidebarOpen(false);
   };
 
   const navItems = [
@@ -92,10 +106,37 @@ const AdminLayout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex">
+      {/* Mobile Header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 z-40">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+        <div className="flex items-center gap-2">
+          <img src="/MathGPT-logo1.png" alt="MathGPT" className="h-7 w-auto" />
+          <span className="font-bold text-gray-900 dark:text-white">Admin</span>
+        </div>
+        <div className="w-10" /> {/* Spacer for centering */}
+      </div>
+
+      {/* Mobile Sidebar Backdrop */}
+      {sidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col">
+      <aside
+        className={`fixed md:static top-0 left-0 h-full w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col z-50 transform transition-transform duration-300 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}
+      >
         {/* Logo */}
-        <div className="h-16 flex items-center px-6 border-b border-gray-200 dark:border-gray-800">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200 dark:border-gray-800">
           <a href="/" className="flex items-center gap-2">
             <img
               src="/MathGPT-logo1.png"
@@ -106,6 +147,13 @@ const AdminLayout = () => {
               Admin
             </span>
           </a>
+          {/* Mobile close button */}
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Navigation */}
@@ -115,6 +163,7 @@ const AdminLayout = () => {
               key={item.path}
               to={item.path}
               end={item.path === "/admin"}
+              onClick={handleNavClick}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                   isActive
@@ -154,6 +203,18 @@ const AdminLayout = () => {
               </p>
             </div>
           </div>
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 mb-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-all"
+          >
+            {isDark ? (
+              <Sun className="w-5 h-5" />
+            ) : (
+              <Moon className="w-5 h-5" />
+            )}
+            {isDark ? "Light Mode" : "Dark Mode"}
+          </button>
           <button
             onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-all"
@@ -177,7 +238,7 @@ const AdminLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto pt-14 md:pt-0">
         <Outlet />
       </main>
     </div>

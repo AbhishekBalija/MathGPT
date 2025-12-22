@@ -73,11 +73,11 @@ const Users = () => {
   const totalPages = Math.ceil(usersTotal / usersLimit);
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
             Users
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">

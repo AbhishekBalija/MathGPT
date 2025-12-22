@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useChatStore } from "../stores/chatStore";
 import { useAuthStore } from "../stores/authStore";
 import { useAppDataStore } from "../stores/appDataStore";
+import { useThemeStore } from "../stores/themeStore";
 import { useNavigate } from "react-router-dom";
 import { Moon, Sun } from "lucide-react";
 
@@ -29,7 +30,9 @@ const Sidebar = () => {
     historyLoading,
   } = useAppDataStore();
   const navigate = useNavigate();
-  const [isDark, setIsDark] = useState(false);
+
+  // Use centralized theme store
+  const { isDark, initTheme, toggleTheme } = useThemeStore();
 
   // Sync cached history to chatStore when appDataStore updates
   useEffect(() => {
@@ -38,34 +41,10 @@ const Sidebar = () => {
     }
   }, [isInitialized, cachedHistory, historyLoaded, loadHistory]);
 
-  // Theme Toggle Logic
+  // Initialize theme on mount
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    const systemPrefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
-
-    // Default to dark if no preference, or if system prefers dark
-    if (savedTheme === "dark" || (!savedTheme && systemPrefersDark)) {
-      setIsDark(true);
-      document.documentElement.classList.add("dark");
-    } else {
-      setIsDark(false);
-      document.documentElement.classList.remove("dark");
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    if (isDark) {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-      setIsDark(false);
-    } else {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-      setIsDark(true);
-    }
-  };
+    initTheme();
+  }, [initTheme]);
 
   const handleLogout = () => {
     logout();
