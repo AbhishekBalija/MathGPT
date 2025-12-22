@@ -100,7 +100,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   globalLoading: false,
   solutionLoading: false,
   error: null,
-  sidebarOpen: true,
+  sidebarOpen: false,
   showAnswerPanel: false,
   historyLoaded: false,
 

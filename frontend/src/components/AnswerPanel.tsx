@@ -81,7 +81,7 @@ const AnswerPanel = () => {
   return (
     <div className="h-full flex flex-col bg-gray-50/50 dark:bg-[#0a0a0a] border-l border-white/50 dark:border-gray-800 backdrop-blur-sm shadow-xl shadow-gray-200/50 dark:shadow-none relative z-10 w-full overflow-hidden transition-colors duration-300">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 sticky top-0 z-20">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-linear-to-tr from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-900/10 text-white">
             <svg
@@ -129,7 +129,10 @@ const AnswerPanel = () => {
       </div>
 
       {/* Content */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 scroll-smooth">
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto p-4 sm:p-6 scroll-smooth"
+      >
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="relative w-16 h-16 mb-6">

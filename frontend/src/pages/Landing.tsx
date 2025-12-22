@@ -16,7 +16,7 @@ const Landing = () => {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-24 lg:pt-48 lg:pb-40 overflow-hidden">
+      <section className="relative pt-24 pb-16 md:pt-32 md:pb-24 lg:pt-48 lg:pb-40 overflow-hidden">
         {/* Subtle Background Gradient - Lower Z-index */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-gray-100 via-[#fafafa] to-[#fafafa] dark:from-gray-900 dark:via-[#0a0a0a] dark:to-[#0a0a0a] opacity-80 pointer-events-none"></div>
 
@@ -80,8 +80,8 @@ const Landing = () => {
           ></div>
         </div>
 
-        <div className="container mx-auto px-6 lg:px-12 relative z-10">
-          <div className="flex flex-col lg:flex-col items-center gap-16 text-center">
+        <div className="container mx-auto px-4 md:px-6 lg:px-12 relative z-10">
+          <div className="flex flex-col lg:flex-col items-center gap-8 md:gap-16 text-center">
             {/* Hero Text */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -94,25 +94,25 @@ const Landing = () => {
                 <span>AI-Powered Precision</span>
               </div>
 
-              <h1 className="text-5xl md:text-7xl lg:text-8xl font-semibold tracking-tighter text-gray-900 dark:text-white mb-8 leading-none">
-                Master Math, <br />
+              <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-semibold tracking-tighter text-gray-900 dark:text-white mb-6 md:mb-8 leading-none">
+                Master Math <br />
                 <span className="text-gray-400 dark:text-gray-600">
                   Step by Step.
                 </span>
               </h1>
 
-              <p className="text-xl md:text-2xl text-gray-500 dark:text-gray-400 mb-10 max-w-2xl mx-auto font-light leading-relaxed">
+              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-500 dark:text-gray-400 mb-8 md:mb-10 max-w-2xl mx-auto font-light leading-relaxed px-2 md:px-0">
                 Teacher-quality explanations verified by symbolic AI. Understand
                 the "why", not just the "what".
               </p>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-4 sm:px-0 sm:w-auto">
                 <Link
                   to="/login"
-                  className="group relative px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-full font-medium text-lg overflow-hidden transition-all hover:pr-10"
+                  className="group relative w-full sm:w-auto px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-full font-medium text-base md:text-lg overflow-hidden transition-all hover:pr-10 text-center"
                 >
                   <span className="relative z-10">Start Learning Free</span>
-                  <ArrowRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white dark:text-black opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+                  <ArrowRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white dark:text-black opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 hidden sm:block" />
                 </Link>
               </div>
             </motion.div>
@@ -125,7 +125,7 @@ const Landing = () => {
               className="w-full max-w-5xl mx-auto"
             >
               {/* Taller Aspect Ratio for Cinematic Feel */}
-              <div className="relative aspect-16/10 md:aspect-21/9 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden group">
+              <div className="relative aspect-video md:aspect-16/10 lg:aspect-21/9 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden group">
                 {/* Browser Toolbar (Keep it minimal) */}
                 <div className="absolute top-0 left-0 right-0 h-8 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800 flex items-center px-4 z-20">
                   <div className="flex gap-1.5">
@@ -159,9 +159,9 @@ const Landing = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-32 bg-white dark:bg-[#0a0a0a]">
-        <div className="container mx-auto px-6 lg:px-12">
-          <div className="grid md:grid-cols-3 gap-12 lg:gap-16">
+      <section className="py-16 md:py-32 bg-white dark:bg-[#0a0a0a]">
+        <div className="container mx-auto px-4 md:px-6 lg:px-12">
+          <div className="grid md:grid-cols-3 gap-8 md:gap-12 lg:gap-16">
             <MinimalFeatureCard
               icon={<CheckCircle2 className="w-5 h-5" />}
               title="Verified Accuracy"
@@ -182,10 +182,10 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-[#0a0a0a] border-t border-gray-100 dark:border-gray-800 py-12">
-        <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+      <footer className="bg-white dark:bg-[#0a0a0a] border-t border-gray-100 dark:border-gray-800 py-8 md:py-12">
+        <div className="container mx-auto px-4 md:px-6 flex flex-col md:flex-row justify-between items-center text-center md:text-left text-sm text-gray-500 dark:text-gray-400">
           <p>&copy; {new Date().getFullYear()} MathGPT</p>
-          <div className="flex space-x-8 mt-4 md:mt-0">
+          <div className="flex space-x-6 md:space-x-8 mt-4 md:mt-0">
             <Link
               to="/privacy"
               className="hover:text-black dark:hover:text-white transition-colors"

@@ -123,8 +123,8 @@ const ChatWindow = () => {
         {!activeChat || activeChat.messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8 animate-in fade-in duration-500">
             {/* NEO Avatar - Centered & Blue/Cyan Theme */}
-            <div className="flex justify-center mb-8">
-              <div className="w-24 h-24 rounded-full bg-linear-to-br from-blue-500 via-cyan-400 to-blue-600 p-1 shadow-xl shadow-cyan-500/20 hover:scale-105 transition-transform flex items-center justify-center overflow-hidden">
+            <div className="flex justify-center mb-6 sm:mb-8">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-linear-to-br from-blue-500 via-cyan-400 to-blue-600 p-1 shadow-xl shadow-cyan-500/20 hover:scale-105 transition-transform flex items-center justify-center overflow-hidden">
                 <img
                   src="/neo-avatar.png"
                   alt="NEO"
@@ -135,13 +135,13 @@ const ChatWindow = () => {
                 />
               </div>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
               Meet{" "}
               <span className="bg-linear-to-r from-blue-600 via-cyan-500 to-blue-600 bg-clip-text text-transparent">
                 NEO
               </span>
             </h2>
-            <p className="text-gray-500 dark:text-gray-400 max-w-sm mb-8 leading-relaxed">
+            <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 max-w-sm mb-6 sm:mb-8 leading-relaxed px-4 sm:px-0">
               Your personal math assistant. Type a problem or snap a photo, and
               I'll break it down step-by-step.
             </p>
@@ -329,7 +329,7 @@ const ChatWindow = () => {
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Problem solved! View the solution or start fresh.
               </p>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-center gap-3">
                 {!showAnswerPanel && (
                   <button
                     onClick={() => setShowAnswerPanel(true)}

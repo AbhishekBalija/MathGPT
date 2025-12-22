@@ -61,21 +61,24 @@ const Register = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#fafafa] dark:bg-[#0a0a0a] bg-grid-white px-4 py-12 sm:px-6 lg:px-8 transition-colors duration-300">
-      <div className="w-full max-w-[500px] space-y-8 bg-white dark:bg-gray-900 p-10 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800">
+    <div className="flex min-h-screen items-center justify-center bg-[#fafafa] dark:bg-[#0a0a0a] bg-grid-white px-4 py-8 sm:py-12 sm:px-6 lg:px-8 transition-colors duration-300">
+      <div className="w-full max-w-[500px] space-y-6 sm:space-y-8 bg-white dark:bg-gray-900 p-6 sm:p-10 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800">
         <div className="text-center">
-          <Link to="/" className="inline-flex items-center gap-3 mb-8 group">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 sm:gap-3 mb-6 sm:mb-8 group"
+          >
             <img
               src="/MathGPT-logo1.png"
               alt="MathGPT Logo"
-              className="h-12 w-auto object-contain transition-transform group-hover:scale-110"
+              className="h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-110"
             />
-            <span className="text-3xl font-normal tracking-wider font-['Rye'] text-gray-900 dark:text-white">
+            <span className="text-2xl sm:text-3xl font-normal tracking-wider font-['Rye'] text-gray-900 dark:text-white">
               MathGPT
             </span>
           </Link>
 
-          <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
+          <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
             Create an account
           </h2>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">

@@ -96,15 +96,7 @@ const AppLayout = () => {
 
       {/* Mobile Answer Overlay */}
       {showAnswerPanel && (
-        <div className="lg:hidden fixed inset-0 z-30 bg-white dark:bg-[#0f1117] flex flex-col">
-          <div className="p-2 border-b border-gray-200 dark:border-white/5 flex justify-end">
-            <button
-              onClick={() => useChatStore.getState().setShowAnswerPanel(false)}
-              className="p-2 text-gray-500"
-            >
-              Close
-            </button>
-          </div>
+        <div className="lg:hidden fixed inset-0 z-30 bg-white dark:bg-[#0f1117] flex flex-col pt-16">
           <AnswerPanel />
         </div>
       )}

@@ -78,6 +78,8 @@ const Sidebar = () => {
     if (chat.solutionId && !chat.solution) {
       fetchSolution(chat.id, chat.solutionId);
     }
+    // Close sidebar after selecting a chat
+    toggleSidebar();
   };
 
   return (
@@ -167,7 +169,10 @@ const Sidebar = () => {
           {/* New Chat Button */}
           <div className="px-4 pb-4 pt-2">
             <button
-              onClick={createNewChat}
+              onClick={() => {
+                createNewChat();
+                toggleSidebar();
+              }}
               className="group w-full flex items-center gap-3 px-4 py-3.5 bg-black dark:bg-blue-600 hover:bg-gray-800 dark:hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-gray-200 dark:shadow-blue-900/20 transition-all active:scale-[0.98]"
             >
               <div className="p-1 bg-white/20 rounded-lg group-hover:rotate-90 transition-transform duration-300">
@@ -273,7 +278,7 @@ const Sidebar = () => {
                       </span>
                     </div>
                   </button>
-                  {/* Delete Button - appears on hover */}
+                  {/* Delete Button - always visible on mobile, hover on desktop */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -281,7 +286,7 @@ const Sidebar = () => {
                         deleteChat(chat.id, chat.solutionId);
                       }
                     }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 dark:text-gray-500 opacity-0 group-hover/item:opacity-100 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 dark:text-gray-500 opacity-100 md:opacity-0 md:group-hover/item:opacity-100 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
                     title="Delete chat"
                   >
                     <svg
