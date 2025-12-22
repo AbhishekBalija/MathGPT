@@ -10,6 +10,7 @@
 graph TB
     subgraph "Client Layer"
         USER["👤 User"]
+        ADMIN["👤 Admin"]
         BROWSER["🌐 Browser"]
     end
 
@@ -26,6 +27,7 @@ graph TB
         AI["🤖 AI Service"]
         SOLUTION["📝 Solution Service"]
         EMAIL["📧 Email Service"]
+        ANALYTICS["📊 Analytics Service"]
     end
 
     subgraph "External Services"
@@ -36,6 +38,7 @@ graph TB
     end
 
     USER --> BROWSER
+    ADMIN --> BROWSER
     BROWSER --> REACT
     REACT --> ROUTER
     REACT --> ZUSTAND
@@ -46,17 +49,20 @@ graph TB
     API --> AI
     API --> SOLUTION
     API --> EMAIL
+    API --> ANALYTICS
 
     AUTH --> MONGODB
     AUTH --> GOOGLE
     SOLUTION --> MONGODB
     AI --> GEMINI
     EMAIL --> RESEND
+    ANALYTICS --> MONGODB
 
     style REACT fill:#61dafb,color:#000
     style MONGODB fill:#00684a,color:#fff
     style GEMINI fill:#8e44ad,color:#fff
     style API fill:#ff6b6b,color:#fff
+    style ANALYTICS fill:#f39c12,color:#fff
 ```
 
 ---
@@ -129,6 +135,7 @@ graph LR
         LOGIN["🔐 Login"]
         REGISTER["📝 Register"]
         APP["💻 AppLayout"]
+        ADMIN_DASH["⚙️ Admin Dashboard"]
     end
 
     subgraph "Components"
@@ -136,23 +143,30 @@ graph LR
         CHAT["💬 ChatWindow"]
         ANSWER["✅ AnswerPanel"]
         STEP["📋 StepCard"]
+        ADMIN_STATS["📊 AdminStats"]
+        ADMIN_USERS["👥 UserManagement"]
     end
 
     subgraph "State"
         AUTH_STORE["authStore"]
         CHAT_STORE["chatStore"]
+        ADMIN_STORE["adminStore"]
     end
 
     subgraph "Services"
         AUTH_SVC["auth.service"]
         SOLVE_SVC["solve.service"]
         HISTORY_SVC["history.service"]
+        ADMIN_SVC["admin.service"]
     end
 
     APP --> SIDEBAR
     APP --> CHAT
     APP --> ANSWER
     ANSWER --> STEP
+
+    ADMIN_DASH --> ADMIN_STATS
+    ADMIN_DASH --> ADMIN_USERS
 
     SIDEBAR --> CHAT_STORE
     CHAT --> CHAT_STORE
@@ -161,10 +175,13 @@ graph LR
     AUTH_SVC --> AUTH_STORE
     SOLVE_SVC --> CHAT_STORE
     HISTORY_SVC --> CHAT_STORE
+    ADMIN_SVC --> ADMIN_STORE
 
     style APP fill:#61dafb,color:#000
+    style ADMIN_DASH fill:#e74c3c,color:#fff
     style CHAT_STORE fill:#764abc,color:#fff
     style AUTH_STORE fill:#764abc,color:#fff
+    style ADMIN_STORE fill:#764abc,color:#fff
 ```
 
 ---
@@ -182,8 +199,16 @@ graph TB
         OAUTH["/auth/google"]
     end
 
+    subgraph "Admin API Layer"
+        ADMIN_STATS["/admin/stats"]
+        ADMIN_USERS["/admin/users"]
+        ADMIN_ANALYTICS["/admin/analytics"]
+        ADMIN_ERRORS["/admin/errors"]
+    end
+
     subgraph "Middleware"
         AUTH_MW["🔐 Auth Middleware"]
+        ADMIN_MW["👑 Admin Middleware"]
         CORS_MW["🌐 CORS Handler"]
     end
 
@@ -192,24 +217,34 @@ graph TB
         AI_SVC["AIService"]
         SOL_SVC["SolutionService"]
         EMAIL_SVC["EmailService"]
+        ANALYTICS_SVC["AnalyticsService"]
     end
 
     subgraph "Repositories"
         USER_REPO["UserRepository"]
         SOL_REPO["SolutionRepository"]
+        ANALYTICS_REPO["AnalyticsRepository"]
     end
 
     subgraph "Database"
         USERS[("👥 Users")]
         SOLUTIONS[("📝 Solutions")]
+        EVENTS[("📊 Analytics Events")]
+        ERRORS[("❌ Error Logs")]
     end
 
     SOLVE --> AUTH_MW
     HISTORY --> AUTH_MW
     PROFILE --> AUTH_MW
 
+    ADMIN_STATS --> ADMIN_MW
+    ADMIN_USERS --> ADMIN_MW
+    ADMIN_ANALYTICS --> ADMIN_MW
+    ADMIN_ERRORS --> ADMIN_MW
+
     AUTH_MW --> AI_SVC
     AUTH_MW --> SOL_SVC
+    ADMIN_MW --> ANALYTICS_SVC
 
     LOGIN --> AUTH_SVC
     REGISTER --> AUTH_SVC
@@ -217,13 +252,18 @@ graph TB
 
     AUTH_SVC --> USER_REPO
     SOL_SVC --> SOL_REPO
+    ANALYTICS_SVC --> ANALYTICS_REPO
 
     USER_REPO --> USERS
     SOL_REPO --> SOLUTIONS
+    ANALYTICS_REPO --> EVENTS
+    ANALYTICS_REPO --> ERRORS
 
     style AUTH_MW fill:#e74c3c,color:#fff
+    style ADMIN_MW fill:#9b59b6,color:#fff
     style AI_SVC fill:#9b59b6,color:#fff
     style AUTH_SVC fill:#3498db,color:#fff
+    style ANALYTICS_SVC fill:#f39c12,color:#fff
 ```
 
 ---
@@ -286,7 +326,29 @@ erDiagram
         Date createdAt
     }
 
+    ANALYTICS_EVENT {
+        ObjectId _id PK
+        string eventName
+        object properties
+        string userId FK
+        Date createdAt
+    }
+
+    ERROR_LOG {
+        ObjectId _id PK
+        string errorCode
+        string errorMessage
+        string problemText
+        string userId FK
+        boolean resolved
+        string resolvedBy FK
+        Date resolvedAt
+        Date createdAt
+    }
+
     USER ||--o{ SOLUTION : "has many"
+    USER ||--o{ ANALYTICS_EVENT : "generates"
+    USER ||--o{ ERROR_LOG : "may cause"
 ```
 
 ---
@@ -303,24 +365,29 @@ graph LR
         VERIFY["✅ Verify Token"]
         DECODE["📖 Decode Payload"]
         CHECK["🔍 Check Expiry"]
+        ADMIN_CHECK["👑 Check isAdmin"]
     end
 
     subgraph "Protection"
         ACCESS["15m Access Token"]
         REFRESH["7d Refresh Token"]
         BCRYPT["🔒 bcrypt Hash"]
+        PASSCODE["🔐 Admin Passcode"]
     end
 
     TOKEN --> VERIFY
     VERIFY --> DECODE
     DECODE --> CHECK
+    CHECK --> ADMIN_CHECK
 
     ACCESS -.->|Short-lived| TOKEN
     REFRESH -.->|Long-lived| TOKEN
     BCRYPT -.->|Passwords| CHECK
+    PASSCODE -.->|Admin Verify| ADMIN_CHECK
 
     style TOKEN fill:#f39c12,color:#000
     style BCRYPT fill:#27ae60,color:#fff
+    style ADMIN_CHECK fill:#e74c3c,color:#fff
 ```
 
 ---
@@ -362,4 +429,4 @@ graph TB
 
 ---
 
-_Last updated: December 21, 2025_
+_Last updated: December 22, 2025_

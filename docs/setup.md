@@ -91,6 +91,9 @@ GEMINI_MATH_AI_API=your_gemini_api_key
 
 # Email (optional)
 RESEND_API_KEY=your_resend_api_key
+
+# Admin (optional - for admin passcode verification)
+ADMIN_PASSCODE=your_admin_passcode
 ```
 
 ### 4. Start Development Servers
@@ -124,14 +127,17 @@ bun dev  # or npm run dev
 
 ### Backend
 
-| Variable             | Description                       | Required |
-| -------------------- | --------------------------------- | -------- |
-| `MONGODB_URI`        | MongoDB connection string         | Yes      |
-| `JWT_SECRET`         | Secret for signing access tokens  | Yes      |
-| `JWT_REFRESH_SECRET` | Secret for signing refresh tokens | Yes      |
-| `GEMINI_MATH_AI_API` | Gemini AI API key                 | Yes      |
-| `GOOGLE_CLIENT_ID`   | Google OAuth Client ID            | Yes      |
-| `RESEND_API_KEY`     | Resend email API key              | No       |
+| Variable               | Description                             | Required |
+| ---------------------- | --------------------------------------- | -------- |
+| `MONGODB_URI`          | MongoDB connection string               | Yes      |
+| `JWT_SECRET`           | Secret for signing access tokens        | Yes      |
+| `JWT_REFRESH_SECRET`   | Secret for signing refresh tokens       | Yes      |
+| `GEMINI_MATH_AI_API`   | Gemini AI API key                       | Yes      |
+| `GOOGLE_CLIENT_ID`     | Google OAuth Client ID                  | Yes      |
+| `RESEND_API_KEY`       | Resend email API key                    | No       |
+| `ADMIN_PASSCODE`       | Admin secondary authentication passcode | No       |
+| `ACCESS_TOKEN_EXPIRY`  | JWT access token expiry (default: 15m)  | No       |
+| `REFRESH_TOKEN_EXPIRY` | JWT refresh token expiry (default: 7d)  | No       |
 
 ---
 
@@ -182,6 +188,30 @@ MONGODB_URI=mongodb://localhost:27017/mathgpt
 
 ---
 
+## Admin Setup
+
+To enable admin features:
+
+1. Set `isAdmin: true` for a user in MongoDB
+2. Optionally set `ADMIN_PASSCODE` env variable for secondary authentication
+3. Admin users can access `/admin` dashboard after login
+
+---
+
+## Running Tests
+
+```bash
+# Frontend tests
+cd frontend
+npm run test
+
+# Backend tests
+cd backend
+npm run test
+```
+
+---
+
 ## Troubleshooting
 
 ### CORS Errors
@@ -199,3 +229,11 @@ Verify Client ID matches in both frontend and backend env files.
 ### "AI service not configured"
 
 Add `GEMINI_MATH_AI_API` to backend env.
+
+### Admin Access Denied
+
+Ensure the user has `isAdmin: true` in the database.
+
+---
+
+_Last updated: December 22, 2025_

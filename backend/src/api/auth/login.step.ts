@@ -28,6 +28,9 @@ export const config: ApiRouteConfig = {
       user: z.object({
         id: z.string(),
         email: z.string().email(),
+        name: z.string().optional(),
+        avatar: z.string().optional(),
+        isAdmin: z.boolean(),
       }),
     }),
     400: z.object({
@@ -102,6 +105,9 @@ export const handler: Handlers["LoginUser"] = async (req, { emit, logger }) => {
       user: {
         id: user.user!.id.toString(),
         email: user.user!.email,
+        name: user.user!.name,
+        avatar: user.user!.avatar,
+        isAdmin: user.user!.isAdmin || false,
       },
     },
   };

@@ -128,6 +128,8 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("token");
+        // Also clear admin verification storage
+        localStorage.removeItem("admin-storage");
 
         set({
           isAuthenticated: false,

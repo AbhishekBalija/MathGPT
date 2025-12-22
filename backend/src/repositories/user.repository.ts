@@ -122,4 +122,52 @@ export const userRepository = {
     const count = await users.countDocuments({ email });
     return count > 0;
   },
+
+  // Get all users with pagination and optional search
+  async findAll(
+    filter: { search?: string; isAdmin?: boolean } = {},
+    page = 1,
+    limit = 20
+  ): Promise<{ users: User[]; total: number }> {
+    const users = await getCollection();
+    const query: Record<string, unknown> = {};
+
+    if (filter.search) {
+      query.$or = [
+        { name: { $regex: filter.search, $options: "i" } },
+        { email: { $regex: filter.search, $options: "i" } },
+      ];
+    }
+
+    if (filter.isAdmin !== undefined) {
+      query.isAdmin = filter.isAdmin;
+    }
+
+    const [docs, total] = await Promise.all([
+      users
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .toArray(),
+      users.countDocuments(query),
+    ]);
+
+    return { users: docs, total };
+  },
+
+  // Get recent users
+  async findRecent(limit = 5): Promise<User[]> {
+    const users = await getCollection();
+    return users.find().sort({ createdAt: -1 }).limit(limit).toArray();
+  },
+
+  // Get user stats for admin dashboard
+  async getStats(): Promise<{ totalUsers: number; totalSolutions: number }> {
+    const users = await getCollection();
+    const totalUsers = await users.countDocuments();
+    // For totalSolutions, we'll need to use solution repository
+    // This is a simplified version - actual implementation connects to solutions
+    return { totalUsers, totalSolutions: 0 };
+  },
 };

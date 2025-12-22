@@ -12,9 +12,16 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const from =
-    (location.state as { from?: { pathname: string } })?.from?.pathname ||
-    "/app";
+  const getRedirectPath = (isAdmin: boolean | undefined) => {
+    // If there's a saved location, go there (unless it's an admin trying to access /app which is fine)
+    const savedPath = (location.state as { from?: { pathname: string } })?.from
+      ?.pathname;
+    if (savedPath && savedPath !== "/") {
+      return savedPath;
+    }
+    // Otherwise redirect based on admin status
+    return isAdmin ? "/admin" : "/app";
+  };
 
   const handleGoogleSuccess = async (
     credentialResponse: CredentialResponse
@@ -23,7 +30,10 @@ const Login = () => {
     if (credentialResponse.credential) {
       try {
         await loginWithGoogle(credentialResponse.credential);
-        navigate(from, { replace: true });
+        // Get user from store after login
+        const currentUser = useAuthStore.getState().user;
+        const redirectPath = getRedirectPath(currentUser?.isAdmin);
+        navigate(redirectPath, { replace: true });
       } catch (err) {
         if (axios.isAxiosError(err) && err.response?.data?.error) {
           setError(err.response.data.error);
@@ -49,7 +59,15 @@ const Login = () => {
 
     try {
       await loginWithEmail(email, password);
-      navigate(from, { replace: true });
+      // Get user from store after login
+      const currentUser = useAuthStore.getState().user;
+      console.log("=== LOGIN DEBUG ===");
+      console.log("Current user from store:", currentUser);
+      console.log("isAdmin value:", currentUser?.isAdmin);
+      const redirectPath = getRedirectPath(currentUser?.isAdmin);
+      console.log("Redirect path:", redirectPath);
+      console.log("===================");
+      navigate(redirectPath, { replace: true });
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.error) {
         setError(err.response.data.error);

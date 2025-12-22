@@ -15,6 +15,7 @@ feature/description    - New features
 fix/description        - Bug fixes
 docs/description       - Documentation
 refactor/description   - Code refactoring
+admin/description      - Admin dashboard features
 ```
 
 ---
@@ -28,6 +29,7 @@ feat: add step explanation toggle
 fix: resolve auth token refresh loop
 docs: update API reference
 refactor: extract solution parser
+admin: add user management page
 ```
 
 ---
@@ -36,11 +38,12 @@ refactor: extract solution parser
 
 1. Create feature branch from `main`
 2. Make changes and test locally
-3. Commit with descriptive messages
-4. Push to your fork
-5. Open PR to `main`
-6. Address review feedback
-7. Squash and merge when approved
+3. Run tests: `npm run test`
+4. Commit with descriptive messages
+5. Push to your fork
+6. Open PR to `main`
+7. Address review feedback
+8. Squash and merge when approved
 
 ---
 
@@ -73,31 +76,59 @@ refactor: extract solution parser
 
 When adding new features:
 
-- **Frontend components** → `frontend/src/components/`
-- **Frontend pages** → `frontend/src/pages/`
-- **API services** → `frontend/src/services/`
-- **Backend endpoints** → `backend/src/api/`
-- **Business logic** → `backend/src/services/`
-- **Database access** → `backend/src/repositories/`
+### Frontend
+
+- **Components** → `frontend/src/components/`
+- **Pages** → `frontend/src/pages/`
+- **Admin Pages** → `frontend/src/pages/Admin/`
+- **API Services** → `frontend/src/services/`
+- **Stores** → `frontend/src/stores/`
+- **Types** → `frontend/src/types/`
+
+### Backend
+
+- **API Endpoints** → `backend/src/api/`
+- **Admin Endpoints** → `backend/src/api/admin/`
+- **Auth Endpoints** → `backend/src/api/auth/`
+- **Business Logic** → `backend/src/services/`
+- **Database Access** → `backend/src/repositories/`
+- **Middleware** → `backend/src/middlewares/`
 
 ---
 
-## Testing (Future)
+## Testing
 
-When tests are added:
+### Frontend Tests
 
 ```bash
-# Frontend
 cd frontend
 npm run test
+```
 
-# Backend
+### Backend Tests
+
+```bash
 cd backend
 npm run test
 ```
 
 ---
 
+## API Documentation
+
+When adding or modifying API endpoints:
+
+1. Update `docs/api-reference.md` with endpoint details
+2. Include request/response examples
+3. Document any new error codes
+4. Update `docs/architecture.md` if adding new services
+
+---
+
 ## Questions?
 
 Open an issue for discussion before major changes.
+
+---
+
+_Last updated: December 22, 2025_
