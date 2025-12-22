@@ -61,12 +61,7 @@ const Login = () => {
       await loginWithEmail(email, password);
       // Get user from store after login
       const currentUser = useAuthStore.getState().user;
-      console.log("=== LOGIN DEBUG ===");
-      console.log("Current user from store:", currentUser);
-      console.log("isAdmin value:", currentUser?.isAdmin);
       const redirectPath = getRedirectPath(currentUser?.isAdmin);
-      console.log("Redirect path:", redirectPath);
-      console.log("===================");
       navigate(redirectPath, { replace: true });
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.error) {

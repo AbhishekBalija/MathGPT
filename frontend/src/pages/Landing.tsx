@@ -125,7 +125,7 @@ const Landing = () => {
               className="w-full max-w-5xl mx-auto"
             >
               {/* Taller Aspect Ratio for Cinematic Feel */}
-              <div className="relative aspect-video md:aspect-16/10 lg:aspect-21/9 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden group">
+              <div className="relative aspect-4/3 md:aspect-16/10 lg:aspect-21/9 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden group">
                 {/* Browser Toolbar (Keep it minimal) */}
                 <div className="absolute top-0 left-0 right-0 h-8 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800 flex items-center px-4 z-20">
                   <div className="flex gap-1.5">

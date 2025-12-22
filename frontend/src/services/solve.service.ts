@@ -52,12 +52,6 @@ export async function solveProblem(request: SolveRequest): Promise<{
     });
 
     if (response.data.success && response.data.solution) {
-      // DEBUG: Log raw API response
-      console.log(
-        "[solve.service] Raw API solution:",
-        JSON.stringify(response.data.solution, null, 2)
-      );
-
       // Convert API response to frontend Solution type
       const apiSolution = response.data.solution;
       const solution: Solution = {
@@ -70,15 +64,6 @@ export async function solveProblem(request: SolveRequest): Promise<{
         processingTimeMs: apiSolution.processingTimeMs,
         createdAt: new Date(apiSolution.createdAt),
       };
-
-      console.log(
-        "[solve.service] Final Answer:",
-        JSON.stringify(solution.finalAnswer)
-      );
-      console.log(
-        "[solve.service] Step 1 Expression:",
-        JSON.stringify(solution.steps[0]?.expression)
-      );
 
       return { success: true, solution };
     }
