@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAdminStore } from "../../stores/adminStore";
+import { useAuthStore } from "../../stores/authStore";
 
 const Users = () => {
+  const { user: currentUser } = useAuthStore();
   const {
     users,
     usersTotal,
@@ -15,12 +17,19 @@ const Users = () => {
   } = useAdminStore();
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  // Fetch all users on mount
+  // Debounce search input for server-side filtering
   useEffect(() => {
-    fetchUsers(1);
-  }, [fetchUsers]);
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Fetch users with server-side search
+  useEffect(() => {
+    fetchUsers(1, debouncedSearch || undefined);
+  }, [fetchUsers, debouncedSearch]);
 
   const handlePageChange = useCallback(
     (page: number) => {
@@ -31,29 +40,35 @@ const Users = () => {
 
   const handleToggleAdmin = useCallback(
     async (userId: string, currentIsAdmin: boolean) => {
-      await updateUserRole(userId, !currentIsAdmin);
+      try {
+        await updateUserRole(userId, !currentIsAdmin);
+      } catch (error) {
+        console.error("Failed to update user role:", error);
+      }
     },
     [updateUserRole]
   );
 
   const handleDelete = useCallback(
     async (userId: string) => {
-      await deleteUser(userId);
-      setDeleteConfirm(null);
+      try {
+        await deleteUser(userId);
+        setDeleteConfirm(null);
+      } catch (error) {
+        console.error("Failed to delete user:", error);
+        // Keep deleteConfirm active so user can retry
+      }
     },
     [deleteUser]
   );
 
-  // Client-side filtering for search
-  const filteredUsers = useMemo(() => {
-    if (!search.trim()) return users;
-    const searchLower = search.toLowerCase().trim();
-    return users.filter(
-      (user) =>
-        user.name?.toLowerCase().includes(searchLower) ||
-        user.email?.toLowerCase().includes(searchLower)
-    );
-  }, [users, search]);
+  // Check if user is the current logged-in admin
+  const isSelf = useCallback(
+    (userId: string) => currentUser?.id === userId,
+    [currentUser?.id]
+  );
+
+  // Users are now filtered server-side
 
   const totalPages = Math.ceil(usersTotal / usersLimit);
 
@@ -161,7 +176,7 @@ const Users = () => {
                     </td>
                   </tr>
                 ))
-              ) : filteredUsers.length === 0 ? (
+              ) : users.length === 0 ? (
                 <tr>
                   <td
                     colSpan={5}
@@ -171,7 +186,7 @@ const Users = () => {
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((user) => (
+                users.map((user) => (
                   <tr
                     key={user.id}
                     className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
@@ -237,8 +252,11 @@ const Users = () => {
                           onClick={() =>
                             handleToggleAdmin(user.id, user.isAdmin)
                           }
+                          disabled={isSelf(user.id)}
                           className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                            user.isAdmin
+                            isSelf(user.id)
+                              ? "opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-gray-400"
+                              : user.isAdmin
                               ? "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
                               : "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-900/50"
                           }`}
@@ -260,6 +278,13 @@ const Users = () => {
                               Cancel
                             </button>
                           </div>
+                        ) : isSelf(user.id) ? (
+                          <button
+                            disabled
+                            className="px-3 py-1.5 text-xs font-medium rounded-lg opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-gray-400"
+                          >
+                            Delete
+                          </button>
                         ) : (
                           <button
                             onClick={() => setDeleteConfirm(user.id)}

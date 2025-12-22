@@ -6,6 +6,7 @@
  * REQUIRES ADMIN AUTHENTICATION (isAdmin: true)
  */
 
+import { timingSafeEqual } from "crypto";
 import type { ApiRouteConfig } from "motia";
 import { z } from "zod";
 import { requireAdmin } from "../../middlewares/auth.middleware";
@@ -70,7 +71,19 @@ export async function handler(
     };
   }
 
-  if (passcode !== correctPasscode) {
+  // Use constant-time comparison to prevent timing attacks
+  // Pad both buffers to fixed length to prevent length-based timing attacks
+  const FIXED_LENGTH = 64;
+  const passcodeBuffer = Buffer.alloc(FIXED_LENGTH);
+  const correctBuffer = Buffer.alloc(FIXED_LENGTH);
+  Buffer.from(passcode).copy(passcodeBuffer);
+  Buffer.from(correctPasscode).copy(correctBuffer);
+
+  // Compare lengths separately and combine with timing-safe comparison
+  const lengthsMatch = passcode.length === correctPasscode.length;
+  const contentsMatch = timingSafeEqual(passcodeBuffer, correctBuffer);
+
+  if (!lengthsMatch || !contentsMatch) {
     logger.info("Invalid admin passcode attempt", { adminId: admin.id });
     return {
       status: 403,
