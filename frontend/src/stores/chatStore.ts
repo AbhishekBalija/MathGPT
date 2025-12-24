@@ -319,6 +319,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     try {
       const { clearAllHistory } = await import("../services/history.service");
       const success = await clearAllHistory();
+
+      // Only clear local state if backend succeeds (matches deleteChat pattern)
       if (success) {
         set({
           chats: [],
@@ -326,7 +328,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
           showAnswerPanel: false,
         });
       }
+
       return success;
+    } catch (error) {
+      console.warn("clearAllChats API error:", error);
+      return false;
     } finally {
       set({ globalLoading: false });
     }

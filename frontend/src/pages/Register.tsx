@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { useAuthStore } from "../stores/authStore";
 import { useState, type FormEvent } from "react";
@@ -6,11 +6,18 @@ import axios from "axios";
 
 const Register = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get("token");
   const { loginWithGoogle, registerWithEmail, isLoading } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // Redirect to landing page if no invite token
+  if (!inviteToken) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleGoogleSuccess = async (
     credentialResponse: CredentialResponse
@@ -49,7 +56,7 @@ const Register = () => {
     }
 
     try {
-      await registerWithEmail(email, password, name);
+      await registerWithEmail(email, password, name, inviteToken ?? undefined);
       navigate("/app", { replace: true });
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.error) {

@@ -1,8 +1,8 @@
 /**
  * AI Service for Math Problem Solving
  *
- * Uses Google Gemini API to generate step-by-step math solutions
- * with proper LaTeX formatting and educational explanations.
+ * Uses Google Gemini API or OpenRouter multi-model parallel calling
+ * to generate step-by-step math solutions with proper LaTeX formatting.
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -13,6 +13,7 @@ import {
   type ProblemType,
 } from "../../types/solve.types";
 import { MATH_TUTOR_SYSTEM_PROMPT, buildSolvePrompt } from "./prompts";
+import { solveWithMultipleModels } from "./openrouter.service";
 
 // Custom error for problems that cannot be solved (not server errors)
 export class UnsolvableProblemError extends Error {
@@ -36,7 +37,8 @@ const UNSOLVABLE_PATTERNS = [
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_MATH_AI_API || "");
 
 /**
- * Main function to solve a math problem using Gemini AI
+ * Main function to solve a math problem using AI
+ * Uses multi-model OpenRouter if enabled, otherwise falls back to Gemini
  */
 export async function solveMathProblem(problem: string): Promise<Solution> {
   const startTime = Date.now();
@@ -46,6 +48,32 @@ export async function solveMathProblem(problem: string): Promise<Solution> {
     if (pattern.test(problem)) {
       throw new UnsolvableProblemError(
         "This problem involves undefined or unsolvable mathematical operations."
+      );
+    }
+  }
+
+  // Use multi-model mode if enabled
+  if (process.env.USE_MULTI_MODEL === "true") {
+    // Try Gemini multi-model first (no rate limits!)
+    try {
+      console.log("[AI Service] Using Gemini multi-model");
+      const { solveWithGeminiModels } = await import("./gemini-multi.service");
+      return await solveWithGeminiModels(problem);
+    } catch (error) {
+      console.error(
+        "[AI Service] Gemini multi-model failed, trying OpenRouter:",
+        error
+      );
+    }
+
+    // Try OpenRouter as backup
+    try {
+      console.log("[AI Service] Using OpenRouter multi-model");
+      return await solveWithMultipleModels(problem);
+    } catch (error) {
+      console.error(
+        "[AI Service] OpenRouter failed, falling back to single Gemini:",
+        error
       );
     }
   }
@@ -74,10 +102,25 @@ export async function solveMathProblem(problem: string): Promise<Solution> {
     const response = result.response;
     const text = response.text();
 
+    // Extract token usage from response metadata
+    const usageMetadata = response.usageMetadata;
+    const tokenUsage = usageMetadata
+      ? {
+          inputTokens: usageMetadata.promptTokenCount || 0,
+          outputTokens: usageMetadata.candidatesTokenCount || 0,
+          totalTokens: usageMetadata.totalTokenCount || 0,
+        }
+      : undefined;
+
     // DEBUG: Log raw AI response
     console.log("\n========== RAW AI RESPONSE ==========");
     console.log(text);
     console.log("========== END RAW AI RESPONSE ==========\n");
+    if (tokenUsage) {
+      console.log(
+        `Token Usage: ${tokenUsage.inputTokens} input, ${tokenUsage.outputTokens} output, ${tokenUsage.totalTokens} total`
+      );
+    }
 
     // Parse the JSON response
     const aiResponse = parseAIResponse(text);
@@ -98,7 +141,8 @@ export async function solveMathProblem(problem: string): Promise<Solution> {
     const solution = transformToSolution(
       problem,
       aiResponse,
-      Date.now() - startTime
+      Date.now() - startTime,
+      tokenUsage
     );
 
     return solution;
@@ -151,7 +195,12 @@ function parseAIResponse(text: string): AISolutionResponse {
 function transformToSolution(
   problem: string,
   aiResponse: AISolutionResponse,
-  processingTimeMs: number
+  processingTimeMs: number,
+  tokenUsage?: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+  }
 ): Solution {
   const steps: SolutionStep[] = aiResponse.steps.map((step, index) => ({
     stepNumber: index + 1,
@@ -170,6 +219,7 @@ function transformToSolution(
     finalAnswer: aiResponse.finalAnswer,
     summary: aiResponse.summary,
     processingTimeMs,
+    tokenUsage,
     createdAt: new Date().toISOString(),
   };
 }

@@ -4,6 +4,9 @@ import { AuthService } from "../services/auth/auth.service";
 import { solutionRepository } from "../repositories/solution.repository";
 import { userRepository } from "../repositories/user.repository";
 
+// Daily free limit for users
+const DAILY_FREE_LIMIT = 5;
+
 // Step 1: Define the route config
 export const config: ApiRouteConfig = {
   name: "GetProfile",
@@ -27,6 +30,12 @@ export const config: ApiRouteConfig = {
         totalSolutions: z.number(),
         problemTypes: z.record(z.string(), z.number()),
         lastSolvedAt: z.string().nullable(),
+      }),
+      dailyCredits: z.object({
+        used: z.number(),
+        limit: z.number(),
+        remaining: z.number(),
+        resetsAt: z.string(),
       }),
     }),
     401: z.object({
@@ -89,9 +98,20 @@ export const handler: Handlers["GetProfile"] = async (req, { logger }) => {
     // Step 5: Fetch usage statistics
     const stats = await solutionRepository.getUserStats(userId);
 
+    // Step 5.5: Calculate daily credits
+    const today = new Date().toDateString();
+    const lastReset = user.lastCreditReset
+      ? new Date(user.lastCreditReset).toDateString()
+      : null;
+    const dailyUsed = today === lastReset ? user.dailyCreditsUsed || 0 : 0;
+    const dailyRemaining = Math.max(0, DAILY_FREE_LIMIT - dailyUsed);
+    const tomorrow = new Date();
+    tomorrow.setHours(24, 0, 0, 0);
+
     logger.info("Profile fetched successfully", {
       userId,
       totalSolutions: stats.totalSolutions,
+      dailyCreditsUsed: dailyUsed,
     });
 
     // Step 6: Return the response
@@ -110,6 +130,12 @@ export const handler: Handlers["GetProfile"] = async (req, { logger }) => {
           totalSolutions: stats.totalSolutions,
           problemTypes: stats.problemTypes,
           lastSolvedAt: stats.lastSolvedAt?.toISOString() || null,
+        },
+        dailyCredits: {
+          used: dailyUsed,
+          limit: DAILY_FREE_LIMIT,
+          remaining: dailyRemaining,
+          resetsAt: tomorrow.toISOString(),
         },
       },
     };

@@ -1,6 +1,6 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from "mongodb";
 
-export type AuthProvider = 'email' | 'google';
+export type AuthProvider = "email" | "google";
 
 export interface User {
   _id: ObjectId;
@@ -11,6 +11,10 @@ export interface User {
   provider: AuthProvider;
   googleId?: string; // Google OAuth user ID
   avatar?: string; // Profile picture URL
+  // Usage tracking
+  dailyCreditsUsed: number; // Reset daily
+  lastCreditReset: Date; // When daily credits were last reset
+  totalCreditsUsed: number; // Lifetime counter for analytics
   createdAt: Date;
   updatedAt: Date;
 }

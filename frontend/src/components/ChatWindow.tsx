@@ -4,6 +4,7 @@ import { solveProblem } from "../services/solve.service";
 import katex from "katex";
 import { sanitizeHtml, escapeHtml } from "../utils/sanitize";
 import { getUserFriendlyError } from "../utils/errorMessages";
+import api from "../services/api";
 
 // Helper to render LaTeX with XSS protection
 const renderLatex = (text: string) => {
@@ -22,6 +23,7 @@ const renderLatex = (text: string) => {
 
 const ChatWindow = () => {
   const [input, setInput] = useState("");
+  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const {
     chats,
@@ -38,6 +40,21 @@ const ChatWindow = () => {
   } = useChatStore();
 
   const activeChat = chats.find((c) => c.id === activeChatId);
+
+  // Fetch credits on mount and after solving
+  useEffect(() => {
+    const fetchCredits = async () => {
+      try {
+        const response = await api.get<{ dailyCredits: { remaining: number } }>(
+          "/api/profile"
+        );
+        setCreditsRemaining(response.data.dailyCredits?.remaining ?? null);
+      } catch {
+        // Silently fail - credits display is optional
+      }
+    };
+    fetchCredits();
+  }, [isLoading]); // Refetch when isLoading changes (after solve)
 
   // Disable input when loading or fetching solution
   const inputDisabled = isLoading || solutionLoading;
@@ -317,9 +334,20 @@ const ChatWindow = () => {
                   </svg>
                 </button>
               </div>
-              <div className="text-center mt-2">
+              <div className="flex items-center justify-center gap-4 mt-2">
                 <span className="text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-semibold">
                   Powered by NEO • Verified Steps
+                </span>
+                <span
+                  className={`text-[10px] uppercase tracking-widest font-semibold ${
+                    creditsRemaining !== null && creditsRemaining <= 1
+                      ? "text-red-500 dark:text-red-400"
+                      : "text-blue-500 dark:text-blue-400"
+                  }`}
+                >
+                  {creditsRemaining !== null
+                    ? `${creditsRemaining} credits left`
+                    : "5 free problems/day"}
                 </span>
               </div>
             </>

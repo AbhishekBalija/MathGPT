@@ -26,6 +26,12 @@ export interface SolutionDocument {
   summary: string;
   /** Processing time in ms */
   processingTimeMs: number;
+  /** Token usage for cost tracking */
+  tokenUsage?: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+  };
   /** Optional chat ID for history grouping */
   chatId?: string;
   /** User who requested this solution */
@@ -46,6 +52,11 @@ export interface SolutionCreate {
   finalAnswer: string;
   summary: string;
   processingTimeMs: number;
+  tokenUsage?: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+  };
   chatId?: string;
   userId?: string;
 }
@@ -90,6 +101,12 @@ export const solutionRepository = {
     const solutions = await getCollection();
     const now = new Date();
 
+    // DEBUG: Log tokenUsage
+    console.log(
+      "[DEBUG] solution.repository.create - tokenUsage:",
+      JSON.stringify(data.tokenUsage)
+    );
+
     const doc: Omit<SolutionDocument, "_id"> = {
       problem: data.problem,
       problemType: data.problemType,
@@ -97,6 +114,7 @@ export const solutionRepository = {
       finalAnswer: data.finalAnswer,
       summary: data.summary,
       processingTimeMs: data.processingTimeMs,
+      tokenUsage: data.tokenUsage,
       chatId: data.chatId,
       userId: data.userId,
       createdAt: now,
@@ -244,5 +262,49 @@ export const solutionRepository = {
     const solutions = await getCollection();
     const result = await solutions.deleteMany({ userId });
     return result.deletedCount;
+  },
+
+  /**
+   * Get aggregate token stats for admin dashboard
+   */
+  async getTokenStats(): Promise<{
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    totalTokens: number;
+    solutionCount: number;
+  }> {
+    const solutions = await getCollection();
+    const pipeline = [
+      {
+        $group: {
+          _id: null,
+          totalInputTokens: {
+            $sum: { $ifNull: ["$tokenUsage.inputTokens", 0] },
+          },
+          totalOutputTokens: {
+            $sum: { $ifNull: ["$tokenUsage.outputTokens", 0] },
+          },
+          totalTokens: { $sum: { $ifNull: ["$tokenUsage.totalTokens", 0] } },
+          solutionCount: { $sum: 1 },
+        },
+      },
+    ];
+    const results = await solutions.aggregate(pipeline).toArray();
+
+    if (results.length === 0) {
+      return {
+        totalInputTokens: 0,
+        totalOutputTokens: 0,
+        totalTokens: 0,
+        solutionCount: 0,
+      };
+    }
+
+    return {
+      totalInputTokens: results[0].totalInputTokens || 0,
+      totalOutputTokens: results[0].totalOutputTokens || 0,
+      totalTokens: results[0].totalTokens || 0,
+      solutionCount: results[0].solutionCount || 0,
+    };
   },
 };

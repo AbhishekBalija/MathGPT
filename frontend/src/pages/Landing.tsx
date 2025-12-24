@@ -1,14 +1,8 @@
 import Navbar from "../components/Navbar";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import {
-  CheckCircle2,
-  BookOpen,
-  Clock,
-  ArrowRight,
-  Play,
-  Sparkles,
-} from "lucide-react";
+import { CheckCircle2, BookOpen, Clock, Play, Sparkles } from "lucide-react";
+import WaitlistForm from "../components/WaitlistForm";
 
 const Landing = () => {
   return (
@@ -107,13 +101,14 @@ const Landing = () => {
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-4 sm:px-0 sm:w-auto">
-                <Link
+                {/* <Link
                   to="/login"
                   className="group relative w-full sm:w-auto px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-full font-medium text-base md:text-lg overflow-hidden transition-all hover:pr-10 text-center"
                 >
                   <span className="relative z-10">Start Learning Free</span>
                   <ArrowRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white dark:text-black opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 hidden sm:block" />
-                </Link>
+                </Link> */}
+                <WaitlistForm source="landing_hero" />
               </div>
             </motion.div>
 

@@ -20,10 +20,11 @@ export const config: ApiRouteConfig = {
   emits: [],
   flows: ["admin-flow"],
   bodySchema: z.object({
-    passcode: z.string().min(1),
+    passcode: z.string(), // Allow empty - we validate in handler for proper 400 response
   }),
   responseSchema: {
     200: z.object({ success: z.literal(true) }),
+    400: z.object({ error: z.string() }), // For validation errors
     401: z.object({ error: z.string() }),
     403: z.object({ error: z.string() }),
   },
@@ -61,6 +62,15 @@ export async function handler(
   }
 
   const { passcode } = req.body;
+
+  // Validate empty passcode - return 400 Bad Request
+  if (!passcode || passcode.trim().length === 0) {
+    return {
+      status: 400 as const,
+      body: { error: "Passcode is required" },
+    };
+  }
+
   const correctPasscode = process.env.ADMIN_PASSCODE;
 
   if (!correctPasscode) {

@@ -115,19 +115,30 @@ const ProfileModal = () => {
           ) : profile ? (
             <div className="space-y-5">
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center shrink-0">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center shrink-0 overflow-hidden">
                   {profile.user.avatar ? (
                     <img
                       src={profile.user.avatar}
                       alt={profile.user.name}
                       className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover"
+                      onError={(e) => {
+                        // Hide broken image and show initials
+                        e.currentTarget.style.display = "none";
+                        // Show the sibling initials span
+                        const parent = e.currentTarget.parentElement;
+                        const span = parent?.querySelector("span");
+                        if (span) span.classList.remove("hidden");
+                      }}
                     />
-                  ) : (
-                    <span className="text-lg sm:text-xl font-medium text-gray-600 dark:text-gray-300">
-                      {profile.user.name?.[0]?.toUpperCase() ||
-                        profile.user.email[0].toUpperCase()}
-                    </span>
-                  )}
+                  ) : null}
+                  <span
+                    className={`text-lg sm:text-xl font-medium text-gray-600 dark:text-gray-300 ${
+                      profile.user.avatar ? "hidden" : ""
+                    }`}
+                  >
+                    {profile.user.name?.[0]?.toUpperCase() ||
+                      profile.user.email[0].toUpperCase()}
+                  </span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white truncate">

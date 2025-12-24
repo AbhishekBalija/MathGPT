@@ -87,6 +87,10 @@ export const userRepository = {
       provider: data.provider || "email",
       googleId: data.googleId,
       avatar: data.avatar,
+      // Credit tracking defaults
+      dailyCreditsUsed: 0,
+      lastCreditReset: now,
+      totalCreditsUsed: 0,
       createdAt: now,
       updatedAt: now,
     };
@@ -107,6 +111,18 @@ export const userRepository = {
       { returnDocument: "after" }
     );
     return result;
+  },
+
+  // Increment daily credits used (atomic operation)
+  async incrementCredits(id: string): Promise<void> {
+    const users = await getCollection();
+    await users.updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $inc: { dailyCreditsUsed: 1, totalCreditsUsed: 1 },
+        $set: { updatedAt: new Date() },
+      }
+    );
   },
 
   // Delete a user

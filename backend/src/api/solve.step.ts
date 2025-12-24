@@ -16,7 +16,11 @@ import {
   UnsolvableProblemError,
 } from "../services/ai/ai.service";
 import { requireAuth } from "../middlewares/auth.middleware";
+import { userRepository } from "../repositories/user.repository";
 import type { SolveResponse } from "../types/solve.types";
+
+// Daily free limit for users
+const DAILY_FREE_LIMIT = 5;
 
 // Request validation schema - userId comes from token, not body
 const solveRequestSchema = z.object({
@@ -54,6 +58,12 @@ export const config: ApiRouteConfig = {
     }),
     401: z.object({
       error: z.string(),
+    }),
+    429: z.object({
+      error: z.string(),
+      resetAt: z.string().optional(),
+      dailyLimit: z.number().optional(),
+      retryAfter: z.number().optional(),
     }),
     500: z.object({
       success: z.boolean().optional(),
@@ -111,6 +121,102 @@ export const handler: Handlers["SolveMath"] = async (
   }
 
   const userId = user.id; // Extract from authenticated user
+
+  // RATE LIMITING - 5 requests per minute per user (using Motia state/Redis)
+  const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+  const RATE_LIMIT_MAX_REQUESTS = 5;
+
+  try {
+    const rateLimitKey = `ratelimit:${userId}`;
+    const now = Date.now();
+
+    // Get current rate limit data from Redis via Motia state
+    const rateLimitData = await state.get<{ requests: number[] }>(
+      "ratelimits",
+      rateLimitKey
+    );
+
+    // Filter requests within the window
+    const recentRequests =
+      rateLimitData?.requests?.filter(
+        (timestamp: number) => now - timestamp < RATE_LIMIT_WINDOW_MS
+      ) || [];
+
+    if (recentRequests.length >= RATE_LIMIT_MAX_REQUESTS) {
+      const oldestRequest = Math.min(...recentRequests);
+      const waitTime = Math.ceil(
+        (oldestRequest + RATE_LIMIT_WINDOW_MS - now) / 1000
+      );
+
+      logger.warn("Rate limit exceeded", {
+        userId,
+        requestCount: recentRequests.length,
+        limit: RATE_LIMIT_MAX_REQUESTS,
+      });
+
+      return {
+        status: 429 as const,
+        body: {
+          error: `Too many requests. Please wait ${waitTime} seconds before trying again.`,
+          retryAfter: waitTime,
+        },
+      };
+    }
+
+    // Add current request timestamp and save
+    recentRequests.push(now);
+    await state.set("ratelimits", rateLimitKey, { requests: recentRequests });
+  } catch (rateLimitError) {
+    // Log but don't block - graceful degradation if Redis fails
+    logger.warn("Rate limit check failed", {
+      userId,
+      error:
+        rateLimitError instanceof Error ? rateLimitError.message : "Unknown",
+    });
+  }
+
+  // DAILY USAGE LIMIT CHECK
+  try {
+    const fullUser = await userRepository.findById(userId);
+    if (fullUser) {
+      const today = new Date().toDateString();
+      const lastReset = fullUser.lastCreditReset
+        ? new Date(fullUser.lastCreditReset).toDateString()
+        : null;
+
+      // Reset daily counter if new day
+      if (today !== lastReset) {
+        await userRepository.update(userId, {
+          dailyCreditsUsed: 0,
+          lastCreditReset: new Date(),
+        });
+      } else if ((fullUser.dailyCreditsUsed || 0) >= DAILY_FREE_LIMIT) {
+        // User has exceeded daily limit
+        const tomorrow = new Date();
+        tomorrow.setHours(24, 0, 0, 0);
+
+        logger.info("Daily limit exceeded", {
+          userId,
+          dailyCreditsUsed: fullUser.dailyCreditsUsed,
+          limit: DAILY_FREE_LIMIT,
+        });
+
+        return {
+          status: 429 as const,
+          body: {
+            error: `Daily limit reached (${DAILY_FREE_LIMIT} free problems/day). Come back tomorrow!`,
+            resetAt: tomorrow.toISOString(),
+            dailyLimit: DAILY_FREE_LIMIT,
+          },
+        };
+      }
+    }
+  } catch (limitError) {
+    // Log but don't block - graceful degradation
+    logger.warn("Failed to check daily limit", {
+      error: limitError instanceof Error ? limitError.message : "Unknown",
+    });
+  }
 
   logger.info("Solve request received", {
     problem: problem.slice(0, 100),
@@ -179,6 +285,18 @@ export const handler: Handlers["SolveMath"] = async (
         solution,
         userId,
         cachedAt: new Date().toISOString(),
+      });
+    }
+
+    // INCREMENT DAILY USAGE COUNTER (after successful solve)
+    try {
+      logger.info("Incrementing credits for user", { userId });
+      await userRepository.incrementCredits(userId);
+      logger.info("Credits incremented successfully", { userId });
+    } catch (updateError) {
+      logger.warn("Failed to increment usage counter", {
+        userId,
+        error: updateError instanceof Error ? updateError.message : "Unknown",
       });
     }
 

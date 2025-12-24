@@ -16,6 +16,7 @@ import {
   Users,
   Errors,
   Analytics,
+  Waitlist,
 } from "./pages/Admin/index";
 
 const App = () => {
@@ -39,6 +40,7 @@ const App = () => {
             <Route path="users" element={<Users />} />
             <Route path="errors" element={<Errors />} />
             <Route path="analytics" element={<Analytics />} />
+            <Route path="waitlist" element={<Waitlist />} />
           </Route>
         </Route>
         <Route

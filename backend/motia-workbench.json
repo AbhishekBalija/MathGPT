@@ -65,43 +65,6 @@
     }
   },
   {
-    "id": "auth-flow",
-    "config": {
-      "src/events/auth/send-welcome-email.step.ts": {
-        "x": -969,
-        "y": -227
-      },
-      "src/api/profile.step.ts": {
-        "x": -674,
-        "y": 129
-      },
-      "src/api/auth/register.step.ts": {
-        "x": -1370,
-        "y": -204
-      },
-      "src/api/auth/refresh-token.step.ts": {
-        "x": -669,
-        "y": -238
-      },
-      "src/api/auth/me.step.ts": {
-        "x": -673,
-        "y": -58
-      },
-      "src/api/auth/logout.step.ts": {
-        "x": -966,
-        "y": 127
-      },
-      "src/api/auth/login.step.ts": {
-        "x": -972,
-        "y": -85
-      },
-      "src/api/auth/google-oauth.step.ts": {
-        "x": -1375,
-        "y": 22
-      }
-    }
-  },
-  {
     "id": "admin-flow",
     "config": {
       "src/api/admin/verify-passcode.step.ts": {
@@ -135,6 +98,80 @@
       "src/api/admin/admin-errors.step.ts": {
         "x": -855,
         "y": 790
+      }
+    }
+  },
+  {
+    "id": "auth-flow",
+    "config": {
+      "src/events/auth/send-welcome-email.step.ts": {
+        "x": -969,
+        "y": -227
+      },
+      "src/api/profile.step.ts": {
+        "x": -674,
+        "y": 129
+      },
+      "src/api/auth/register.step.ts": {
+        "x": -1370,
+        "y": -204
+      },
+      "src/api/auth/register-invite.step.ts": {
+        "x": -1328,
+        "y": 232
+      },
+      "src/api/auth/refresh-token.step.ts": {
+        "x": -669,
+        "y": -238
+      },
+      "src/api/auth/me.step.ts": {
+        "x": -673,
+        "y": -58
+      },
+      "src/api/auth/logout.step.ts": {
+        "x": -966,
+        "y": 170
+      },
+      "src/api/auth/login.step.ts": {
+        "x": -972,
+        "y": -85
+      },
+      "src/api/auth/google-oauth.step.ts": {
+        "x": -1375,
+        "y": 22
+      }
+    }
+  },
+  {
+    "id": "WaitlistFlow",
+    "config": {
+      "src/events/waitlist-invite.step.ts": {
+        "x": 379,
+        "y": 256
+      },
+      "src/events/waitlist-email.step.ts": {
+        "x": 366,
+        "y": 85
+      },
+      "src/api/waitlist.step.ts": {
+        "x": -604,
+        "y": -93
+      },
+      "src/api/auth/register-invite.step.ts": {
+        "x": -613,
+        "y": 116
+      },
+      "src/api/admin/list-waitlist.step.ts": {
+        "x": -577,
+        "y": 299
+      },
+      "src/api/admin/invite-user.step.ts": {
+        "x": -316,
+        "y": 298
+      },
+      "src/api/admin/resend-confirmation.step.ts": {
+        "x": 9,
+        "y": 812
       }
     }
   }

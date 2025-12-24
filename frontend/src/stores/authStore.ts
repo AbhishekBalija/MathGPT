@@ -14,7 +14,8 @@ interface AuthState {
   registerWithEmail: (
     email: string,
     password: string,
-    name: string
+    name: string,
+    inviteToken?: string
   ) => Promise<void>;
   loginWithGoogle: (credential: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -61,12 +62,18 @@ export const useAuthStore = create<AuthState>()(
       registerWithEmail: async (
         email: string,
         password: string,
-        name: string
+        name: string,
+        inviteToken?: string
       ) => {
         set({ isLoading: true });
 
         try {
-          const response = await authService.register(email, password, name);
+          const response = await authService.register(
+            email,
+            password,
+            name,
+            inviteToken
+          );
 
           set({
             isAuthenticated: true,

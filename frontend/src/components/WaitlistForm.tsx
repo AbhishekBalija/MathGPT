@@ -1,0 +1,122 @@
+import { useState } from "react";
+import { ArrowRight, CheckCircle, Loader2 } from "lucide-react";
+
+interface WaitlistFormProps {
+  source?: string;
+  className?: string;
+}
+
+export const WaitlistForm = ({
+  source = "landing_hero",
+  className = "",
+}: WaitlistFormProps) => {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email.trim()) return;
+
+    setStatus("loading");
+
+    try {
+      const apiUrl =
+        import.meta.env.MODE === "development"
+          ? import.meta.env.VITE_API_URL_DEV
+          : import.meta.env.VITE_API_URL_PROD;
+
+      // Validate API URL
+      if (!apiUrl) {
+        setStatus("error");
+        setMessage("Configuration error. Please contact support.");
+        return;
+      }
+
+      const res = await fetch(`${apiUrl}/api/waitlist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), source }),
+      });
+
+      // Handle non-JSON responses
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        setStatus("error");
+        setMessage("Invalid response from server. Please try again.");
+        return;
+      }
+
+      if (res.ok) {
+        setStatus("success");
+        setMessage(data.message);
+      } else {
+        setStatus("error");
+        setMessage(data.error || "Something went wrong. Please try again.");
+      }
+    } catch (err) {
+      setStatus("error");
+      setMessage("Connection error. Please try again.");
+    }
+  };
+
+  if (status === "success") {
+    return (
+      <div
+        className={`flex items-center gap-3 px-6 py-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-full ${className}`}
+      >
+        <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
+        <span className="text-green-700 dark:text-green-400 text-sm sm:text-base">
+          {message}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className={`relative flex flex-col sm:flex-row gap-3 w-full sm:w-auto ${className}`}
+    >
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          if (status === "error") setStatus("idle");
+        }}
+        placeholder="Enter your email"
+        required
+        aria-label="Email address"
+        className="px-6 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white w-full sm:w-80 transition-colors"
+      />
+      <button
+        type="submit"
+        disabled={status === "loading"}
+        className="group px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-full font-medium text-base flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {status === "loading" ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <>
+            Join Waitlist
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+          </>
+        )}
+      </button>
+
+      {status === "error" && (
+        <p className="text-red-500 text-sm mt-2 sm:mt-0 sm:absolute sm:top-full sm:left-0 sm:pt-2">
+          {message}
+        </p>
+      )}
+    </form>
+  );
+};
+
+export default WaitlistForm;

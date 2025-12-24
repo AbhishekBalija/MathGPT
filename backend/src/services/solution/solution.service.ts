@@ -21,6 +21,12 @@ export const SolutionService = {
     chatId?: string,
     userId?: string
   ): Promise<SolutionDocument> {
+    // DEBUG: Log incoming tokenUsage
+    console.log(
+      "[DEBUG] solution.service.saveSolution - tokenUsage:",
+      JSON.stringify(solution.tokenUsage)
+    );
+
     const data: SolutionCreate = {
       problem: solution.problem,
       problemType: solution.problemType,
@@ -28,6 +34,7 @@ export const SolutionService = {
       finalAnswer: solution.finalAnswer,
       summary: solution.summary,
       processingTimeMs: solution.processingTimeMs,
+      tokenUsage: solution.tokenUsage,
       chatId,
       userId,
     };

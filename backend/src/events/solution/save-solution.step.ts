@@ -37,6 +37,13 @@ const SolutionSavedSchema = z.object({
     finalAnswer: z.string(),
     summary: z.string(),
     processingTimeMs: z.number(),
+    tokenUsage: z
+      .object({
+        inputTokens: z.number(),
+        outputTokens: z.number(),
+        totalTokens: z.number(),
+      })
+      .optional(),
     createdAt: z.string(),
   }),
   problemType: z.string(),
@@ -77,6 +84,12 @@ export const handler: Handlers["SaveSolution"] = async (
     stepsCount,
   });
 
+  // DEBUG: Log tokenUsage from event
+  console.log(
+    "[DEBUG] save-solution.step - solution.tokenUsage:",
+    JSON.stringify(solution.tokenUsage)
+  );
+
   try {
     // Convert to proper Solution type for the service
     const solutionData: Solution = {
@@ -90,6 +103,7 @@ export const handler: Handlers["SaveSolution"] = async (
       finalAnswer: solution.finalAnswer,
       summary: solution.summary,
       processingTimeMs: solution.processingTimeMs,
+      tokenUsage: solution.tokenUsage,
       createdAt: solution.createdAt,
     };
 

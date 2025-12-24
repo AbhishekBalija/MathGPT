@@ -70,6 +70,13 @@ export interface Solution {
   /** Processing time in milliseconds */
   processingTimeMs: number;
 
+  /** Token usage for cost tracking */
+  tokenUsage?: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+  };
+
   /** Timestamp */
   createdAt: string;
 }

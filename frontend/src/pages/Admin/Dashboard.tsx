@@ -1,11 +1,24 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAdminStore } from "../../stores/adminStore";
+import { adminService } from "../../services/admin.service";
+import type { TokenStatsResponse } from "../../services/admin.service";
 
 const Dashboard = () => {
   const { stats, fetchStats, isLoading, error } = useAdminStore();
+  const [tokenStats, setTokenStats] = useState<TokenStatsResponse | null>(null);
+  const [tokenStatsLoading, setTokenStatsLoading] = useState(false);
 
   useEffect(() => {
     fetchStats();
+    // Fetch token stats
+    setTokenStatsLoading(true);
+    adminService
+      .getTokenStats()
+      .then(setTokenStats)
+      .catch((err) => {
+        console.error("Failed to fetch token stats:", err);
+      })
+      .finally(() => setTokenStatsLoading(false));
   }, [fetchStats]);
 
   const statCards = [
@@ -50,9 +63,9 @@ const Dashboard = () => {
       color: "bg-emerald-500",
     },
     {
-      label: "Problem Types",
-      value: stats?.solutionsByType
-        ? Object.keys(stats.solutionsByType).length
+      label: "Total Tokens",
+      value: tokenStats?.totalTokens
+        ? `${(tokenStats.totalTokens / 1000).toFixed(1)}K`
         : "-",
       icon: (
         <svg
@@ -65,11 +78,34 @@ const Dashboard = () => {
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth={2}
-            d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+            d="M13 10V3L4 14h7v7l9-11h-7z"
           />
         </svg>
       ),
-      color: "bg-purple-500",
+      color: "bg-amber-500",
+    },
+    {
+      label: "Estimated Cost",
+      value:
+        tokenStats?.estimatedCost !== undefined
+          ? `$${tokenStats.estimatedCost.toFixed(2)}`
+          : "-",
+      icon: (
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      ),
+      color: "bg-rose-500",
     },
   ];
 
@@ -93,7 +129,7 @@ const Dashboard = () => {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {statCards.map((card) => (
           <div
             key={card.label}
@@ -105,7 +141,7 @@ const Dashboard = () => {
                   {card.label}
                 </p>
                 <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-                  {isLoading ? (
+                  {isLoading || tokenStatsLoading ? (
                     <span className="inline-block w-16 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                   ) : (
                     card.value
