@@ -1,5 +1,5 @@
 /**
- * MathGPT Frontend Test Suite
+ * NeoMath Frontend Test Suite
  *
  * BRUTAL FRONTEND TESTS - Senior QA Engineer
  * Testing XSS, state management, network failures, race conditions

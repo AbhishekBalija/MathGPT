@@ -1,14 +1,14 @@
 {
-  "name": "Image to Favicon From Poper",
-  "short_name": "Image to Favicon From Poper",
-  "description": null,
+  "name": "NeoMath",
+  "short_name": "NeoMath",
+  "description": "AI-powered math tutor with step-by-step solutions",
   "dir": "auto",
   "lang": "en-US",
   "display": "standalone",
   "orientation": "any",
   "start_url": "/?homescreen=1",
-  "background_color": "#fff",
-  "theme_color": "#fff",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",

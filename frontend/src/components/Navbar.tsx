@@ -54,12 +54,12 @@ const Navbar = () => {
         <div className="container mx-auto px-4 md:px-6 lg:px-12 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 group">
             <img
-              src="/MathGPT-logo1.png"
-              alt="MathGPT Logo"
-              className="h-8 md:h-10 w-auto object-contain transition-transform group-hover:scale-110"
+              src="/NeoMath-Logo.png"
+              alt="NeoMath Logo"
+              className="h-12 md:h-14 w-auto object-contain transition-transform group-hover:scale-110"
             />
             <span className="text-2xl md:text-3xl font-normal tracking-wider font-['Rye'] text-gray-900 dark:text-white">
-              MathGPT
+              NeoMath
             </span>
           </Link>
 

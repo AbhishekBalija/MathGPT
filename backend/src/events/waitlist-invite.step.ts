@@ -74,7 +74,7 @@ export const handler: Handlers["SendWaitlistInvite"] = async (
     await resend.emails.send({
       from: fromEmail,
       to: data.email,
-      subject: "You're Invited to MathGPT! 🎉",
+      subject: "You're Invited to NeoMath! 🎉",
       html: `
         <!DOCTYPE html>
         <html>
@@ -84,13 +84,13 @@ export const handler: Handlers["SendWaitlistInvite"] = async (
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="font-size: 28px; font-weight: 600; margin: 0;">MathGPT</h1>
+            <h1 style="font-size: 28px; font-weight: 600; margin: 0;">NeoMath</h1>
           </div>
           
           <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 20px;">You're Invited! 🚀</h2>
           
           <p style="font-size: 16px; color: #555; margin-bottom: 20px;">
-            Great news! You've been approved to join MathGPT. Click the button below to create your account 
+            Great news! You've been approved to join NeoMath. Click the button below to create your account 
             and start solving math problems with AI-powered explanations.
           </p>
           
@@ -128,7 +128,7 @@ export const handler: Handlers["SendWaitlistInvite"] = async (
           </ul>
           
           <p style="font-size: 14px; color: #888; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">
-            — The MathGPT Team
+            — The NeoMath Team
           </p>
         </body>
         </html>

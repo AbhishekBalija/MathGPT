@@ -102,12 +102,12 @@ const Sidebar = () => {
           <div className="flex items-center justify-between p-4 pt-5 pb-2">
             <div className="flex items-center gap-2 px-2">
               <img
-                src="/MathGPT-logo1.png"
-                alt="MathGPT"
+                src="/NeoMath-Logo.png"
+                alt="NeoMath"
                 className="w-8 h-8 object-contain"
               />
               <span className="text-base font-['Rye'] font-normal text-gray-900 dark:text-white tracking-tight">
-                MathGPT
+                NeoMath
               </span>
             </div>
             <div className="flex items-center gap-1">

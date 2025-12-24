@@ -10,9 +10,9 @@ export const EmailService = {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const { data, error } = await resend.emails.send({
-        from: process.env.FROM_EMAIL || "MathGPT <onboarding@resend.dev>",
+        from: process.env.FROM_EMAIL || "NeoMath <onboarding@resend.dev>",
         to: [to],
-        subject: "Welcome to MathGPT! 🎓",
+        subject: "Welcome to NeoMath! 🎓",
         html: welcomeEmailTemplate(name),
       });
 

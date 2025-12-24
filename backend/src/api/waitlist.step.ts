@@ -88,7 +88,7 @@ async function getWaitlistCollection(): Promise<Collection<WaitlistEntry>> {
 export const config: ApiRouteConfig = {
   type: "api",
   name: "JoinWaitlist",
-  description: "Add email to the MathGPT waitlist",
+  description: "Add email to the NeoMath waitlist",
   path: "/api/waitlist",
   method: "POST",
   flows: ["WaitlistFlow"],
@@ -179,7 +179,7 @@ export const handler: Handlers["JoinWaitlist"] = async (
       status: 200 as const,
       body: {
         success: true,
-        message: "You're on the list! We'll email you when MathGPT launches.",
+        message: "You're on the list! We'll email you when NeoMath launches.",
         isNew: true,
       },
     };

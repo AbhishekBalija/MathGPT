@@ -1,5 +1,5 @@
 /**
- * MathGPT Backend Test Suite
+ * NeoMath Backend Test Suite
  *
  * BRUTAL TEST CASES - Written by Senior QA Engineer
  * These tests are designed to break things, not just pass.

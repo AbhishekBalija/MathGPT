@@ -117,7 +117,7 @@ const Dashboard = () => {
           Dashboard
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Overview of your MathGPT platform
+          Overview of your NeoMath platform
         </p>
       </div>
 

@@ -115,7 +115,7 @@ export const handler: Handlers["SolveMath"] = async (
     return {
       status: 401 as const,
       body: {
-        error: "Authentication required. Please login to use MathGPT.",
+        error: "Authentication required. Please login to use NeoMath.",
       },
     };
   }

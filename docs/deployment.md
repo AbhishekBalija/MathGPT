@@ -1,4 +1,4 @@
-# MathGPT Deployment Guide
+# NeoMath Deployment Guide
 
 ## Overview
 

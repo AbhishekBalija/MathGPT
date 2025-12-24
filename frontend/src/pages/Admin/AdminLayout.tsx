@@ -134,7 +134,7 @@ const AdminLayout = () => {
           <Menu className="w-6 h-6" />
         </button>
         <div className="flex items-center gap-2">
-          <img src="/MathGPT-logo1.png" alt="MathGPT" className="h-7 w-auto" />
+          <img src="/NeoMath-Logo.png" alt="NeoMath" className="h-7 w-auto" />
           <span className="font-bold text-gray-900 dark:text-white">Admin</span>
         </div>
         <div className="w-10" /> {/* Spacer for centering */}
@@ -158,8 +158,8 @@ const AdminLayout = () => {
         <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200 dark:border-gray-800">
           <a href="/" className="flex items-center gap-2">
             <img
-              src="/MathGPT-logo1.png"
-              alt="MathGPT"
+              src="/NeoMath-Logo.png"
+              alt="NeoMath"
               className="h-8 w-auto"
             />
             <span className="font-bold text-lg text-gray-900 dark:text-white">

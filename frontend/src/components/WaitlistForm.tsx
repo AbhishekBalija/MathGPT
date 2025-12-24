@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { ArrowRight, CheckCircle, Loader2 } from "lucide-react";
+import UserStats from "./UserStats";
 
 interface WaitlistFormProps {
   source?: string;
   className?: string;
+  showStats?: boolean;
 }
 
 export const WaitlistForm = ({
   source = "landing_hero",
   className = "",
+  showStats = true,
 }: WaitlistFormProps) => {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<
@@ -79,43 +82,46 @@ export const WaitlistForm = ({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className={`relative flex flex-col sm:flex-row gap-3 w-full sm:w-auto ${className}`}
-    >
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => {
-          setEmail(e.target.value);
-          if (status === "error") setStatus("idle");
-        }}
-        placeholder="Enter your email"
-        required
-        aria-label="Email address"
-        className="px-6 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white w-full sm:w-80 transition-colors"
-      />
-      <button
-        type="submit"
-        disabled={status === "loading"}
-        className="group px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-full font-medium text-base flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+    <div className="flex flex-col items-center w-full">
+      {showStats && <UserStats threshold={5} />}
+      <form
+        onSubmit={handleSubmit}
+        className={`relative flex flex-col sm:flex-row gap-3 w-full sm:w-auto ${className}`}
       >
-        {status === "loading" ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <>
-            Join Waitlist
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-          </>
-        )}
-      </button>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (status === "error") setStatus("idle");
+          }}
+          placeholder="Enter your email"
+          required
+          aria-label="Email address"
+          className="px-6 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white w-full sm:w-80 transition-colors"
+        />
+        <button
+          type="submit"
+          disabled={status === "loading"}
+          className="group px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-full font-medium text-base flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {status === "loading" ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <>
+              Join Waitlist
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            </>
+          )}
+        </button>
 
-      {status === "error" && (
-        <p className="text-red-500 text-sm mt-2 sm:mt-0 sm:absolute sm:top-full sm:left-0 sm:pt-2">
-          {message}
-        </p>
-      )}
-    </form>
+        {status === "error" && (
+          <p className="text-red-500 text-sm mt-2 sm:mt-0 sm:absolute sm:top-full sm:left-0 sm:pt-2">
+            {message}
+          </p>
+        )}
+      </form>
+    </div>
   );
 };
 

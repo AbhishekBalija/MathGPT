@@ -1,6 +1,6 @@
-# MathGPT Architecture
+# NeoMath Architecture
 
-> A comprehensive overview of the MathGPT system architecture
+> A comprehensive overview of the NeoMath system architecture
 
 ---
 

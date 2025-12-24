@@ -1,5 +1,5 @@
 /**
- * MathGPT Backend Advanced Test Suite
+ * NeoMath Backend Advanced Test Suite
  *
  * BRUTAL ADVANCED TESTS - Senior QA Engineer
  * These tests focus on edge cases NOT covered by brutal.test.ts:

@@ -76,12 +76,12 @@ const Register = () => {
             className="inline-flex items-center gap-2 sm:gap-3 mb-6 sm:mb-8 group"
           >
             <img
-              src="/MathGPT-logo1.png"
-              alt="MathGPT Logo"
+              src="/NeoMath-Logo.png"
+              alt="NeoMath Logo"
               className="h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-110"
             />
             <span className="text-2xl sm:text-3xl font-normal tracking-wider font-['Rye'] text-gray-900 dark:text-white">
-              MathGPT
+              NeoMath
             </span>
           </Link>
 

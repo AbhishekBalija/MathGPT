@@ -1,4 +1,4 @@
-# MathGPT Development Setup
+# NeoMath Development Setup
 
 ## Prerequisites
 

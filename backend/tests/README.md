@@ -2,7 +2,7 @@
 
 ## Overview
 
-The brutal test suite (`tests/brutal.test.ts`) is designed to test security vulnerabilities, edge cases, and stress test the MathGPT backend.
+The brutal test suite (`tests/brutal.test.ts`) is designed to test security vulnerabilities, edge cases, and stress test the NeoMath backend.
 
 ## Running Tests
 

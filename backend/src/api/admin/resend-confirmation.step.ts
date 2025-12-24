@@ -92,7 +92,7 @@ export const handler: Handlers["AdminResendConfirmation"] = async (
       await resend.emails.send({
         from: fromEmail,
         to: email,
-        subject: "Welcome to the MathGPT Waitlist! 🎉",
+        subject: "Welcome to the NeoMath Waitlist! 🎉",
         html: `
           <!DOCTYPE html>
           <html>
@@ -102,13 +102,13 @@ export const handler: Handlers["AdminResendConfirmation"] = async (
           </head>
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="font-size: 28px; font-weight: 600; margin: 0;">MathGPT</h1>
+              <h1 style="font-size: 28px; font-weight: 600; margin: 0;">NeoMath</h1>
             </div>
             
             <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 20px;">You're on the list! 🎉</h2>
             
             <p style="font-size: 16px; color: #555; margin-bottom: 20px;">
-              Thanks for joining the MathGPT waitlist. We're building an AI-powered math tutor 
+              Thanks for joining the NeoMath waitlist. We're building an AI-powered math tutor 
               that explains solutions step-by-step, just like a real teacher.
             </p>
             
@@ -128,7 +128,7 @@ export const handler: Handlers["AdminResendConfirmation"] = async (
             </p>
             
             <p style="font-size: 14px; color: #888; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">
-              — The MathGPT Team
+              — The NeoMath Team
             </p>
           </body>
           </html>

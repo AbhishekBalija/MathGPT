@@ -1,4 +1,4 @@
-# Contributing to MathGPT
+# Contributing to NeoMath
 
 ## Getting Started
 

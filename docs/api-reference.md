@@ -1,4 +1,4 @@
-# MathGPT API Reference
+# NeoMath API Reference
 
 Base URL: `https://your-backend-url.motia.cloud`
 

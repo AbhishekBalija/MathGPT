@@ -4,7 +4,7 @@ export const welcomeEmailTemplate = (name: string): string => `
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to MathGPT</title>
+  <title>Welcome to NeoMath</title>
   <link href="https://fonts.googleapis.com/css2?family=Indie+Flower&family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     /* Dark mode overrides */
@@ -35,7 +35,7 @@ export const welcomeEmailTemplate = (name: string): string => `
             <td style="background:#fefce8;border-bottom:2px dashed #000000;padding:20px 30px;">
               <div style="display:flex;align-items:center;justify-content:space-between;">
                 <h1 style="margin:0;font-family:'Indie Flower', cursive;font-size:32px;color:#000000;transform:rotate(-2deg);">
-                  MathGPT ✏️
+                  NeoMath ✏️
                 </h1>
                 <span style="font-size:24px;">📝</span>
               </div>
@@ -81,7 +81,7 @@ export const welcomeEmailTemplate = (name: string): string => `
             <td style="padding:20px;text-align:center;background:#fff;border-top:2px dashed #000;">
               <p style="margin:0;font-family:'Indie Flower', cursive;font-size:14px;color:#6b7280;">
                 Keep crunching numbers! <br>
-                - The MathGPT Team 🤓
+                - The NeoMath Team 🤓
               </p>
             </td>
           </tr>
@@ -89,7 +89,7 @@ export const welcomeEmailTemplate = (name: string): string => `
         </table>
 
         <p style="margin-top:20px;font-size:12px;color:#9ca3af;">
-          Sent with ❤️ from MathGPT
+          Sent with ❤️ from NeoMath
         </p>
 
       </td>

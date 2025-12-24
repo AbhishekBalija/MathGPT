@@ -56,7 +56,7 @@ async function callSingleModel(
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
         "HTTP-Referer": "https://mathgpt.abhishekbalija.xyz",
-        "X-Title": "MathGPT",
+        "X-Title": "NeoMath",
       },
       body: JSON.stringify({
         model: modelId,

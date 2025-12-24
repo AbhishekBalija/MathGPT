@@ -1,5 +1,5 @@
 PRODUCT REQUIREMENTS DOCUMENT (PRD)
-Project: MathGPT — Verified Step-by-Step Math Solver
+Project: NeoMath — Verified Step-by-Step Math Solver
 Version: UI-Flow-Rev2
 
 ========================================================
