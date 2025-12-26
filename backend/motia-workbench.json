@@ -161,6 +161,14 @@
         "x": -613,
         "y": 116
       },
+      "src/api/auth/refresh-invite.step.ts": {
+        "x": 0,
+        "y": 408
+      },
+      "src/api/admin/resend-confirmation.step.ts": {
+        "x": -321,
+        "y": 504
+      },
       "src/api/admin/list-waitlist.step.ts": {
         "x": -577,
         "y": 299
@@ -168,10 +176,6 @@
       "src/api/admin/invite-user.step.ts": {
         "x": -316,
         "y": 298
-      },
-      "src/api/admin/resend-confirmation.step.ts": {
-        "x": 9,
-        "y": 812
       }
     }
   }

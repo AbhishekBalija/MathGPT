@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/node";
+import Sentry from "@sentry/node";
 import { nodeProfilingIntegration } from "@sentry/profiling-node";
 
 // Ensure Sentry is initialized before anything else
