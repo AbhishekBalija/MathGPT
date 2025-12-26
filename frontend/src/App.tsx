@@ -18,10 +18,12 @@ import {
   Analytics,
   Waitlist,
 } from "./pages/Admin/index";
+import AnalyticsTracker from "./components/AnalyticsTracker";
 
 const App = () => {
   return (
     <Router>
+      <AnalyticsTracker />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />

@@ -1,10 +1,16 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useChatStore } from "../stores/chatStore";
 import { solveProblem } from "../services/solve.service";
 import katex from "katex";
 import { sanitizeHtml, escapeHtml } from "../utils/sanitize";
 import { getUserFriendlyError } from "../utils/errorMessages";
 import api from "../services/api";
+import MathSymbolToolbar from "./MathSymbolToolbar";
+import MathInputPreview from "./MathInputPreview";
+import {
+  useAutocomplete,
+  AutocompleteDropdown,
+} from "../hooks/useAutocomplete";
 
 // Helper to render LaTeX with XSS protection
 const renderLatex = (text: string) => {
@@ -24,7 +30,11 @@ const renderLatex = (text: string) => {
 const ChatWindow = () => {
   const [input, setInput] = useState("");
   const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
+  const [toolbarCollapsed, setToolbarCollapsed] = useState(true);
+  const [mobileSymbolsOpen, setMobileSymbolsOpen] = useState(false);
+  const [_cursorPosition, setCursorPosition] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const {
     chats,
     activeChatId,
@@ -40,6 +50,72 @@ const ChatWindow = () => {
   } = useChatStore();
 
   const activeChat = chats.find((c) => c.id === activeChatId);
+
+  // Insert text at cursor position (for symbol toolbar)
+  const insertAtCursor = useCallback(
+    (text: string) => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const newValue = input.slice(0, start) + text + input.slice(end);
+
+      setInput(newValue);
+
+      // Set cursor after inserted text
+      setTimeout(() => {
+        const newCursorPos = start + text.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+        textarea.focus();
+        setCursorPosition(newCursorPos);
+      }, 0);
+    },
+    [input]
+  );
+
+  // Handle autocomplete insertion (replaces trigger text)
+  const handleAutocompleteInsert = useCallback(
+    (text: string, replaceLength: number) => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      const cursorPos = textarea.selectionStart;
+      const beforeTrigger = input.slice(0, cursorPos - replaceLength);
+      const afterCursor = input.slice(cursorPos);
+      const newValue = beforeTrigger + text + afterCursor;
+
+      setInput(newValue);
+
+      // Set cursor after inserted text
+      setTimeout(() => {
+        const newCursorPos = beforeTrigger.length + text.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+        textarea.focus();
+        setCursorPosition(newCursorPos);
+      }, 0);
+    },
+    [input]
+  );
+
+  // Autocomplete hook
+  const {
+    suggestions: autocompleteSuggestions,
+    selectedIndex: autocompleteSelectedIndex,
+    isOpen: autocompleteOpen,
+    handleKeyDown: handleAutocompleteKeyDown,
+    selectSuggestion,
+    updateQuery,
+  } = useAutocomplete(handleAutocompleteInsert);
+
+  // Track cursor position and update autocomplete
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    const newCursorPos = e.target.selectionStart;
+    setInput(newValue);
+    setCursorPosition(newCursorPos);
+    updateQuery(newValue, newCursorPos);
+  };
 
   // Fetch credits on mount and after solving
   useEffect(() => {
@@ -119,14 +195,19 @@ const ChatWindow = () => {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // First check if autocomplete wants to handle this
+    if (handleAutocompleteKeyDown(e)) {
+      return;
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
 
-  const suggestions = [
+  const exampleProblems = [
     "Solve x² + 5x + 6 = 0",
     "Simplify (3x² + 6x) / 3x",
     "Derivative of sin(x)",
@@ -135,6 +216,216 @@ const ChatWindow = () => {
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-white dark:bg-[#0a0a0a] relative transition-colors duration-300">
+      {/* Mobile Symbol Button - Top Right (only on mobile) */}
+      <div className="fixed top-4 right-4 z-50 sm:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileSymbolsOpen(!mobileSymbolsOpen)}
+          className={`w-10 h-10 flex items-center justify-center rounded-xl shadow-lg border transition-all active:scale-95 ${
+            mobileSymbolsOpen
+              ? "bg-blue-500 text-white border-blue-600"
+              : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-100 dark:border-gray-700 hover:shadow-xl"
+          }`}
+          aria-label="Math symbols"
+        >
+          <span className="text-sm font-bold">±</span>
+        </button>
+
+        {/* Mobile Symbol Dropdown - Full Version */}
+        {mobileSymbolsOpen && (
+          <div className="absolute top-full right-0 mt-2 p-3 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 w-[280px] max-h-[70vh] overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+            {/* Basic */}
+            <div className="mb-3">
+              <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1 flex items-center gap-1">
+                <span>±</span> Basic
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {[
+                  "²",
+                  "³",
+                  "⁴",
+                  "ⁿ",
+                  "√",
+                  "∛",
+                  "±",
+                  "÷",
+                  "×",
+                  "≠",
+                  "≈",
+                  "≤",
+                  "≥",
+                  "∞",
+                ].map((symbol) => (
+                  <button
+                    key={symbol}
+                    type="button"
+                    onClick={() => {
+                      insertAtCursor(symbol);
+                      setMobileSymbolsOpen(false);
+                    }}
+                    className="w-9 h-9 flex items-center justify-center text-base bg-gray-50 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors active:scale-95"
+                  >
+                    {symbol}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Greek */}
+            <div className="mb-3">
+              <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1 flex items-center gap-1">
+                <span>π</span> Greek
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {[
+                  "π",
+                  "θ",
+                  "α",
+                  "β",
+                  "γ",
+                  "δ",
+                  "ε",
+                  "λ",
+                  "μ",
+                  "σ",
+                  "φ",
+                  "ω",
+                  "Δ",
+                  "Σ",
+                ].map((symbol) => (
+                  <button
+                    key={symbol}
+                    type="button"
+                    onClick={() => {
+                      insertAtCursor(symbol);
+                      setMobileSymbolsOpen(false);
+                    }}
+                    className="w-9 h-9 flex items-center justify-center text-base bg-gray-50 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors active:scale-95"
+                  >
+                    {symbol}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Calculus */}
+            <div className="mb-3">
+              <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1 flex items-center gap-1">
+                <span>∫</span> Calculus
+              </div>
+              <div className="grid grid-cols-6 gap-1">
+                {[
+                  { s: "∫", i: "∫" },
+                  { s: "∬", i: "∬" },
+                  { s: "∂", i: "∂" },
+                  { s: "∇", i: "∇" },
+                  { s: "∏", i: "∏" },
+                  { s: "→", i: "→" },
+                  { s: "lim", i: "lim" },
+                  { s: "dx", i: "dx" },
+                  { s: "dy", i: "dy" },
+                  { s: "f'", i: "f'" },
+                  { s: 'f"', i: 'f"' },
+                  { s: "∑", i: "∑" },
+                ].map((item) => (
+                  <button
+                    key={item.s}
+                    type="button"
+                    onClick={() => {
+                      insertAtCursor(item.i);
+                      setMobileSymbolsOpen(false);
+                    }}
+                    className="h-9 flex items-center justify-center text-sm bg-gray-50 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors active:scale-95 px-1"
+                  >
+                    {item.s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Trig */}
+            <div className="mb-3">
+              <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1 flex items-center gap-1">
+                <span>sin</span> Trig
+              </div>
+              <div className="grid grid-cols-4 gap-1">
+                {[
+                  { s: "sin", i: "sin(" },
+                  { s: "cos", i: "cos(" },
+                  { s: "tan", i: "tan(" },
+                  { s: "log", i: "log(" },
+                  { s: "sec", i: "sec(" },
+                  { s: "csc", i: "csc(" },
+                  { s: "cot", i: "cot(" },
+                  { s: "ln", i: "ln(" },
+                  { s: "sin⁻¹", i: "arcsin(" },
+                  { s: "cos⁻¹", i: "arccos(" },
+                  { s: "tan⁻¹", i: "arctan(" },
+                  { s: "e", i: "e" },
+                ].map((item) => (
+                  <button
+                    key={item.s}
+                    type="button"
+                    onClick={() => {
+                      insertAtCursor(item.i);
+                      setMobileSymbolsOpen(false);
+                    }}
+                    className="h-9 flex items-center justify-center text-xs font-medium bg-gray-50 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors active:scale-95"
+                  >
+                    {item.s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Subscripts */}
+            <div className="mb-2">
+              <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1 flex items-center gap-1">
+                <span>x₁</span> Subscripts
+              </div>
+              <div className="grid grid-cols-6 gap-1">
+                {[
+                  "₀",
+                  "₁",
+                  "₂",
+                  "₃",
+                  "₄",
+                  "₅",
+                  "₆",
+                  "₇",
+                  "₈",
+                  "₉",
+                  "ₙ",
+                  "ₓ",
+                ].map((symbol) => (
+                  <button
+                    key={symbol}
+                    type="button"
+                    onClick={() => {
+                      insertAtCursor(symbol);
+                      setMobileSymbolsOpen(false);
+                    }}
+                    className="w-full h-9 flex items-center justify-center text-base bg-gray-50 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors active:scale-95"
+                  >
+                    {symbol}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-700 text-center">
+              <span className="text-[10px] text-gray-400">
+                💡 Type{" "}
+                <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">
+                  /
+                </code>{" "}
+                in input for shortcuts
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 pb-32 scroll-smooth">
         {!activeChat || activeChat.messages.length === 0 ? (
@@ -164,13 +455,13 @@ const ChatWindow = () => {
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
-              {suggestions.map((suggestion) => (
+              {exampleProblems.map((problem) => (
                 <button
-                  key={suggestion}
-                  onClick={() => handleSend(suggestion)}
+                  key={problem}
+                  onClick={() => handleSend(problem)}
                   className="px-4 py-3 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 text-sm text-gray-600 dark:text-gray-300 rounded-xl transition-all text-left flex items-center justify-between group"
                 >
-                  <span className="truncate">{suggestion}</span>
+                  <span className="truncate">{problem}</span>
                   <svg
                     className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors"
                     fill="none"
@@ -300,54 +591,92 @@ const ChatWindow = () => {
           {/* Show input only if no solution exists yet */}
           {!activeChat?.solution && !solutionLoading ? (
             <>
-              <div
-                className={`flex items-end gap-2 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900 focus-within:border-blue-400 dark:focus-within:border-blue-600 transition-all ${
-                  inputDisabled ? "opacity-50" : ""
-                }`}
-              >
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask a math problem..."
-                  disabled={inputDisabled}
-                  className="flex-1 bg-transparent border-none outline-none resize-none text-gray-900 dark:text-white placeholder-gray-400 min-h-[44px] max-h-[120px] py-2.5 px-3 disabled:cursor-not-allowed"
-                  rows={1}
+              {/* Math Symbol Toolbar - Hidden on mobile, shown on larger screens */}
+              <div className="mb-2 sm:mb-3 hidden sm:block">
+                <MathSymbolToolbar
+                  onSymbolInsert={insertAtCursor}
+                  isCollapsed={toolbarCollapsed}
+                  onToggleCollapse={() =>
+                    setToolbarCollapsed(!toolbarCollapsed)
+                  }
                 />
-                <button
-                  onClick={() => handleSend()}
-                  disabled={!input.trim() || inputDisabled}
-                  className="p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shadow-md shadow-blue-500/20"
-                >
-                  <svg
-                    className="w-5 h-5 transform rotate-90"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                    />
-                  </svg>
-                </button>
               </div>
-              <div className="flex items-center justify-center gap-4 mt-2">
-                <span className="text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-semibold">
-                  Powered by NEO • Verified Steps
+
+              {/* Live Preview (if input contains math) */}
+              {input.trim() && (
+                <div className="mb-3">
+                  <MathInputPreview input={input} />
+                </div>
+              )}
+
+              {/* Input with Autocomplete */}
+              <div className="relative">
+                {/* Autocomplete Dropdown */}
+                {autocompleteOpen && (
+                  <AutocompleteDropdown
+                    suggestions={autocompleteSuggestions}
+                    selectedIndex={autocompleteSelectedIndex}
+                    onSelect={selectSuggestion}
+                  />
+                )}
+
+                <div
+                  className={`flex items-end gap-2 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900 focus-within:border-blue-400 dark:focus-within:border-blue-600 transition-all ${
+                    inputDisabled ? "opacity-50" : ""
+                  }`}
+                >
+                  <textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    onClick={(e) =>
+                      setCursorPosition(e.currentTarget.selectionStart)
+                    }
+                    placeholder="Type a math problem..."
+                    disabled={inputDisabled}
+                    className="flex-1 bg-transparent border-none outline-none resize-none text-gray-900 dark:text-white placeholder-gray-400 min-h-[44px] max-h-[120px] py-2.5 px-3 disabled:cursor-not-allowed scrollbar-hide"
+                    rows={1}
+                  />
+                  <button
+                    onClick={() => handleSend()}
+                    disabled={!input.trim() || inputDisabled}
+                    className="p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shadow-md shadow-blue-500/20"
+                  >
+                    <svg
+                      className="w-5 h-5 transform rotate-90"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-2 sm:gap-4 mt-2">
+                <span className="text-[9px] sm:text-[10px] uppercase tracking-wide sm:tracking-widest text-gray-400 dark:text-gray-500 font-semibold hidden sm:inline">
+                  Powered by NEO • Type / for shortcuts
+                </span>
+                <span className="text-[9px] sm:text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500 font-semibold sm:hidden">
+                  NEO • / for shortcuts
                 </span>
                 <span
-                  className={`text-[10px] uppercase tracking-widest font-semibold ${
+                  className={`text-[9px] sm:text-[10px] uppercase tracking-wide sm:tracking-widest font-semibold ${
                     creditsRemaining !== null && creditsRemaining <= 1
                       ? "text-red-500 dark:text-red-400"
                       : "text-blue-500 dark:text-blue-400"
                   }`}
                 >
                   {creditsRemaining !== null
-                    ? `${creditsRemaining} credits left`
-                    : "5 free problems/day"}
+                    ? `${creditsRemaining} left`
+                    : "5 free/day"}
                 </span>
               </div>
             </>

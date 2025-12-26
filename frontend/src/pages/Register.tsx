@@ -3,6 +3,7 @@ import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { useAuthStore } from "../stores/authStore";
 import { useState, type FormEvent } from "react";
 import axios from "axios";
+import api from "../services/api";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -13,11 +14,39 @@ const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isInviteExpired, setIsInviteExpired] = useState(false);
+  const [isRequestingNewInvite, setIsRequestingNewInvite] = useState(false);
+  const [newInviteSuccess, setNewInviteSuccess] = useState(false);
 
   // Redirect to landing page if no invite token
   if (!inviteToken) {
     return <Navigate to="/" replace />;
   }
+
+  const handleRequestNewInvite = async () => {
+    if (!email) {
+      setError("Please enter your email address to request a new invite.");
+      return;
+    }
+
+    setIsRequestingNewInvite(true);
+    setError(null);
+
+    try {
+      await api.post("/auth/refresh-invite", { email });
+      setNewInviteSuccess(true);
+      setIsInviteExpired(false);
+      setError(null);
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else {
+        setError("Failed to request new invite. Please try again.");
+      }
+    } finally {
+      setIsRequestingNewInvite(false);
+    }
+  };
 
   const handleGoogleSuccess = async (
     credentialResponse: CredentialResponse
@@ -44,6 +73,7 @@ const Register = () => {
   const handleEmailRegister = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsInviteExpired(false);
 
     if (!name || !email || !password) {
       setError("Please fill in all fields.");
@@ -59,8 +89,12 @@ const Register = () => {
       await registerWithEmail(email, password, name, inviteToken ?? undefined);
       navigate("/app", { replace: true });
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.data?.error) {
-        setError(err.response.data.error);
+      if (axios.isAxiosError(err) && err.response?.data) {
+        const { error: errorMsg, code } = err.response.data;
+        setError(errorMsg);
+        if (code === "INVITE_EXPIRED") {
+          setIsInviteExpired(true);
+        }
       } else {
         setError("Registration failed. Please try again.");
       }
@@ -93,9 +127,29 @@ const Register = () => {
           </p>
         </div>
 
+        {/* Success message for new invite */}
+        {newInviteSuccess && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 text-green-600 dark:text-green-400 px-4 py-3 rounded-lg text-sm font-medium">
+            ✅ New invite sent! Check your email for the fresh link.
+          </div>
+        )}
+
+        {/* Error display with optional Request New Invite button */}
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm font-medium">
-            {error}
+          <div className="space-y-3">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm font-medium">
+              {error}
+            </div>
+            {isInviteExpired && (
+              <button
+                type="button"
+                onClick={handleRequestNewInvite}
+                disabled={isRequestingNewInvite || !email}
+                className="w-full px-4 py-3 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white font-semibold rounded-xl transition-all shadow-md disabled:cursor-not-allowed"
+              >
+                {isRequestingNewInvite ? "Sending..." : "🔄 Request New Invite"}
+              </button>
+            )}
           </div>
         )}
 

@@ -87,7 +87,7 @@ export const handler: Handlers["SendWaitlistEmail"] = async (
           </p>
           
           <p style="font-size: 14px; color: #888; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">
-            — The NeoMath Team
+            — The Indie Dev
           </p>
         </body>
         </html>

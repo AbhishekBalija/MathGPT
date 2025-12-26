@@ -1,13 +1,18 @@
+import "./src/instrument"; // Must be the very first import
 import { defineConfig } from "@motiadev/core";
 import endpointPlugin from "@motiadev/plugin-endpoint/plugin";
 import logsPlugin from "@motiadev/plugin-logs/plugin";
 import observabilityPlugin from "@motiadev/plugin-observability/plugin";
-import statesPlugin from "@motiadev/plugin-states/plugin";
 import bullmqPlugin from "@motiadev/plugin-bullmq/plugin";
+import statesPlugin from "@motiadev/plugin-states/plugin";
+import * as Sentry from "@sentry/node";
+
+// Sentry Init moved to src/instrument.ts to ensure it runs beore Express load
 
 const allowedOrigins = [
   "http://localhost:5173",
   "https://math-gpt-beta.vercel.app",
+  "https://neomath.vercel.app",
 ];
 
 const allowedMethods = "GET, POST, PUT, DELETE, OPTIONS, PATCH";
@@ -54,5 +59,9 @@ export default defineConfig({
     });
 
     console.log(`CORS configured for origins: ${allowedOrigins.join(", ")}`);
+
+    if (process.env.SENTRY_DSN) {
+      Sentry.setupExpressErrorHandler(app);
+    }
   },
 });

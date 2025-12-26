@@ -33,7 +33,7 @@ if (!fromEmail) {
 // Get frontend URL for registration link based on environment
 const getFrontendUrl = () => {
   if (process.env.NODE_ENV === "production") {
-    return process.env.FRONTEND_URL_PROD || "https://math-gpt-beta.vercel.app";
+    return process.env.FRONTEND_URL_PROD || "https://neomath.vercel.app";
   }
   return process.env.FRONTEND_URL_DEV || "http://localhost:5173";
 };
@@ -116,6 +116,18 @@ export const handler: Handlers["SendWaitlistInvite"] = async (
             </p>
           </div>
           
+          <div style="background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 20px; margin: 20px 0;">
+            <p style="font-size: 14px; color: #856404; margin: 0 0 10px 0;">
+              <strong>📋 Your Invite Token:</strong>
+            </p>
+            <p style="font-family: monospace; font-size: 14px; background: #fff; padding: 12px 16px; border-radius: 6px; border: 1px dashed #ccc; word-break: break-all; margin: 0; user-select: all; cursor: text;">
+              ${data.inviteToken}
+            </p>
+            <p style="font-size: 12px; color: #856404; margin: 10px 0 0 0;">
+              Copy this token if asked during registration.
+            </p>
+          </div>
+          
           <p style="font-size: 16px; color: #555; margin-bottom: 20px;">
             <strong>What you'll get:</strong>
           </p>
@@ -127,8 +139,14 @@ export const handler: Handlers["SendWaitlistInvite"] = async (
             <li>Solution history & tracking</li>
           </ul>
           
+          <div style="background-color: #f0f7ff; border: 1px solid #b3d4fc; border-radius: 8px; padding: 15px; margin: 20px 0;">
+            <p style="font-size: 13px; color: #31708f; margin: 0;">
+              <strong>💡 Token expired?</strong> Don't worry! Click the link above and you'll see an option to request a fresh invite instantly.
+            </p>
+          </div>
+          
           <p style="font-size: 14px; color: #888; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">
-            — The NeoMath Team
+            — The Indie Dev
           </p>
         </body>
         </html>

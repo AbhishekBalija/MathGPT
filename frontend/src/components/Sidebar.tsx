@@ -1,12 +1,22 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useChatStore } from "../stores/chatStore";
 import { useAuthStore } from "../stores/authStore";
 import { useAppDataStore } from "../stores/appDataStore";
 import { useThemeStore } from "../stores/themeStore";
 import { useNavigate } from "react-router-dom";
 import { Moon, Sun } from "lucide-react";
+import HelpSection from "./HelpSection";
+import SidebarResizer from "./SidebarResizer";
+
+const SIDEBAR_MIN_WIDTH = 240;
+const SIDEBAR_MAX_WIDTH = 480;
+const SIDEBAR_DEFAULT_WIDTH = 280;
 
 const Sidebar = () => {
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem("sidebarWidth");
+    return saved ? parseInt(saved, 10) : SIDEBAR_DEFAULT_WIDTH;
+  });
   const {
     chats,
     activeChatId,
@@ -46,6 +56,11 @@ const Sidebar = () => {
     initTheme();
   }, [initTheme]);
 
+  // Persist sidebar width to localStorage
+  useEffect(() => {
+    localStorage.setItem("sidebarWidth", sidebarWidth.toString());
+  }, [sidebarWidth]);
+
   const handleLogout = () => {
     logout();
     navigate("/login");
@@ -71,7 +86,7 @@ const Sidebar = () => {
       {!sidebarOpen && (
         <button
           onClick={toggleSidebar}
-          className="fixed top-4 left-4 z-50 p-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white rounded-xl shadow-lg hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all active:scale-95"
+          className="fixed top-4 left-4 z-50 w-10 h-10 flex items-center justify-center bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white rounded-xl shadow-lg hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all active:scale-95"
           aria-label="Open sidebar"
         >
           <svg
@@ -95,8 +110,15 @@ const Sidebar = () => {
         className={`fixed top-0 left-0 h-full bg-white dark:bg-[#0f1117]/98 backdrop-blur-2xl border-r border-gray-100 dark:border-white/5 text-gray-800 dark:text-gray-300 transition-transform duration-300 z-40 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ width: "280px" }}
+        style={{ width: `${sidebarWidth}px` }}
       >
+        {/* Resizer Handle */}
+        <SidebarResizer
+          onResize={setSidebarWidth}
+          minWidth={SIDEBAR_MIN_WIDTH}
+          maxWidth={SIDEBAR_MAX_WIDTH}
+        />
+
         <div className="flex flex-col h-full">
           {/* Header Area */}
           <div className="flex items-center justify-between p-4 pt-5 pb-2">
@@ -285,6 +307,11 @@ const Sidebar = () => {
                 </div>
               ))
             )}
+          </div>
+
+          {/* Help Section */}
+          <div className="border-t border-gray-100 dark:border-white/5">
+            <HelpSection />
           </div>
 
           {/* User Profile Footer */}

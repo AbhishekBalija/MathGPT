@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ArrowRight, CheckCircle, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight, CheckCircle, Loader2, KeyRound } from "lucide-react";
 import UserStats from "./UserStats";
 
 interface WaitlistFormProps {
@@ -13,11 +14,14 @@ export const WaitlistForm = ({
   className = "",
   showStats = true,
 }: WaitlistFormProps) => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [message, setMessage] = useState("");
+  const [showTokenInput, setShowTokenInput] = useState(false);
+  const [inviteToken, setInviteToken] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,6 +125,43 @@ export const WaitlistForm = ({
           </p>
         )}
       </form>
+
+      {/* Already got access section */}
+      <div className="mt-6 text-center">
+        <button
+          type="button"
+          onClick={() => setShowTokenInput(!showTokenInput)}
+          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors flex items-center gap-2 mx-auto"
+        >
+          <KeyRound className="w-4 h-4" />
+          Already got access? Enter your token
+        </button>
+
+        {showTokenInput && (
+          <div className="mt-4 flex flex-col sm:flex-row gap-3 items-center justify-center">
+            <input
+              type="text"
+              value={inviteToken}
+              onChange={(e) => setInviteToken(e.target.value)}
+              placeholder="Paste your invite token"
+              className="px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white w-full sm:w-72 text-sm transition-colors"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (inviteToken.trim()) {
+                  navigate(`/register?token=${inviteToken.trim()}`);
+                }
+              }}
+              disabled={!inviteToken.trim()}
+              className="px-6 py-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-black rounded-full font-medium text-sm flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ArrowRight className="w-4 h-4" />
+              Register
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

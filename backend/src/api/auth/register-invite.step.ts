@@ -104,6 +104,7 @@ export const config: ApiRouteConfig = {
     }),
     403: z.object({
       error: z.string(),
+      code: z.string().optional(),
     }),
     409: z.object({
       error: z.string(),
@@ -187,7 +188,8 @@ export const handler: Handlers["RegisterWithInvite"] = async (
         status: 403 as const,
         body: {
           error:
-            "Your invite has expired. Please contact support for a new invite.",
+            "Your invite has expired. Click 'Request New Invite' to get a fresh one!",
+          code: "INVITE_EXPIRED",
         },
       };
     }

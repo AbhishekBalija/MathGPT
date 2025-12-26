@@ -65,7 +65,7 @@ export const welcomeEmailTemplate = (name: string): string => `
               <!-- CTA Button -->
               <div style="text-align:center;margin-top:20px;">
                 <a href="${
-                  process.env.APP_URL || "https://mathgpt.abhishekbalija.xyz"
+                  process.env.APP_URL || "https://neomath.vercel.app"
                 }" 
                    class="cta-button"
                    style="display:inline-block;padding:12px 30px;background:#4F46E5;color:#ffffff;text-decoration:none;font-weight:600;font-size:16px;border-radius:255px 15px 225px 15px/15px 225px 15px 255px;border:2px solid #4F46E5;transition:transform 0.2s;">
@@ -81,7 +81,7 @@ export const welcomeEmailTemplate = (name: string): string => `
             <td style="padding:20px;text-align:center;background:#fff;border-top:2px dashed #000;">
               <p style="margin:0;font-family:'Indie Flower', cursive;font-size:14px;color:#6b7280;">
                 Keep crunching numbers! <br>
-                - The NeoMath Team 🤓
+                - The Indie Dev 🤓
               </p>
             </td>
           </tr>
@@ -89,7 +89,7 @@ export const welcomeEmailTemplate = (name: string): string => `
         </table>
 
         <p style="margin-top:20px;font-size:12px;color:#9ca3af;">
-          Sent with ❤️ from NeoMath
+          Sent with ❤️ from Indie Dev
         </p>
 
       </td>
