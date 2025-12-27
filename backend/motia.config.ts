@@ -1,13 +1,9 @@
-import "./src/instrument"; // Must be the very first import
 import { defineConfig } from "@motiadev/core";
 import endpointPlugin from "@motiadev/plugin-endpoint/plugin";
 import logsPlugin from "@motiadev/plugin-logs/plugin";
 import observabilityPlugin from "@motiadev/plugin-observability/plugin";
 import bullmqPlugin from "@motiadev/plugin-bullmq/plugin";
 import statesPlugin from "@motiadev/plugin-states/plugin";
-import * as Sentry from "@sentry/node";
-
-// Sentry Init moved to src/instrument.ts to ensure it runs beore Express load
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -60,8 +56,22 @@ export default defineConfig({
 
     console.log(`CORS configured for origins: ${allowedOrigins.join(", ")}`);
 
+    // Sentry error handler - only load if DSN is configured
     if (process.env.SENTRY_DSN) {
-      Sentry.setupExpressErrorHandler(app);
+      import("@sentry/node")
+        .then((Sentry) => {
+          Sentry.init({
+            dsn: process.env.SENTRY_DSN,
+            integrations: [Sentry.expressIntegration()],
+            tracesSampleRate: 1.0,
+            sendDefaultPii: true,
+          });
+          Sentry.setupExpressErrorHandler(app);
+          console.log("✅ Sentry error handler configured");
+        })
+        .catch((err) => {
+          console.error("❌ Failed to load Sentry:", err);
+        });
     }
   },
 });

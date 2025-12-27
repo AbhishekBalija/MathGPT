@@ -8,13 +8,13 @@ import App from "./App.tsx";
 import GoogleAuthProvider from "./components/GoogleAuthProvider.tsx";
 
 // Initialize Google Analytics
-const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
+const GA_MEASUREMENT_ID = import.meta.env.GA_MEASUREMENT_ID;
 if (GA_MEASUREMENT_ID && GA_MEASUREMENT_ID !== "PLACEHOLDER") {
   ReactGA.initialize(GA_MEASUREMENT_ID);
 }
 
 // Initialize Sentry
-const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
+const SENTRY_DSN = import.meta.env.SENTRY_DSN;
 if (SENTRY_DSN && SENTRY_DSN !== "PLACEHOLDER") {
   Sentry.init({
     dsn: SENTRY_DSN,
