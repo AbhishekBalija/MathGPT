@@ -1,20 +1,10 @@
-// Sentry initialization - only runs if SENTRY_DSN is provided
-// Using dynamic import to avoid loading @sentry/node when not needed
+// Sentry is disabled for Motia Cloud deployment
+// Motia Cloud uses its own observability plugin (@motiadev/plugin-observability)
+// To re-enable Sentry for local development, you can conditionally import it
+
 export async function initSentry() {
-  if (process.env.SENTRY_DSN) {
-    try {
-      const Sentry = await import("@sentry/node");
-      Sentry.init({
-        dsn: process.env.SENTRY_DSN,
-        integrations: [Sentry.expressIntegration()],
-        tracesSampleRate: 1.0,
-        sendDefaultPii: true,
-      });
-      console.log("✅ Sentry Initialized");
-      return Sentry;
-    } catch (error) {
-      console.error("❌ Failed to initialize Sentry:", error);
-    }
-  }
+  // Sentry disabled - using Motia Cloud's native observability instead
+  // The @motiadev/plugin-observability handles logging and monitoring
+  console.log("📊 Using Motia Cloud observability (Sentry disabled)");
   return null;
 }

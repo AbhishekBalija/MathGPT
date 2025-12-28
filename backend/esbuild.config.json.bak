@@ -1,0 +1,14 @@
+{
+  "external": [
+    "mongoose",
+    "mongodb",
+    "@sentry/node",
+    "@sentry/profiling-node",
+    "@google/generative-ai",
+    "google-auth-library",
+    "bcryptjs",
+    "jsonwebtoken",
+    "resend",
+    "cors"
+  ]
+}

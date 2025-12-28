@@ -24,15 +24,13 @@
     "@motiadev/plugin-logs": "^0.17.9-beta.191",
     "@motiadev/plugin-observability": "^0.17.9-beta.191",
     "@motiadev/plugin-states": "^0.17.9-beta.191",
-    "@sentry/node": "^10.32.1",
-    "@sentry/profiling-node": "^10.32.1",
+
     "@types/cors": "^2.8.19",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "google-auth-library": "^10.5.0",
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.0.0",
-    "mongoose": "^9.0.1",
     "motia": "^0.17.9-beta.191",
     "resend": "^6.6.0",
     "zod": "^4.1.12"

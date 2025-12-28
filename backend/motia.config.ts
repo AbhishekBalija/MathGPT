@@ -55,23 +55,5 @@ export default defineConfig({
     });
 
     console.log(`CORS configured for origins: ${allowedOrigins.join(", ")}`);
-
-    // Sentry error handler - only load if DSN is configured
-    if (process.env.SENTRY_DSN) {
-      import("@sentry/node")
-        .then((Sentry) => {
-          Sentry.init({
-            dsn: process.env.SENTRY_DSN,
-            integrations: [Sentry.expressIntegration()],
-            tracesSampleRate: 1.0,
-            sendDefaultPii: true,
-          });
-          Sentry.setupExpressErrorHandler(app);
-          console.log("✅ Sentry error handler configured");
-        })
-        .catch((err) => {
-          console.error("❌ Failed to load Sentry:", err);
-        });
-    }
   },
 });
