@@ -635,6 +635,7 @@ const ChatWindow = () => {
                     }
                     placeholder="Type a math problem..."
                     disabled={inputDisabled}
+                    maxLength={2000}
                     className="flex-1 bg-transparent border-none outline-none resize-none text-gray-900 dark:text-white placeholder-gray-400 min-h-[44px] max-h-[120px] py-2.5 px-3 disabled:cursor-not-allowed scrollbar-hide"
                     rows={1}
                   />
@@ -660,24 +661,39 @@ const ChatWindow = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-center gap-2 sm:gap-4 mt-2">
-                <span className="text-[9px] sm:text-[10px] uppercase tracking-wide sm:tracking-widest text-gray-400 dark:text-gray-500 font-semibold hidden sm:inline">
-                  Powered by NEO • Type / for shortcuts
-                </span>
-                <span className="text-[9px] sm:text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500 font-semibold sm:hidden">
-                  NEO • / for shortcuts
-                </span>
-                <span
-                  className={`text-[9px] sm:text-[10px] uppercase tracking-wide sm:tracking-widest font-semibold ${
-                    creditsRemaining !== null && creditsRemaining <= 1
-                      ? "text-red-500 dark:text-red-400"
-                      : "text-blue-500 dark:text-blue-400"
-                  }`}
-                >
-                  {creditsRemaining !== null
-                    ? `${creditsRemaining} left`
-                    : "5 free/day"}
-                </span>
+              <div className="flex items-center justify-between mt-2 px-1">
+                <div className="flex items-center gap-2 sm:gap-4">
+                  <span className="text-[9px] sm:text-[10px] uppercase tracking-wide sm:tracking-widest text-gray-400 dark:text-gray-500 font-semibold hidden sm:inline">
+                    Powered by NEO • Type / for shortcuts
+                  </span>
+                  <span className="text-[9px] sm:text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500 font-semibold sm:hidden">
+                    NEO • / for shortcuts
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`text-[9px] sm:text-[10px] font-medium ${
+                      input.length > 1800
+                        ? input.length > 2000
+                          ? "text-red-500 dark:text-red-400"
+                          : "text-yellow-500 dark:text-yellow-400"
+                        : "text-gray-400 dark:text-gray-500"
+                    }`}
+                  >
+                    {input.length}/2000
+                  </span>
+                  <span
+                    className={`text-[9px] sm:text-[10px] uppercase tracking-wide sm:tracking-widest font-semibold ${
+                      creditsRemaining !== null && creditsRemaining <= 1
+                        ? "text-red-500 dark:text-red-400"
+                        : "text-blue-500 dark:text-blue-400"
+                    }`}
+                  >
+                    {creditsRemaining !== null
+                      ? `${creditsRemaining} left`
+                      : "5 free/day"}
+                  </span>
+                </div>
               </div>
             </>
           ) : (
