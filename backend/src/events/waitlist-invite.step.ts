@@ -74,6 +74,7 @@ export const handler: Handlers["SendWaitlistInvite"] = async (
     await resend.emails.send({
       from: fromEmail,
       to: data.email,
+      replyTo: "abhishekan017@gmail.com",
       subject: "You're Invited to NeoMath! 🎉",
       html: `
         <!DOCTYPE html>
@@ -141,7 +142,8 @@ export const handler: Handlers["SendWaitlistInvite"] = async (
           
           <div style="background-color: #f0f7ff; border: 1px solid #b3d4fc; border-radius: 8px; padding: 15px; margin: 20px 0;">
             <p style="font-size: 13px; color: #31708f; margin: 0;">
-              <strong>💡 Token expired?</strong> Don't worry! Click the link above and you'll see an option to request a fresh invite instantly.
+              <strong>💡 Token expired?</strong> Don't worry! 
+              <a href="${registrationLink}" style="color: #0066cc; text-decoration: underline; font-weight: 600;">Click here to request a fresh invite</a> instantly.
             </p>
           </div>
           

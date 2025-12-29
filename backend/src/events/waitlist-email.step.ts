@@ -51,6 +51,7 @@ export const handler: Handlers["SendWaitlistEmail"] = async (
     await resend.emails.send({
       from: fromEmail, // Change to your domain after verification
       to: data.email,
+      replyTo: "abhishekan017@gmail.com",
       subject: "Welcome to the NeoMath Waitlist! 🎉",
       html: `
         <!DOCTYPE html>

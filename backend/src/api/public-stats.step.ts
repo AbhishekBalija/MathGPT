@@ -81,9 +81,10 @@ export async function handler(
     const db = mongoClient.db("MathGPTDB");
 
     // Fetch counts in parallel
+    // waitlistCount only counts entries that haven't registered yet
     const [userCount, waitlistCount] = await Promise.all([
       db.collection("users").countDocuments(),
-      db.collection("waitlist").countDocuments(),
+      db.collection("waitlist").countDocuments({ registered: { $ne: true } }),
     ]);
 
     logger.info("Public stats fetched", { userCount, waitlistCount });

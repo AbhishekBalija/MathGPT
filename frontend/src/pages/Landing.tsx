@@ -99,7 +99,7 @@ const Landing = () => {
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-5xl mx-auto mt-16"
+              className="w-full max-w-6xl mx-auto mt-16 px-4"
             >
               {/* Floating Animation Wrapper */}
               <motion.div
@@ -114,13 +114,13 @@ const Landing = () => {
                 <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
                   {/* Actual Video */}
                   <video
-                    className="w-full h-auto"
+                    className="w-full h-auto block"
                     autoPlay
                     loop
                     muted
                     playsInline
                   >
-                    <source src="/NeoMath-Video.mp4" type="video/mp4" />
+                    <source src="/NeoMath_Hero.mp4" type="video/mp4" />
                     Your browser does not support the video tag.
                   </video>
                 </div>
