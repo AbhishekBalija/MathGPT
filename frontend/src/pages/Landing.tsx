@@ -187,12 +187,14 @@ const Landing = () => {
             >
               Terms
             </Link>
-            <Link
-              to="#"
+            <a
+              href="https://x.com/AbhishekBalija1"
+              target="_blank"
+              rel="noopener noreferrer"
               className="hover:text-black dark:hover:text-white transition-colors"
             >
               Twitter
-            </Link>
+            </a>
           </div>
         </div>
       </footer>

@@ -10,6 +10,8 @@ import Register from "./pages/Register";
 import Admin from "./pages/Admin";
 import AppLayout from "./pages/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import {
   AdminLayout,
   Dashboard,
@@ -28,6 +30,8 @@ const App = () => {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
         {/* Admin Routes with nested layout */}
         <Route
           path="/admin"

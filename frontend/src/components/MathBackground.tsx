@@ -65,11 +65,11 @@ const MathBackground = () => {
             yCenter={30}
             amplitude={18}
             strokeColor={waveColors.stroke1}
-            symbols={["∫", "×", "π"]}
+            symbols={["∫", "×", "π", "θ", "∂", "λ"]}
             symbolColor={waveColors.symbol1}
             duration={28}
             direction={1}
-            delay={0}
+            startOffset={0}
           />
 
           {/* Wave 2 */}
@@ -77,11 +77,11 @@ const MathBackground = () => {
             yCenter={70}
             amplitude={20}
             strokeColor={waveColors.stroke2}
-            symbols={["∑", "∞", "log"]}
+            symbols={["∑", "∞", "log", "α", "β", "÷"]}
             symbolColor={waveColors.symbol2}
             duration={32}
             direction={-1}
-            delay={1}
+            startOffset={15}
           />
 
           {/* Wave 3 */}
@@ -89,11 +89,11 @@ const MathBackground = () => {
             yCenter={110}
             amplitude={18}
             strokeColor={waveColors.stroke3}
-            symbols={["ƒ(x)", "√", "e"]}
+            symbols={["ƒ(x)", "√", "e", "σ", "∏", "±"]}
             symbolColor={waveColors.symbol3}
             duration={26}
             direction={1}
-            delay={2}
+            startOffset={30}
           />
 
           {/* Wave 4 */}
@@ -101,11 +101,11 @@ const MathBackground = () => {
             yCenter={150}
             amplitude={22}
             strokeColor={waveColors.stroke4}
-            symbols={["d/dx", "∆", "≈"]}
+            symbols={["d/dx", "∆", "≈", "Ω", "∇", "≠"]}
             symbolColor={waveColors.symbol4}
             duration={30}
             direction={-1}
-            delay={3}
+            startOffset={45}
           />
         </svg>
       </div>
@@ -125,7 +125,7 @@ const FlowingWavePath = ({
   symbolColor,
   duration,
   direction,
-  delay,
+  startOffset,
 }: {
   yCenter: number;
   amplitude: number;
@@ -134,7 +134,7 @@ const FlowingWavePath = ({
   symbolColor: string;
   duration: number;
   direction: number;
-  delay: number;
+  startOffset: number;
 }) => {
   const id = `wave-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -157,6 +157,12 @@ const FlowingWavePath = ({
   };
 
   const pathData = createSinePath();
+
+  // Calculate staggered starting positions for immediate animation
+  const primaryFrom = direction === 1 ? -25 + startOffset : 100 - startOffset;
+  const primaryTo = direction === 1 ? 100 + startOffset : -25 - startOffset;
+  const secondaryFrom = direction === 1 ? -75 + startOffset : 150 - startOffset;
+  const secondaryTo = direction === 1 ? 50 + startOffset : 25 - startOffset;
 
   return (
     <g>
@@ -184,14 +190,14 @@ const FlowingWavePath = ({
         <textPath href={`#${id}`} startOffset="0%">
           <animate
             attributeName="startOffset"
-            from={direction === 1 ? "-25%" : "100%"}
-            to={direction === 1 ? "100%" : "-25%"}
+            from={`${primaryFrom}%`}
+            to={`${primaryTo}%`}
             dur={`${duration}s`}
             repeatCount="indefinite"
-            begin={`${delay}s`}
+            begin="0s"
           />
           {symbols.map((s, i) => (
-            <tspan key={i} dx={i === 0 ? "50" : "280"}>
+            <tspan key={i} dx={i === 0 ? "50" : "160"}>
               {s}
             </tspan>
           ))}
@@ -208,14 +214,14 @@ const FlowingWavePath = ({
         <textPath href={`#${id}`} startOffset="0%">
           <animate
             attributeName="startOffset"
-            from={direction === 1 ? "-75%" : "150%"}
-            to={direction === 1 ? "50%" : "25%"}
+            from={`${secondaryFrom}%`}
+            to={`${secondaryTo}%`}
             dur={`${duration}s`}
             repeatCount="indefinite"
-            begin={`${delay}s`}
+            begin="0s"
           />
           {symbols.map((s, i) => (
-            <tspan key={i} dx={i === 0 ? "50" : "280"}>
+            <tspan key={i} dx={i === 0 ? "50" : "160"}>
               {s}
             </tspan>
           ))}
