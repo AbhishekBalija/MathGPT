@@ -6,28 +6,71 @@ The brutal test suite (`tests/brutal.test.ts`) is designed to test security vuln
 
 ## Running Tests
 
-The tests talk to a running API at `TEST_API_URL` (default `http://localhost:3000`).
-They register users, call `/api/solve` and trigger emails, so run them against an
-isolated server only:
-
 ```bash
-# 1. Throwaway local MongoDB (data lives in a temp folder)
-mkdir -p /tmp/neomath-test-db
-mongod --dbpath /tmp/neomath-test-db --port 27018 --fork --logpath /tmp/neomath-test-db/mongod.log
-
-# 2. API with test-only settings. --no-env-file stops Bun from loading your real .env
-PORT=3100 NODE_ENV=test MONGODB_URI=mongodb://127.0.0.1:27018 \
-JWT_SECRET=test-access JWT_REFRESH_SECRET=test-refresh \
-RESEND_API=re_dummy FROM_EMAIL="Test <test@example.invalid>" \
-GEMINI_MATH_AI_API=dummy ADMIN_PASSCODE=test-admin-passcode \
-bun --no-env-file src/server.ts
-
-# 3. In another terminal
-TEST_API_URL=http://localhost:3100 ADMIN_PASSCODE=test-admin-passcode bun run test -- --run
+bun run test          # whole suite, once
+bun run test:watch    # re-run on changes
 ```
 
-With a dummy `GEMINI_MATH_AI_API`, tests that need a real AI answer fail with
-500. Use a real key only when you need those tests, and expect some Gemini usage.
+You only need Postgres running locally (`brew services start postgresql@17`)
+and MongoDB installed (`mongod` on your PATH). Nothing else to start by hand.
+
+### What happens on each run
+
+```mermaid
+flowchart TD
+    A[bun run test] --> B[global-setup.ts]
+    B --> C{Both databases on localhost, Postgres name ends in _test?}
+    C -- no --> X[Stop with an error, nothing connects]
+    C -- yes --> D[Start a throwaway mongod in a temp folder]
+    D --> E[Create neomath_test if missing, drop all tables, run migrations]
+    E --> F[Each test file: start-app.ts starts the real app on a random port]
+    F --> G[Tests call the app over HTTP]
+    G --> H[Teardown: stop mongod, delete its temp folder]
+```
+
+- **Postgres**: `postgres://localhost:5432/neomath_test` by default. Override
+  with `TEST_DATABASE_URL`; it must still point to localhost and the database
+  name must end in `_test`, so your dev database can never be wiped.
+- **MongoDB**: a fresh `mongod` on a random port, deleted afterwards. Used
+  only by features not yet moved to Postgres.
+- **Settings**: every secret is a dummy set in `global-setup.ts`. Your real
+  `.env` is never loaded (`envDir: false` in `vitest.config.ts`).
+
+### Fakes
+
+Only two things are faked, both outside the app (see `tests/support/`):
+
+| Fake               | Replaces | What tests can do with it                         |
+| ------------------ | -------- | ------------------------------------------------- |
+| `fakeMathSolver`   | Gemini   | Solving always returns the same Solution          |
+| `fakeEmailSender`  | Resend   | Read sent emails: `fakeEmailSender.emailsTo(...)` |
+
+Everything else (routes, repositories, databases, Rate Limits) is real.
+
+### Writing a test
+
+```ts
+import { apiUrl, fakeEmailSender } from "./support/test-app";
+import { registerUser } from "./support/users";
+
+const { email, accessToken } = await registerUser();
+const res = await fetch(apiUrl("/api/profile"), {
+  headers: { Authorization: `Bearer ${accessToken}` },
+});
+```
+
+Use `uniqueEmail()` (or `registerUser()`) so tests never share a User by
+accident. Assert on what a User could see (status, body, emails), not on
+database rows.
+
+### Known failures
+
+Six tests in `brutal.test.ts` and `brutal-advanced.test.ts` fail. They failed
+before this harness too (it fixed four others that only failed because the AI
+key was a dummy). They come from current app behaviour that later tickets
+change: the solve Rate Limit shared by tests using the same User, the saved
+Solution ID differing from the returned one, an empty admin passcode returning
+401, and refresh tokens issued in the same second being identical.
 
 ## Test Categories
 
@@ -70,8 +113,8 @@ Configured in `vitest.config.ts`:
 
 | Setting       | Value   | Purpose                    |
 | ------------- | ------- | -------------------------- |
-| `testTimeout` | 60000ms | AI API calls can be slow   |
-| `hookTimeout` | 30000ms | Network setup in beforeAll |
+| `testTimeout` | 60000ms | Generous for slow machines |
+| `hookTimeout` | 30000ms | Database setup in hooks    |
 
 ## Security Patterns Tested
 

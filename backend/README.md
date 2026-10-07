@@ -18,12 +18,14 @@ curl http://localhost:3000/health
 
 ## Scripts
 
-| Command             | What it does                                   |
-| ------------------- | ---------------------------------------------- |
-| `bun run dev`       | Start the API with file watching               |
-| `bun run start`     | Start the API without watching                 |
-| `bun run typecheck` | TypeScript check, no output files              |
-| `bun run test`      | HTTP test suite (read `tests/README.md` first) |
+| Command               | What it does                                   |
+| --------------------- | ---------------------------------------------- |
+| `bun run dev`         | Start the API with file watching               |
+| `bun run start`       | Start the API without watching                 |
+| `bun run typecheck`   | TypeScript check, no output files              |
+| `bun run test`        | HTTP test suite on a throwaway local database  |
+| `bun run db:generate` | Create a SQL migration from `src/db/schema.ts` |
+| `bun run db:migrate`  | Apply pending migrations to `DATABASE_URL`     |
 
 ## Layout
 
@@ -33,13 +35,17 @@ src/
   server.ts         local entry point, calls listen()
   routes/           one file per endpoint, all registered in routes/index.ts
   events/           work that runs after a request (emails, analytics, saving)
+  db/               Postgres: Drizzle schema and the one shared connection pool
+  modules/          feature modules (ADR-0004); ai/ and email/ hold the
+                    solver and email sender interfaces, the rest fill in later
   lib/              small shared helpers (http adapter, logger, env, rate limit)
   middlewares/      JWT auth checks
   services/         business logic (auth, AI, email, analytics)
   repositories/     database access
   types/            shared TypeScript types
+drizzle/            generated SQL migrations, committed and reviewed
 scripts/            one-off admin scripts
-tests/              black-box HTTP tests
+tests/              black-box HTTP tests (see tests/README.md)
 ```
 
 ## How a request flows
@@ -63,8 +69,22 @@ sequenceDiagram
 Routes return a plain `{ status, body }` object. `lib/http.ts` turns that into
 the Express response, so routes never touch `res` directly.
 
+## Database migrations
+
+Schema changes always go through committed SQL files (ADR-0002), never
+`drizzle-kit push`:
+
+1. Edit `src/db/schema.ts`
+2. `bun run db:generate` writes a new file in `drizzle/`
+3. Read the SQL, commit it with the schema change
+4. `bun run db:migrate` applies it to the database in `DATABASE_URL`
+
+Before running `db:migrate` against Neon (preview or production), show the
+SQL to a human first. Tests apply every migration to a fresh local database
+on each run, so a broken migration fails the test run.
+
 ## Migration status
 
 1. Motia to Express: done
-2. MongoDB to Postgres (Drizzle + Neon): next
+2. MongoDB to Postgres (Drizzle + Neon): in progress (database and test harness ready, no tables moved yet)
 3. Deploy to Vercel: after Phase 2

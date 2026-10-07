@@ -11,7 +11,9 @@ import express, {
   type RequestHandler,
 } from "express";
 import { logger } from "./lib/logger";
-import { router } from "./routes";
+import type { MathSolver } from "./modules/ai/math-solver";
+import type { EmailSender } from "./modules/email/email-sender";
+import { createRouter } from "./routes";
 
 const DEFAULT_ALLOWED_ORIGINS = [
   "http://localhost:5173",
@@ -54,7 +56,16 @@ const handleError: ErrorRequestHandler = (error, _req, res, _next) => {
   res.status(500).json({ error: "Internal server error" });
 };
 
-export function createApp() {
+/**
+ * The outside services the app talks to. Passed in rather than imported so
+ * tests can run the real app with a fake AI solver and a fake email outbox.
+ */
+export interface AppServices {
+  solver: MathSolver;
+  emailSender: EmailSender;
+}
+
+export function createApp(services: AppServices) {
   const app = express();
 
   // Vercel sits in front of the app as a proxy
@@ -75,7 +86,7 @@ export function createApp() {
   );
   app.use(express.json({ limit: "100kb" }));
 
-  app.use(router);
+  app.use(createRouter(services));
 
   app.use(notFound);
   app.use(handleError);
