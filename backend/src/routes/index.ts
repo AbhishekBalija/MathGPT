@@ -10,6 +10,7 @@ import {
   requireUser,
   requireVerifiedEmail,
 } from "../modules/auth/auth.middleware";
+import { limitByIp } from "../modules/rate-limits/rate-limit.middleware";
 
 import { healthRoute } from "./health.route";
 
@@ -47,9 +48,19 @@ export function createRouter(services: AppServices) {
   router.get("/health", healthRoute);
 
   // Auth
-  router.post("/auth/register", createRegisterRoute(services.emailSender));
-  router.post("/auth/login", loginRoute);
-  router.post("/auth/google", createGoogleOAuthRoute(services.emailSender));
+  // Per-IP limits stop one client from farming accounts or guessing passwords (ADR-0003)
+  router.post(
+    "/auth/register",
+    limitByIp("register", 5, 60 * 60),
+    createRegisterRoute(services.emailSender)
+  );
+  router.post("/auth/login", limitByIp("login", 10, 15 * 60), loginRoute);
+  // Google sign-in can also create accounts, so it shares the login budget
+  router.post(
+    "/auth/google",
+    limitByIp("login", 10, 15 * 60),
+    createGoogleOAuthRoute(services.emailSender)
+  );
   router.post("/auth/refresh", refreshTokenRoute);
   router.post("/auth/logout", logoutRoute);
   router.get("/auth/me", requireUser, meRoute);

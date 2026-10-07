@@ -8,6 +8,7 @@
 
 import { sql } from "drizzle-orm";
 import { db } from "../../db/client";
+import { runInBackground } from "../../lib/background";
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -15,8 +16,20 @@ export interface RateLimitResult {
   retryAfterSeconds: number;
 }
 
+// Windows older than this are dead weight; no limit here is longer than an hour
+const CLEANUP_AFTER = sql`interval '1 day'`;
+// About 1 in 100 hits also clears out old rows, so no scheduled job is needed
+const CLEANUP_CHANCE = 0.01;
+
 export const rateLimitRepository = {
   async hit(key: string, limit: number, windowSeconds: number): Promise<RateLimitResult> {
+    if (Math.random() < CLEANUP_CHANCE) {
+      // Off the request path, so a slow or failed cleanup never delays or breaks a request
+      runInBackground("rate-limit-cleanup", async () => {
+        await db.execute(sql`delete from rate_limits where window_start < now() - ${CLEANUP_AFTER}`);
+      });
+    }
+
     const window = sql`make_interval(secs => ${windowSeconds})`;
     const result = await db.execute<{ count: number; seconds_left: number }>(sql`
       insert into rate_limits (key, window_start, count)

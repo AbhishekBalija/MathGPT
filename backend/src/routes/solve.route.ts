@@ -16,13 +16,17 @@ import { getCurrentUser } from "../modules/auth/auth.middleware";
 import { userRepository } from "../modules/users/user.repository";
 import { route } from "../lib/http";
 import { logger } from "../lib/logger";
-import { checkRateLimit } from "../lib/rate-limit";
+import { rateLimitRepository } from "../modules/rate-limits/rate-limit.repository";
 import { runInBackground } from "../lib/background";
 import { handleSolveError } from "../events/solution/handle-solve-error";
 import { saveSolution } from "../events/solution/save-solution";
 
 // Daily free limit for users
 const DAILY_FREE_LIMIT = 5;
+
+// Short-window limit on solving, separate from the Daily Limit
+const RATE_LIMIT_MAX_REQUESTS = 5;
+const RATE_LIMIT_WINDOW_SECONDS = 60;
 
 // Request validation schema - userId comes from token, not body
 const solveRequestSchema = z.object({
@@ -69,14 +73,11 @@ export function createSolveRoute(solver: MathSolver) {
     const user = getCurrentUser(req);
     const userId = user.id;
 
-    // RATE LIMITING - 5 requests per minute per user
-    const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-    const RATE_LIMIT_MAX_REQUESTS = 5;
-
-    const rateLimit = checkRateLimit(
-      `ratelimit:${userId}`,
+    // RATE LIMITING - 5 requests per minute per User, shared by every server instance
+    const rateLimit = await rateLimitRepository.hit(
+      `solve:user:${userId}`,
       RATE_LIMIT_MAX_REQUESTS,
-      RATE_LIMIT_WINDOW_MS
+      RATE_LIMIT_WINDOW_SECONDS
     );
 
     if (!rateLimit.allowed) {
@@ -89,6 +90,7 @@ export function createSolveRoute(solver: MathSolver) {
         status: 429 as const,
         body: {
           error: `Too many requests. Please wait ${rateLimit.retryAfterSeconds} seconds before trying again.`,
+          code: "RATE_LIMITED",
           retryAfter: rateLimit.retryAfterSeconds,
         },
       };
