@@ -52,12 +52,16 @@ Register a new user account.
   "accessToken": "eyJhbG...",
   "refreshToken": "eyJhbG...",
   "user": {
-    "id": "user_id",
+    "id": "8f14e45f-ceea-4e7a-9b1c-2f6c1d0e5a11",
     "email": "user@example.com",
-    "name": "John Doe"
+    "emailVerified": false
   }
 }
 ```
+
+Emails are stored lowercase, so `User@Example.com` and `user@example.com`
+are the same account. Signing up with an email that is already registered
+returns **409**. Any `isAdmin` field in the body is ignored.
 
 ---
 
@@ -81,12 +85,17 @@ Login with email and password.
   "accessToken": "eyJhbG...",
   "refreshToken": "eyJhbG...",
   "user": {
-    "id": "user_id",
+    "id": "8f14e45f-ceea-4e7a-9b1c-2f6c1d0e5a11",
     "email": "user@example.com",
-    "name": "John Doe"
+    "name": "John Doe",
+    "avatar": "https://...",
+    "isAdmin": false,
+    "emailVerified": false
   }
 }
 ```
+
+The email is matched in any letter case.
 
 ---
 
@@ -109,14 +118,19 @@ Login with Google OAuth.
   "accessToken": "eyJhbG...",
   "refreshToken": "eyJhbG...",
   "user": {
-    "id": "user_id",
+    "id": "8f14e45f-ceea-4e7a-9b1c-2f6c1d0e5a11",
     "email": "user@example.com",
     "name": "John Doe",
-    "avatar": "https://..."
-  },
-  "isNewUser": false
+    "avatar": "https://...",
+    "isAdmin": false,
+    "emailVerified": true
+  }
 }
 ```
+
+Google Users are verified from the start. If the email already belongs to an
+email-and-password User, the Google account is linked to it and the User
+becomes verified.
 
 ---
 
@@ -133,10 +147,14 @@ Get current authenticated user. **Requires auth.**
     "email": "user@example.com",
     "name": "John Doe",
     "avatar": "https://...",
-    "isAdmin": false
+    "isAdmin": false,
+    "emailVerified": false
   }
 }
 ```
+
+Returns **401** `{ "error": "Authentication required" }` when the token is
+missing, invalid, expired, or belongs to a User that no longer exists.
 
 ---
 

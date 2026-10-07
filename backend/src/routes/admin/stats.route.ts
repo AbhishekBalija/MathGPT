@@ -3,38 +3,24 @@
  *
  * GET /admin/stats - Get dashboard statistics
  *
- * REQUIRES ADMIN AUTHENTICATION
+ * REQUIRES ADMIN AUTHENTICATION (requireUser + requireAdmin middleware)
  */
 
-import { requireAdmin } from "../../middlewares/auth.middleware";
-import { userRepository } from "../../repositories/user.repository";
+import { getCurrentUser } from "../../modules/auth/auth.middleware";
+import { userRepository } from "../../modules/users/user.repository";
 import { solutionRepository } from "../../repositories/solution.repository";
 import { route } from "../../lib/http";
 import { logger } from "../../lib/logger";
 
 // GET /admin/stats
 export const adminStatsRoute = route(async (req) => {
-  // Require admin authentication
-  let admin;
-  try {
-    admin = await requireAdmin(req.headers || {});
-  } catch (error) {
-    const isUnauthorized =
-      error instanceof Error && error.message === "Unauthorized";
-    return {
-      status: isUnauthorized ? 401 : 403,
-      body: {
-        error: isUnauthorized
-          ? "Authentication required"
-          : "Admin access required",
-      },
-    };
-  }
+  // Mounted behind requireUser and requireAdmin
+  const admin = getCurrentUser(req);
 
   try {
     // Fetch stats in parallel
-    const [userStats, solutionsByType, recentUsers] = await Promise.all([
-      userRepository.getStats(),
+    const [totalUsers, solutionsByType, recentUsers] = await Promise.all([
+      userRepository.count(),
       solutionRepository.countByProblemType(),
       userRepository.findRecent(5),
     ]);
@@ -44,11 +30,12 @@ export const adminStatsRoute = route(async (req) => {
     return {
       status: 200,
       body: {
-        totalUsers: userStats.totalUsers,
-        totalSolutions: userStats.totalSolutions,
+        totalUsers,
+        // Always 0 so far (unchanged from before); the admin work in #9 fills it in
+        totalSolutions: 0,
         solutionsByType,
         recentUsers: recentUsers.map((u) => ({
-          id: u._id.toString(),
+          id: u.id,
           name: u.name,
           email: u.email,
           createdAt: u.createdAt.toISOString(),

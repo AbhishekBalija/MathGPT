@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AuthService } from "../../services/auth/auth.service";
+import { AuthService } from "../../modules/auth/auth.service";
 import { routeWithBody } from "../../lib/http";
 import { logger } from "../../lib/logger";
 import { runInBackground } from "../../lib/background";
@@ -13,8 +13,8 @@ const GoogleOAuthSchema = z.object({
 
 // POST /auth/google
 export function createGoogleOAuthRoute(emailSender: EmailSender) {
-  return routeWithBody(GoogleOAuthSchema, async (req, body) => {
-    const { idToken } = GoogleOAuthSchema.parse(req.body);
+  return routeWithBody(GoogleOAuthSchema, async (_req, body) => {
+    const { idToken } = body;
 
     logger.info("Google OAuth login attempt");
 
@@ -26,7 +26,7 @@ export function createGoogleOAuthRoute(emailSender: EmailSender) {
       return {
         status: 401,
         body: {
-          error: result.error ?? "Google authentication failed",
+          error: result.error,
         },
       };
     }
@@ -37,7 +37,7 @@ export function createGoogleOAuthRoute(emailSender: EmailSender) {
       try {
         const { MongoClient } = await import("mongodb");
         const uri = process.env.MONGODB_URI;
-        if (uri && result.user?.email) {
+        if (uri) {
           const client = new MongoClient(uri);
           await client.connect();
           const db = client.db("MathGPTDB");
@@ -62,30 +62,24 @@ export function createGoogleOAuthRoute(emailSender: EmailSender) {
 
       runInBackground("send-welcome-email", () =>
         sendWelcomeEmail(emailSender, {
-          userId: result.user?.id?.toString(),
-          email: result.user?.email,
-          name: result.user?.name,
+          userId: result.user.id,
+          email: result.user.email,
+          name: result.user.name,
         })
       );
     }
 
-    logger.info("Google OAuth successful", { email: result.user?.email });
+    logger.info("Google OAuth successful", { email: result.user.email });
 
     // Step 5: Return the response
     return {
       status: 200,
       body: {
         message: "Google authentication successful",
-        email: result.user!.email,
-        refreshToken: result.refreshToken!,
-        accessToken: result.accessToken!,
-        user: {
-          id: result.user!.id.toString(),
-          email: result.user!.email,
-          name: result.user!.name,
-          avatar: result.user!.avatar,
-          isAdmin: result.user!.isAdmin || false,
-        },
+        email: result.user.email,
+        refreshToken: result.refreshToken,
+        accessToken: result.accessToken,
+        user: result.user,
       },
     };
   });

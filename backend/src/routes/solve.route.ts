@@ -12,9 +12,8 @@
 import { z, ZodError } from "zod";
 import { UnsolvableProblemError } from "../services/ai/ai.service";
 import type { MathSolver } from "../modules/ai/math-solver";
-import { requireAuth } from "../middlewares/auth.middleware";
-import { userRepository } from "../repositories/user.repository";
-import type { SolveResponse } from "../types/solve.types";
+import { getCurrentUser } from "../modules/auth/auth.middleware";
+import { userRepository } from "../modules/users/user.repository";
 import { route } from "../lib/http";
 import { logger } from "../lib/logger";
 import { checkRateLimit } from "../lib/rate-limit";
@@ -43,7 +42,7 @@ export function createSolveRoute(solver: MathSolver) {
   return route(async (req) => {
     const startTime = Date.now();
 
-    // VALIDATION FIRST - Validate input before auth to return proper 400 for invalid data
+    // VALIDATION - requireUser has already checked the token
     let problem: string;
     let mode: "step_by_step" | "hint" | "full";
     let chatId: string | undefined;
@@ -66,26 +65,9 @@ export function createSolveRoute(solver: MathSolver) {
       throw error;
     }
 
-    // AUTHENTICATION - Require valid access token
-    let user;
-    try {
-      user = await requireAuth(
-        req.headers as Record<string, string | string[] | undefined>
-      );
-      logger.info("User authenticated", { userId: user.id, email: user.email });
-    } catch (authError) {
-      logger.warn("Authentication failed", {
-        error: authError instanceof Error ? authError.message : "Unknown",
-      });
-      return {
-        status: 401 as const,
-        body: {
-          error: "Authentication required. Please login to use NeoMath.",
-        },
-      };
-    }
-
-    const userId = user.id; // Extract from authenticated user
+    // Mounted behind requireUser, so the User is already loaded
+    const user = getCurrentUser(req);
+    const userId = user.id;
 
     // RATE LIMITING - 5 requests per minute per user
     const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
@@ -123,10 +105,7 @@ export function createSolveRoute(solver: MathSolver) {
 
         // Reset daily counter if new day
         if (today !== lastReset) {
-          await userRepository.update(userId, {
-            dailyCreditsUsed: 0,
-            lastCreditReset: new Date(),
-          });
+          await userRepository.resetDailyCredits(userId);
         } else if ((fullUser.dailyCreditsUsed || 0) >= DAILY_FREE_LIMIT) {
           // User has exceeded daily limit
           const tomorrow = new Date();

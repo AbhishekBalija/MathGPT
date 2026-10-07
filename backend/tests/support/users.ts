@@ -25,3 +25,38 @@ export async function registerUser(email = uniqueEmail()): Promise<{
   const body = await res.json();
   return { email, accessToken: body.accessToken };
 }
+
+/**
+ * Signs up a User and makes them an Admin. The API can never grant admin
+ * rights to yourself, so this uses the repository directly, the same way
+ * `scripts/create-admin.ts` does. Use it for setup only, never to assert.
+ */
+export async function registerAdmin(): Promise<{
+  email: string;
+  accessToken: string;
+}> {
+  const { userRepository } = await import("../../src/modules/users/user.repository");
+  const admin = await registerUser();
+  const user = await userRepository.findByEmail(admin.email);
+  if (!user) {
+    throw new Error("Registered admin not found");
+  }
+  await userRepository.setAdmin(user.id, true);
+  return admin;
+}
+
+/** Calls the API with a User's access token. */
+export function authedFetch(
+  accessToken: string,
+  path: string,
+  init: { method?: string; body?: unknown } = {}
+): Promise<Response> {
+  return fetch(apiUrl(path), {
+    method: init.method ?? "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      ...(init.body === undefined ? {} : { "Content-Type": "application/json" }),
+    },
+    body: init.body === undefined ? undefined : JSON.stringify(init.body),
+  });
+}

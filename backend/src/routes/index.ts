@@ -5,6 +5,7 @@
 
 import { Router } from "express";
 import type { AppServices } from "../app";
+import { requireAdmin, requireUser } from "../modules/auth/auth.middleware";
 
 import { healthRoute } from "./health.route";
 
@@ -53,15 +54,15 @@ export function createRouter(services: AppServices) {
   router.post("/auth/google", createGoogleOAuthRoute(services.emailSender));
   router.post("/auth/refresh", refreshTokenRoute);
   router.post("/auth/logout", logoutRoute);
-  router.get("/auth/me", meRoute);
+  router.get("/auth/me", requireUser, meRoute);
 
   // Solving and history
-  router.post("/api/solve", createSolveRoute(services.solver));
+  router.post("/api/solve", requireUser, createSolveRoute(services.solver));
   router.get("/api/history", historyRoute);
   router.delete("/api/clear-history", clearHistoryRoute);
   router.get("/api/solution/:id", getSolutionRoute);
   router.delete("/api/solution/:id", deleteSolutionRoute);
-  router.get("/api/profile", profileRoute);
+  router.get("/api/profile", requireUser, profileRoute);
 
   // Public
   router.get("/api/public-stats", publicStatsRoute);
@@ -69,15 +70,15 @@ export function createRouter(services: AppServices) {
 
   // Admin
   router.post("/admin/verify-passcode", adminVerifyPasscodeRoute);
-  router.get("/admin/stats", adminStatsRoute);
+  router.get("/admin/stats", requireUser, requireAdmin, adminStatsRoute);
   router.get("/admin/analytics", adminAnalyticsRoute);
   router.get("/admin/token-stats", adminTokenStatsRoute);
   router.get("/admin/errors", adminErrorsRoute);
   router.patch("/admin/errors/:id/resolve", adminResolveErrorRoute);
-  router.get("/admin/users", adminListUsersRoute);
-  router.put("/admin/users/update-role", adminUpdateRolePutRoute);
-  router.patch("/admin/users/:id/role", adminUpdateUserRoleRoute);
-  router.delete("/admin/users/:id", adminDeleteUserRoute);
+  router.get("/admin/users", requireUser, requireAdmin, adminListUsersRoute);
+  router.put("/admin/users/update-role", requireUser, requireAdmin, adminUpdateRolePutRoute);
+  router.patch("/admin/users/:id/role", requireUser, requireAdmin, adminUpdateUserRoleRoute);
+  router.delete("/admin/users/:id", requireUser, requireAdmin, adminDeleteUserRoute);
   router.get("/admin/waitlist", adminListWaitlistRoute);
   router.post("/admin/invite-user", adminInviteUserRoute);
   router.post("/admin/resend-confirmation", adminResendConfirmationRoute);

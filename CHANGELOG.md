@@ -6,8 +6,28 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Postgres with Drizzle (`backend/src/db/`), with committed SQL migrations
+  and `bun run db:generate` / `bun run db:migrate`.
+- `bun run test` runs the real app in-process against a throwaway local
+  database, with a fake AI solver and a fake email outbox.
+- CI on every PR: lint, typecheck and tests for backend and frontend.
+- `emailVerified` on the user object in sign-up, login, Google sign-in and
+  `GET /auth/me` responses.
+
 ### Changed
 
+- Users are stored in Postgres instead of MongoDB. User ids are now UUIDs,
+  so tokens issued before this change stop working and Users log in again.
+- Emails are stored lowercase and matched in any letter case.
+- Authentication for `/auth/me`, `/api/profile`, `/api/solve` and the admin
+  user endpoints runs as `requireUser` / `requireAdmin` middleware. Their 401
+  and 403 errors are now `Authentication required` and `Admin access required`.
+- `GET /admin/users` falls back to page 1 and 20 per page for invalid values
+  and caps `limit` at 100.
+- `scripts/create-admin.ts` writes to the database in `DATABASE_URL` instead
+  of defaulting to production settings in `.env.prod`.
 - Backend moved from Motia to Express 5, run with Bun in development. All
   API paths and response shapes are unchanged.
 - Background work (emails, analytics, error logging) runs as plain functions
@@ -22,6 +42,14 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Security
 
+- `POST /auth/register` no longer accepts `isAdmin`. Before, anyone could
+  sign up as an Admin (present since 2025-12-17).
+- Google sign-in requires Google to have verified the email, and never
+  replaces an existing Google link on an account. Before, an unverified Google
+  address could be linked to someone else's NeoMath account.
+- `scripts/create-admin.ts` applies the same password rules as sign-up.
+- Malformed user ids (in tokens or admin URLs) are rejected before any
+  database query and return 401 or 404.
 - Removed hardcoded JWT secret fallbacks. The server now refuses to start
   without `JWT_SECRET` and `JWT_REFRESH_SECRET`.
 - CORS now only allows the listed frontend origins. Motia's default left
