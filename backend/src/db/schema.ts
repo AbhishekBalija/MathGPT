@@ -9,12 +9,15 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { ProblemType, SolutionStep } from "../types/solve.types";
 
 export type AuthProvider = "email" | "google";
 
@@ -75,3 +78,36 @@ export const rateLimits = pgTable("rate_limits", {
   windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
   count: integer("count").notNull(),
 });
+
+export const solutions = pgTable(
+  "solutions",
+  {
+    // The id the solver generated, so the id returned by solving is the one
+    // used to fetch and delete the Solution (ADR-0002)
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    chatId: text("chat_id"),
+    problem: text("problem").notNull(),
+    // Text, not an enum, so new Problem Types need no migration (ADR-0002)
+    problemType: text("problem_type").$type<ProblemType>().notNull(),
+    steps: jsonb("steps").$type<SolutionStep[]>().notNull(),
+    finalAnswer: text("final_answer").notNull(),
+    summary: text("summary").notNull(),
+    processingTimeMs: integer("processing_time_ms").notNull(),
+    inputTokens: integer("input_tokens").notNull().default(0),
+    outputTokens: integer("output_tokens").notNull().default(0),
+    totalTokens: integer("total_tokens").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    // History: one User's Solutions, newest first
+    index("solutions_user_id_created_at_idx").on(table.userId, table.createdAt.desc()),
+    index("solutions_problem_type_idx").on(table.problemType),
+  ]
+);
+
+export type SolutionRow = typeof solutions.$inferSelect;

@@ -301,8 +301,8 @@ graph TB
 
 ## Data Models
 
-Users live in Postgres. Solutions, Analytics Events and Error Logs are still
-in MongoDB and move in #7 and #9; until then they point at Users by id only,
+Users and Solutions live in Postgres. Analytics Events and Error Logs are
+still in MongoDB and move in #9; until then they point at Users by id only,
 without a database-enforced foreign key.
 
 ```mermaid
@@ -325,15 +325,19 @@ erDiagram
     }
 
     SOLUTION {
-        ObjectId _id PK
-        string userId FK "a Postgres User id"
-        string problem
-        string problemType
-        array steps
-        string finalAnswer
-        string summary
-        number processingTimeMs
-        Date createdAt
+        uuid id PK "the solver's id"
+        uuid user_id FK "cascade delete"
+        text chat_id
+        text problem
+        text problem_type "text, not an enum"
+        jsonb steps
+        text final_answer
+        text summary
+        int processing_time_ms
+        int input_tokens
+        int output_tokens
+        int total_tokens
+        timestamptz created_at
     }
 
     ANALYTICS_EVENT {

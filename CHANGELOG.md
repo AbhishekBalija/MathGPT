@@ -33,6 +33,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
   Unverified Users can still log in and see their profile and History.
 - The welcome email is sent after verification instead of at sign-up; email
   sign-ups get the Verification Code first.
+- Solutions are stored in Postgres. A Solution's id is the id solving
+  returned, so opening and deleting a just-solved Problem works (before, the
+  stored id was different). Deleting a User deletes their Solutions through a
+  database cascade. If saving a Solution fails, solving returns a generic 500
+  and no Credit is spent.
 - Users are stored in Postgres instead of MongoDB. User ids are now UUIDs,
   so tokens issued before this change stop working and Users log in again.
 - Emails are stored lowercase and matched in any letter case.
@@ -52,6 +57,9 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- "Clear History" in the app: the frontend called `DELETE /api/history`,
+  which did not exist. Both that and `DELETE /api/clear-history` now work.
+
 - Admin error filters (`GET /admin/errors?errorCode=...`) and
   `PATCH /admin/errors/:id/resolve` now read query and path params correctly.
 
@@ -64,6 +72,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
   address could be linked to someone else's NeoMath account.
 - `scripts/create-admin.ts` applies the same password rules as sign-up.
 - User names are HTML-escaped in emails.
+- `GET /api/solution/:id` only returns your own Solutions. Before, any
+  logged-in User could open anyone's Solution by id.
 - Malformed user ids (in tokens or admin URLs) are rejected before any
   database query and return 401 or 404.
 - Removed hardcoded JWT secret fallbacks. The server now refuses to start

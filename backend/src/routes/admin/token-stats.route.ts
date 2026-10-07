@@ -7,7 +7,7 @@
  */
 
 import { requireAdmin } from "../../middlewares/auth.middleware";
-import { solutionRepository } from "../../repositories/solution.repository";
+import { solutionRepository } from "../../modules/solutions/solution.repository";
 import { route } from "../../lib/http";
 import { logger } from "../../lib/logger";
 
@@ -35,8 +35,7 @@ export const adminTokenStatsRoute = route(async (req) => {
   logger.info("Admin fetching token stats", { adminId: admin.id });
 
   try {
-    // Get token usage stats from solutions collection
-    const tokenStats = await solutionRepository.getTokenStats();
+    const tokenStats = await solutionRepository.tokenTotals();
 
     // Calculate estimated cost
     const inputCost =

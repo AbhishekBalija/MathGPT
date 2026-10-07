@@ -1,4 +1,4 @@
-import { solutionRepository } from "../repositories/solution.repository";
+import { solutionRepository } from "../modules/solutions/solution.repository";
 import { getCurrentUser } from "../modules/auth/auth.middleware";
 import { userRepository } from "../modules/users/user.repository";
 import { route } from "../lib/http";
@@ -25,7 +25,7 @@ export const profileRoute = route(async (req) => {
     }
 
     // Step 5: Fetch usage statistics
-    const stats = await solutionRepository.getUserStats(userId);
+    const stats = await solutionRepository.statsForUser(userId);
 
     // Step 5.5: Calculate daily credits
     const today = new Date().toDateString();

@@ -8,7 +8,8 @@
 
 import { getCurrentUser } from "../../modules/auth/auth.middleware";
 import { userRepository } from "../../modules/users/user.repository";
-import { solutionRepository } from "../../repositories/solution.repository";
+import { solutionRepository } from "../../modules/solutions/solution.repository";
+import { inTransaction } from "../../db/transaction";
 import { pathParam, route } from "../../lib/http";
 import { logger } from "../../lib/logger";
 
@@ -37,10 +38,12 @@ export const adminDeleteUserRoute = route(async (req) => {
       };
     }
 
-    // The User goes first: if removing their Solutions then fails, we are left
-    // with unreachable Solutions instead of a User who lost all their work.
-    // Solutions move to Postgres in #7, where a cascade does both at once.
-    const deleted = await userRepository.delete(id);
+    // Counted for the response inside the same transaction as the delete, so
+    // the number matches what the database cascade removes with the User
+    const { deleted, deletedSolutions } = await inTransaction(async (tx) => ({
+      deletedSolutions: await solutionRepository.countForUser(id, tx),
+      deleted: await userRepository.delete(id, tx),
+    }));
 
     if (!deleted) {
       return {
@@ -48,8 +51,6 @@ export const adminDeleteUserRoute = route(async (req) => {
         body: { error: "Failed to delete user" },
       };
     }
-
-    const deletedSolutions = await solutionRepository.deleteByUserId(id);
 
     logger.info("Admin deleted user", {
       adminId: admin.id,

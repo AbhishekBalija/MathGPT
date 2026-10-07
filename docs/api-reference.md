@@ -309,7 +309,8 @@ Get user's solution history. **Requires auth.**
 
 ### GET /api/solution/:id
 
-Get a specific solution. **Requires auth.**
+Get one of your Solutions in full. **Requires auth.** The `id` is the one
+`POST /api/solve` returned.
 
 **Response (200):**
 
@@ -317,24 +318,26 @@ Get a specific solution. **Requires auth.**
 {
   "success": true,
   "solution": {
-    /* full solution object */
+    "id": "8f14e45f-ceea-4e7a-9b1c-2f6c1d0e5a11",
+    "problem": "2x = 4",
+    "problemType": "algebra",
+    "steps": [ /* Steps */ ],
+    "finalAnswer": "x = 2",
+    "summary": "...",
+    "processingTimeMs": 1200,
+    "createdAt": "2026-10-07T10:00:00.000Z"
   }
 }
 ```
 
+**404** for an id that is not a UUID, does not exist, or belongs to another
+User (the response never confirms someone else's id exists).
+
 ---
 
-### DELETE /api/delete-solution
+### DELETE /api/solution/:id
 
-Delete a solution. **Requires auth.**
-
-**Request Body:**
-
-```json
-{
-  "solutionId": "solution_id"
-}
-```
+Delete one of your Solutions. **Requires auth.**
 
 **Response (200):**
 
@@ -345,18 +348,21 @@ Delete a solution. **Requires auth.**
 }
 ```
 
+**404** in the same cases as `GET /api/solution/:id`.
+
 ---
 
-### DELETE /api/clear-history
+### DELETE /api/history
 
-Clear all user's solutions. **Requires auth.**
+Clear all your Solutions. **Requires auth.** `DELETE /api/clear-history` is
+an older path for the same thing.
 
 **Response (200):**
 
 ```json
 {
   "success": true,
-  "message": "History cleared",
+  "message": "Deleted 5 solution(s)",
   "deletedCount": 5
 }
 ```

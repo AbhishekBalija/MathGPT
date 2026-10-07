@@ -73,10 +73,12 @@ export function createRouter(services: AppServices) {
 
   // Solving and history
   router.post("/api/solve", requireUser, requireVerifiedEmail, createSolveRoute(services.solver));
-  router.get("/api/history", historyRoute);
-  router.delete("/api/clear-history", clearHistoryRoute);
-  router.get("/api/solution/:id", getSolutionRoute);
-  router.delete("/api/solution/:id", deleteSolutionRoute);
+  router.get("/api/history", requireUser, historyRoute);
+  // The frontend calls DELETE /api/history; /api/clear-history is the older path
+  router.delete("/api/history", requireUser, clearHistoryRoute);
+  router.delete("/api/clear-history", requireUser, clearHistoryRoute);
+  router.get("/api/solution/:id", requireUser, getSolutionRoute);
+  router.delete("/api/solution/:id", requireUser, deleteSolutionRoute);
   router.get("/api/profile", requireUser, profileRoute);
 
   // Public
