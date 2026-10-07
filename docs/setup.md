@@ -119,7 +119,6 @@ bun run dev
 | `GEMINI_MATH_AI_API`   | Gemini AI API key                       | Yes      |
 | `GOOGLE_CLIENT_ID`     | Google OAuth Client ID                  | Yes      |
 | `RESEND_API_KEY`       | Resend email API key                    | No       |
-| `ADMIN_PASSCODE`       | Admin secondary authentication passcode | No       |
 | `ACCESS_TOKEN_EXPIRY`  | JWT access token expiry (default: 15m)  | No       |
 | `REFRESH_TOKEN_EXPIRY` | JWT refresh token expiry (default: 7d)  | No       |
 
@@ -201,7 +200,6 @@ To enable admin features:
 
 1. Run `bun run scripts/create-admin.ts` in `backend/`. It creates an Admin,
    or makes an existing User one, in the database `DATABASE_URL` points to
-2. Optionally set `ADMIN_PASSCODE` env variable for secondary authentication
 3. Admin users can access `/admin` dashboard after login
 
 ---

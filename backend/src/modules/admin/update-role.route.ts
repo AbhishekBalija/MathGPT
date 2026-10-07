@@ -1,39 +1,46 @@
 /**
- * Admin Update User Role API
+ * Admin Update User Role API (Alternate Route)
  *
- * PATCH /admin/users/:id/role - Toggle admin role for a user
+ * PUT /admin/users/update-role - Update user admin role
  *
  * REQUIRES ADMIN AUTHENTICATION (requireUser + requireAdmin middleware)
  */
 
 import { z } from "zod";
-import { getCurrentUser } from "../../modules/auth/auth.middleware";
-import { userRepository } from "../../modules/users/user.repository";
+import { getCurrentUser } from "../auth/auth.middleware";
+import { userRepository } from "../users/user.repository";
 
-const UpdateUserRoleSchema = z.object({
+const UpdateRoleSchema = z.object({
+  userId: z.string().min(1, "userId is required"),
   isAdmin: z.boolean(),
 });
-import { pathParam, routeWithBody } from "../../lib/http";
+import { routeWithBody } from "../../lib/http";
 import { logger } from "../../lib/logger";
 
-// PATCH /admin/users/:id/role
-export const adminUpdateUserRoleRoute = routeWithBody(UpdateUserRoleSchema, async (req, body) => {
+// PUT /admin/users/update-role
+export const adminUpdateRolePutRoute = routeWithBody(UpdateRoleSchema, async (req, body) => {
   // Mounted behind requireUser and requireAdmin
   const admin = getCurrentUser(req);
 
   try {
-    const id = pathParam(req, "id");
-    const { isAdmin } = body;
+    const { userId, isAdmin } = body;
+
+    if (!userId) {
+      return {
+        status: 400,
+        body: { error: "userId is required" },
+      };
+    }
 
     // Prevent admin from removing their own admin status
-    if (id === admin.id && !isAdmin) {
+    if (userId === admin.id && !isAdmin) {
       return {
         status: 403,
         body: { error: "Cannot remove your own admin status" },
       };
     }
 
-    const user = await userRepository.setAdmin(id, isAdmin);
+    const user = await userRepository.setAdmin(userId, isAdmin);
 
     if (!user) {
       return {
@@ -44,7 +51,7 @@ export const adminUpdateUserRoleRoute = routeWithBody(UpdateUserRoleSchema, asyn
 
     logger.info("Admin updated user role", {
       adminId: admin.id,
-      targetUserId: id,
+      targetUserId: userId,
       newRole: isAdmin ? "admin" : "user",
     });
 

@@ -1,68 +1,52 @@
 /**
- * Handle Solve Error Event Handler
- *
- * Handles errors from the solve API:
- * - Logs errors for debugging
- * - Tracks error analytics
- * - Could trigger retries or notifications
+ * Records a failed solve as an Error Log (with the Problem text, so an Admin
+ * can see what failed) plus a "solve_error" Analytics Event.
+ * Runs in the background; a failure is logged and never breaks a request.
  */
 
-import { z } from "zod";
 import { logger } from "../../lib/logger";
-import { trackAnalytics } from "./track-analytics";
+import { analyticsRepository } from "../../modules/analytics/analytics.repository";
 
-const ProblemErrorSchema = z.object({
-  chatId: z.string().optional(),
-  userId: z.string().optional(),
-  problem: z.string(),
-  errorCode: z.string(),
-  errorMessage: z.string(),
-  processingTimeMs: z.number().optional(),
-  timestamp: z.string(),
-});
+export interface SolveErrorData {
+  chatId?: string;
+  userId?: string;
+  problem: string;
+  errorCode: string;
+  errorMessage: string;
+  processingTimeMs?: number;
+  timestamp: string;
+}
 
-export type SolveErrorEvent = z.infer<typeof ProblemErrorSchema>;
+export async function handleSolveError(data: SolveErrorData): Promise<void> {
+  const { userId, problem, errorCode, errorMessage, processingTimeMs } = data;
 
-export async function handleSolveError(data: SolveErrorEvent): Promise<void> {
-  const {
-    chatId,
-    userId,
-    problem,
+  logger.warn("Recording solve error", {
     errorCode,
-    errorMessage,
-    processingTimeMs,
-    timestamp,
-  } = data;
-
-  logger.warn("Processing solve error", {
-    errorCode,
-    errorMessage,
-    chatId,
     userId,
     problemPreview: problem.slice(0, 50),
   });
 
-  try {
-    // Short id so this error can be found in the logs
-    const errorId = `err-${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2, 7)}`;
+  // Independent writes: if one fails, the other is still recorded
+  const results = await Promise.allSettled([
+    analyticsRepository.recordError({
+      errorCode,
+      errorMessage,
+      problemText: problem,
+      userId,
+      processingTimeMs,
+    }),
+    analyticsRepository.recordEvent(
+      "solve_error",
+      { errorCode, errorMessage: errorMessage.slice(0, 100), processingTimeMs },
+      userId
+    ),
+  ]);
 
-    // Track error analytics (stored in error_logs for the admin dashboard)
-    await trackAnalytics({
-      event: "solve_error",
-      properties: {
-        errorCode,
-        errorMessage: errorMessage.slice(0, 100),
-        userId,
-        processingTimeMs,
-      },
-      timestamp,
-    });
-
-    logger.info("Solve error processed", { errorId, errorCode });
-  } catch (error) {
-    const err = error instanceof Error ? error.message : "Unknown error";
-    logger.error("Failed to process solve error", { error: err });
+  for (const result of results) {
+    if (result.status === "rejected") {
+      logger.error("Failed to record solve error", {
+        error: result.reason instanceof Error ? result.reason.message : "Unknown error",
+      });
+    }
   }
 }

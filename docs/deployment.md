@@ -69,7 +69,6 @@ motia env set GEMINI_MATH_AI_API="your_gemini_key"
 motia env set GOOGLE_CLIENT_ID="your_google_client_id"
 motia env set VITE_GOOGLE_CLIENT_ID="your_google_client_id"
 motia env set RESEND_API_KEY="your_resend_key"
-motia env set ADMIN_PASSCODE="your_admin_passcode"
 ```
 
 ### 4. Deploy
@@ -161,18 +160,6 @@ After users register, set `isAdmin: true` in MongoDB:
 db.users.updateOne({ email: "admin@example.com" }, { $set: { isAdmin: true } });
 ```
 
-### 2. Admin Passcode (Optional)
-
-Set `ADMIN_PASSCODE` environment variable for additional security:
-
-```bash
-motia env set ADMIN_PASSCODE="secure_passcode_here"
-```
-
-Admins must verify this passcode when accessing certain admin features.
-
----
-
 ## Deployment Checklist
 
 - [ ] MongoDB Atlas cluster created
@@ -183,7 +170,6 @@ Admins must verify this passcode when accessing certain admin features.
 - [ ] CORS origins updated for production
 - [ ] Google OAuth URIs updated
 - [ ] Admin user configured (if needed)
-- [ ] Admin passcode set (optional)
 - [ ] Test login/register flow
 - [ ] Test solve functionality
 - [ ] Verify history loads correctly

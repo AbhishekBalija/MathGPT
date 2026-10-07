@@ -403,34 +403,7 @@ Get user profile and usage statistics. **Requires auth.**
 
 ## Admin Endpoints
 
-> **Note**: All admin endpoints require authentication with an admin account (`isAdmin: true`).
-
-### POST /admin/verify-passcode
-
-Verify admin passcode for secondary authentication.
-
-**Request Body:**
-
-```json
-{
-  "passcode": "admin_passcode"
-}
-```
-
-**Response (200):**
-
-```json
-{
-  "success": true
-}
-```
-
-| Status | Error                                    |
-| ------ | ---------------------------------------- |
-| 401    | Authentication required                  |
-| 403    | Admin access required / Invalid passcode |
-
----
+> **Note**: All admin endpoints require a normal login with an Admin account (`isAdmin: true`): 401 without a login, 403 for non-Admins. There is no separate admin passcode.
 
 ### GET /admin/stats
 
@@ -576,6 +549,10 @@ Delete a user and their solutions. **Requires admin.**
 
 ### GET /admin/errors
 
+Query: `errorCode`, `userId`, `includeResolved=true`, `limit` (1 to 200,
+default 50). Filters combine. Resolved Error Logs are left out unless
+`includeResolved=true`, also when filtering by code or User.
+
 Get error logs for admin dashboard. **Requires admin.**
 
 **Query Parameters:**
@@ -617,6 +594,9 @@ Get error logs for admin dashboard. **Requires admin.**
 ---
 
 ### PATCH /admin/errors/:id/resolve
+
+Resolving an already resolved Error Log changes nothing and returns it as it
+is, so the record keeps who resolved it first and when.
 
 Mark an error as resolved. **Requires admin.**
 

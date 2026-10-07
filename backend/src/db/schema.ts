@@ -111,3 +111,50 @@ export const solutions = pgTable(
 );
 
 export type SolutionRow = typeof solutions.$inferSelect;
+
+// Something that happened, e.g. "solution_saved", for admin statistics
+export const analyticsEvents = pgTable(
+  "analytics_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventName: text("event_name").notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    properties: jsonb("properties").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("analytics_events_event_name_created_at_idx").on(
+      table.eventName,
+      table.createdAt.desc()
+    ),
+    // Deleting a User nulls these out, and Admins filter by User
+    index("analytics_events_user_id_idx").on(table.userId),
+  ]
+);
+
+// A failed solve, kept so an Admin can review it and mark it resolved
+export const errorLogs = pgTable(
+  "error_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    errorCode: text("error_code").notNull(),
+    errorMessage: text("error_message").notNull(),
+    problemText: text("problem_text").notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    processingTimeMs: integer("processing_time_ms"),
+    resolved: boolean("resolved").notNull().default(false),
+    resolvedBy: uuid("resolved_by").references(() => users.id, { onDelete: "set null" }),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("error_logs_resolved_created_at_idx").on(table.resolved, table.createdAt.desc()),
+    index("error_logs_error_code_idx").on(table.errorCode),
+    index("error_logs_user_id_idx").on(table.userId),
+    index("error_logs_resolved_by_idx").on(table.resolvedBy),
+  ]
+);

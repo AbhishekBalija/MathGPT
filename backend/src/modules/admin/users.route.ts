@@ -9,8 +9,8 @@
  */
 
 import { z } from "zod";
-import { getCurrentUser } from "../../modules/auth/auth.middleware";
-import { userRepository } from "../../modules/users/user.repository";
+import { getCurrentUser } from "../auth/auth.middleware";
+import { userRepository } from "../users/user.repository";
 import { queryParam, route } from "../../lib/http";
 import { logger } from "../../lib/logger";
 

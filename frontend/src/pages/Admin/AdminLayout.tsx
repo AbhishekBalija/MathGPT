@@ -7,7 +7,7 @@ import { Menu, X, Moon, Sun } from "lucide-react";
 
 const AdminLayout = () => {
   const { user, logout } = useAuthStore();
-  const { clearAdminVerification } = useAdminStore();
+  const { clearAdminData } = useAdminStore();
   const { isDark, toggleTheme } = useThemeStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -17,7 +17,7 @@ const AdminLayout = () => {
   }, []);
 
   const handleLogout = async () => {
-    clearAdminVerification();
+    clearAdminData();
     await logout();
   };
 

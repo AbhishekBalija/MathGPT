@@ -38,7 +38,6 @@ const TEST_ENV = {
   USE_MULTI_MODEL: "false",
   RESEND_API: "re_test_not_a_real_key",
   FROM_EMAIL: "NeoMath Test <test@example.invalid>",
-  ADMIN_PASSCODE: "test-admin-passcode",
 };
 
 async function findFreePort(): Promise<number> {
