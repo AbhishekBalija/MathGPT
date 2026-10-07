@@ -38,12 +38,15 @@ admin: add user management page
 
 1. Create feature branch from `main`
 2. Make changes and test locally
-3. Run tests: `npm run test`
+3. In each package you changed, run `bun run lint`, `bun run typecheck` and `bun run test`
 4. Commit with descriptive messages
 5. Push to your fork
 6. Open PR to `main`
-7. Address review feedback
-8. Squash and merge when approved
+7. Wait for CI (`.github/workflows/ci.yml`) to pass: it runs lint, typecheck
+   and tests for backend and frontend on every PR. Lint is not blocking yet
+   (#13, #14)
+8. Address review feedback
+9. Merge when approved
 
 ---
 
@@ -102,15 +105,18 @@ When adding new features:
 
 ```bash
 cd frontend
-npm run test
+bun run test
 ```
 
 ### Backend Tests
 
 ```bash
 cd backend
-npm run test
+bun run test
 ```
+
+Needs a local Postgres running and MongoDB installed. See
+`backend/tests/README.md`.
 
 ---
 
