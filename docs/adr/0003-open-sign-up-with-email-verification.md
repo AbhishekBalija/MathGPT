@@ -1,0 +1,3 @@
+# Open sign-up guarded by email verification and IP rate limits
+
+We removed the invite-only waitlist and let anyone sign up. The waitlist had also been the only protection against people mass-creating accounts to use free AI Credits, so we replaced it with two guards: only Verified Users can solve Problems (a Verification Code is emailed on sign-up; Google sign-ins count as verified), and sign-up and login are rate limited per IP. We chose this over a CAPTCHA such as Cloudflare Turnstile to avoid adding a third-party widget and dependency, and over IP limits alone because rotating IPs with fake emails would still get through.
