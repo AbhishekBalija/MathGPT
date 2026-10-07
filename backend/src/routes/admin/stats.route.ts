@@ -6,53 +6,14 @@
  * REQUIRES ADMIN AUTHENTICATION
  */
 
-import type { ApiRouteConfig } from "motia";
-import { z } from "zod";
 import { requireAdmin } from "../../middlewares/auth.middleware";
 import { userRepository } from "../../repositories/user.repository";
 import { solutionRepository } from "../../repositories/solution.repository";
+import { route } from "../../lib/http";
+import { logger } from "../../lib/logger";
 
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "AdminGetStats",
-  description: "Get dashboard statistics (requires admin)",
-  path: "/admin/stats",
-  method: "GET",
-  emits: [],
-  flows: ["admin-flow"],
-  responseSchema: {
-    200: z.object({
-      totalUsers: z.number(),
-      totalSolutions: z.number(),
-      solutionsByType: z.record(z.string(), z.number()),
-      recentUsers: z.array(
-        z.object({
-          id: z.string(),
-          name: z.string(),
-          email: z.string(),
-          createdAt: z.string(),
-        })
-      ),
-    }),
-    401: z.object({ error: z.string() }),
-    403: z.object({ error: z.string() }),
-    500: z.object({ error: z.string() }),
-  },
-};
-
-export async function handler(
-  req: {
-    headers?: Record<string, string | string[] | undefined>;
-  },
-  {
-    logger,
-  }: {
-    logger: {
-      info: (msg: string, data?: unknown) => void;
-      error: (msg: string, data?: unknown) => void;
-    };
-  }
-) {
+// GET /admin/stats
+export const adminStatsRoute = route(async (req) => {
   // Require admin authentication
   let admin;
   try {
@@ -102,4 +63,4 @@ export async function handler(
       body: { error: "Failed to load stats" },
     };
   }
-}
+});

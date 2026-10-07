@@ -6,48 +6,13 @@
  * REQUIRES AUTHENTICATION
  */
 
-import type { ApiRouteConfig } from "motia";
-import { z } from "zod";
 import { requireAuth } from "../middlewares/auth.middleware";
 import { SolutionService } from "../services/solution/solution.service";
+import { route } from "../lib/http";
+import { logger } from "../lib/logger";
 
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "GetUserHistory",
-  description: "Get authenticated user's solution history",
-  path: "/api/history",
-  method: "GET",
-  emits: [],
-  flows: ["SolutionFlow"],
-  responseSchema: {
-    200: z.object({
-      success: z.boolean(),
-      history: z.array(
-        z.object({
-          id: z.string(),
-          problem: z.string(),
-          problemType: z.string(),
-          finalAnswer: z.string(),
-          createdAt: z.string(),
-        })
-      ),
-    }),
-    401: z.object({ error: z.string() }),
-    500: z.object({ error: z.string() }),
-  },
-};
-
-export async function handler(
-  req: { headers?: Record<string, string | string[] | undefined> },
-  {
-    logger,
-  }: {
-    logger: {
-      info: (msg: string, data?: unknown) => void;
-      error: (msg: string, data?: unknown) => void;
-    };
-  }
-) {
+// GET /api/history
+export const historyRoute = route(async (req) => {
   // Require authentication
   let user;
   try {
@@ -93,4 +58,4 @@ export async function handler(
       body: { error: "Failed to load history" },
     };
   }
-}
+});

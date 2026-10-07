@@ -1,13 +1,14 @@
 /**
  * Waitlist Email Event Handler
  *
- * Listens to 'waitlist-joined' events and sends confirmation emails.
+ * Sends confirmation emails.
  * Uses Resend for email delivery.
  */
 
-import { EventConfig, Handlers } from "motia";
 import { Resend } from "resend";
+import { requireEnv } from "../lib/env";
 import { z } from "zod";
+import { logger } from "../lib/logger";
 
 // Define the input schema for the waitlist-joined event
 const waitlistJoinedSchema = z.object({
@@ -16,35 +17,13 @@ const waitlistJoinedSchema = z.object({
   timestamp: z.string(),
 });
 
-// Initialize Resend client at module load (fail fast if not configured)
-const resendApiKey = process.env.RESEND_API;
-if (!resendApiKey) {
-  throw new Error("RESEND_API environment variable is not set");
-}
-const resend = new Resend(resendApiKey);
+// Fail fast at startup if email is not configured
+const resend = new Resend(requireEnv("RESEND_API"));
+const fromEmail = requireEnv("FROM_EMAIL");
 
-// Validate FROM_EMAIL at module load
-const fromEmail = process.env.FROM_EMAIL;
-if (!fromEmail) {
-  throw new Error("FROM_EMAIL environment variable is not set");
-}
+export type WaitlistJoinedData = z.infer<typeof waitlistJoinedSchema>;
 
-export const config: EventConfig = {
-  type: "event",
-  name: "SendWaitlistEmail",
-  description: "Send confirmation email when user joins waitlist",
-  subscribes: ["waitlist-joined"],
-  emits: [],
-  flows: ["WaitlistFlow"],
-  input: waitlistJoinedSchema,
-};
-
-type WaitlistJoinedData = z.infer<typeof waitlistJoinedSchema>;
-
-export const handler: Handlers["SendWaitlistEmail"] = async (
-  data: WaitlistJoinedData,
-  { logger }
-) => {
+export async function sendWaitlistEmail(data: WaitlistJoinedData): Promise<void> {
   logger.info("Sending waitlist confirmation email");
 
   try {
@@ -102,4 +81,4 @@ export const handler: Handlers["SendWaitlistEmail"] = async (
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }
-};
+}

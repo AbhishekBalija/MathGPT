@@ -6,62 +6,13 @@
  * REQUIRES AUTHENTICATION
  */
 
-import type { ApiRouteConfig } from "motia";
-import { z } from "zod";
 import { requireAuth } from "../middlewares/auth.middleware";
 import { solutionRepository } from "../repositories/solution.repository";
+import { pathParam, route } from "../lib/http";
+import { logger } from "../lib/logger";
 
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "GetSolution",
-  description: "Get a full solution by its ID",
-  path: "/api/solution/:id",
-  method: "GET",
-  emits: [],
-  flows: ["SolutionFlow"],
-  responseSchema: {
-    200: z.object({
-      success: z.boolean(),
-      solution: z.object({
-        id: z.string(),
-        problem: z.string(),
-        problemType: z.string(),
-        steps: z.array(
-          z.object({
-            stepNumber: z.number(),
-            expression: z.string(),
-            justification: z.string(),
-            explanation: z.string(),
-            status: z.string(),
-            notes: z.string().optional(),
-          })
-        ),
-        finalAnswer: z.string(),
-        summary: z.string(),
-        processingTimeMs: z.number(),
-        createdAt: z.string(),
-      }),
-    }),
-    401: z.object({ error: z.string() }),
-    404: z.object({ error: z.string() }),
-    500: z.object({ error: z.string() }),
-  },
-};
-
-export async function handler(
-  req: {
-    headers?: Record<string, string | string[] | undefined>;
-    pathParams?: Record<string, string>;
-  },
-  {
-    logger,
-  }: {
-    logger: {
-      info: (msg: string, data?: unknown) => void;
-      error: (msg: string, data?: unknown) => void;
-    };
-  }
-) {
+// GET /api/solution/:id
+export const getSolutionRoute = route(async (req) => {
   // Require authentication
   try {
     await requireAuth(req.headers || {});
@@ -72,7 +23,7 @@ export async function handler(
     };
   }
 
-  const solutionId = req.pathParams?.id;
+  const solutionId = pathParam(req, "id");
 
   if (!solutionId) {
     return {
@@ -128,4 +79,4 @@ export async function handler(
       body: { error: "Failed to fetch solution" },
     };
   }
-}
+});

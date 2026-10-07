@@ -7,9 +7,9 @@
  * No authentication required.
  */
 
-import { ApiRouteConfig } from "motia";
-import { z } from "zod";
 import { MongoClient, Collection } from "mongodb";
+import { route } from "../lib/http";
+import { logger } from "../lib/logger";
 
 // MongoDB connection cache (reused across invocations)
 let client: MongoClient | null = null;
@@ -46,36 +46,8 @@ async function getMongoClient(): Promise<MongoClient> {
   return connectionPromise;
 }
 
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "PublicStats",
-  description: "Get public user and waitlist counts for social proof",
-  path: "/api/public-stats",
-  method: "GET",
-  emits: [],
-  flows: ["public-flow"],
-  responseSchema: {
-    200: z.object({
-      userCount: z.number(),
-      waitlistCount: z.number(),
-    }),
-    500: z.object({
-      error: z.string(),
-    }),
-  },
-};
-
-export async function handler(
-  _req: unknown,
-  {
-    logger,
-  }: {
-    logger: {
-      info: (msg: string, data?: unknown) => void;
-      error: (msg: string, data?: unknown) => void;
-    };
-  }
-) {
+// GET /api/public-stats
+export const publicStatsRoute = route(async (req) => {
   try {
     const mongoClient = await getMongoClient();
     const db = mongoClient.db("MathGPTDB");
@@ -105,4 +77,4 @@ export async function handler(
       body: { error: "Failed to fetch stats" },
     };
   }
-}
+});

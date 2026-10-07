@@ -7,11 +7,14 @@
  * Token expires after 24 hours.
  */
 
-import { ApiRouteConfig, Handlers } from "motia";
 import { z } from "zod";
 import { MongoClient, Collection } from "mongodb";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 import { requireAuth } from "../../middlewares/auth.middleware";
+import { route } from "../../lib/http";
+import { logger } from "../../lib/logger";
+import { runInBackground } from "../../lib/background";
+import { sendWaitlistInvite } from "../../events/waitlist-invite";
 
 // Waitlist document type (matches waitlist.step.ts)
 interface WaitlistEntry {
@@ -55,43 +58,8 @@ async function getWaitlistCollection(): Promise<Collection<WaitlistEntry>> {
   return waitlistCollection;
 }
 
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "AdminInviteUser",
-  description: "Approve waitlist user and send invite email",
-  path: "/admin/invite-user",
-  method: "POST",
-  flows: ["WaitlistFlow"],
-  emits: [{ topic: "waitlist-invite-sent", label: "Send Invite Email" }],
-  bodySchema: inviteUserSchema,
-  responseSchema: {
-    200: z.object({
-      success: z.boolean(),
-      message: z.string(),
-      expiresAt: z.string(),
-    }),
-    400: z.object({
-      error: z.string(),
-    }),
-    401: z.object({
-      error: z.string(),
-    }),
-    403: z.object({
-      error: z.string(),
-    }),
-    404: z.object({
-      error: z.string(),
-    }),
-    500: z.object({
-      error: z.string(),
-    }),
-  },
-};
-
-export const handler: Handlers["AdminInviteUser"] = async (
-  req,
-  { emit, logger }
-) => {
+// POST /admin/invite-user
+export const adminInviteUserRoute = route(async (req) => {
   try {
     // Require admin authentication
     let user;
@@ -138,7 +106,7 @@ export const handler: Handlers["AdminInviteUser"] = async (
     }
 
     // Generate invite token with 24-hour expiry
-    const inviteToken = uuidv4();
+    const inviteToken = randomUUID();
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
 
@@ -165,15 +133,14 @@ export const handler: Handlers["AdminInviteUser"] = async (
     }
 
     // Emit event to send invite email
-    emit({
-      topic: "waitlist-invite-sent",
-      data: {
+    runInBackground("waitlist-invite-sent", () =>
+      sendWaitlistInvite({
         email: normalizedEmail,
         inviteToken,
         expiresAt: expiresAt.toISOString(),
         timestamp: new Date().toISOString(),
-      },
-    });
+      })
+    );
 
     logger.info("User invited successfully", {
       expiresAt: expiresAt.toISOString(),
@@ -204,4 +171,4 @@ export const handler: Handlers["AdminInviteUser"] = async (
       body: { error: "Failed to send invite" },
     };
   }
-};
+});

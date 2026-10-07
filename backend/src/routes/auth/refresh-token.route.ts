@@ -1,5 +1,6 @@
-import type { ApiRouteConfig, Handlers } from "motia";
 import { z } from "zod";
+import { routeWithBody } from "../../lib/http";
+import { logger } from "../../lib/logger";
 import { AuthService } from "../../services/auth/auth.service";
 
 // Defining body schema
@@ -7,30 +8,9 @@ const RefreshTokenSchema = z.object({
     refreshToken: z.string(),
 });
 
-// Step 1: Define the route config
-export const config: ApiRouteConfig = {
-    name: "RefreshToken",
-    type: "api",
-    path: "/auth/refresh",
-    method: "POST",
-    description: "Refresh access token using refresh token",
-    bodySchema: RefreshTokenSchema,
-    emits: [],
-    flows: ["auth-flow"],
-    responseSchema: {
-        200: z.object({
-            accessToken: z.string(),
-            refreshToken: z.string(),
-        }),
-        401: z.object({
-            error: z.string(),
-        }),
-    },
-};
-
-// Step 2: Define the handlers
-export const handler: Handlers["RefreshToken"] = async (req, { logger }) => {
-    const { refreshToken } = RefreshTokenSchema.parse(req.body);
+// POST /auth/refresh: swap a refresh token for a new token pair
+export const refreshTokenRoute = routeWithBody(RefreshTokenSchema, async (_req, body) => {
+    const { refreshToken } = body;
 
     logger.info("Token refresh attempt");
 
@@ -57,4 +37,4 @@ export const handler: Handlers["RefreshToken"] = async (req, { logger }) => {
             refreshToken: result.refreshToken!,
         },
     };
-};
+});

@@ -1,48 +1,18 @@
-import type { ApiRouteConfig, Handlers } from "motia";
 import { z } from "zod";
 import { AuthService } from "../../services/auth/auth.service";
 import { EmailService } from "../../services/email/email.service";
+import { routeWithBody } from "../../lib/http";
+import { logger } from "../../lib/logger";
+import { runInBackground } from "../../lib/background";
+import { sendWelcomeEmail } from "../../events/auth/send-welcome-email";
 
 // Defining body schema
 const GoogleOAuthSchema = z.object({
   idToken: z.string(),
 });
 
-// Step 1: Define the route config
-export const config: ApiRouteConfig = {
-  name: "GoogleOAuth",
-  type: "api",
-  path: "/auth/google",
-  method: "POST",
-  description: "Authenticate user with Google OAuth",
-  bodySchema: GoogleOAuthSchema,
-  emits: ["send-welcome-email"],
-  flows: ["auth-flow"],
-  responseSchema: {
-    200: z.object({
-      message: z.string(),
-      email: z.string().email(),
-      refreshToken: z.string(),
-      accessToken: z.string(),
-      user: z.object({
-        id: z.string(),
-        email: z.string().email(),
-        name: z.string(),
-        avatar: z.string().optional(),
-        isAdmin: z.boolean(),
-      }),
-    }),
-    401: z.object({
-      error: z.string(),
-    }),
-  },
-};
-
-// Step 2: Define the handlers
-export const handler: Handlers["GoogleOAuth"] = async (
-  req,
-  { emit, logger }
-) => {
+// POST /auth/google
+export const googleOAuthRoute = routeWithBody(GoogleOAuthSchema, async (req, body) => {
   const { idToken } = GoogleOAuthSchema.parse(req.body);
 
   logger.info("Google OAuth login attempt");
@@ -89,14 +59,13 @@ export const handler: Handlers["GoogleOAuth"] = async (
       });
     }
 
-    await emit({
-      topic: "send-welcome-email",
-      data: {
+    runInBackground("send-welcome-email", () =>
+      sendWelcomeEmail({
         userId: result.user?.id?.toString(),
         email: result.user?.email,
         name: result.user?.name,
-      },
-    } as any);
+      })
+    );
   }
 
   logger.info("Google OAuth successful", { email: result.user?.email });
@@ -118,4 +87,4 @@ export const handler: Handlers["GoogleOAuth"] = async (
       },
     },
   };
-};
+});

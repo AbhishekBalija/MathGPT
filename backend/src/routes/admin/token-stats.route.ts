@@ -6,52 +6,17 @@
  * REQUIRES ADMIN AUTHENTICATION
  */
 
-import type { ApiRouteConfig } from "motia";
-import { z } from "zod";
 import { requireAdmin } from "../../middlewares/auth.middleware";
 import { solutionRepository } from "../../repositories/solution.repository";
+import { route } from "../../lib/http";
+import { logger } from "../../lib/logger";
 
 // Gemini 2.5 Flash pricing (per 1M tokens)
 const GEMINI_FLASH_INPUT_PRICE = 0.075; // $0.075 per 1M input tokens
 const GEMINI_FLASH_OUTPUT_PRICE = 0.3; // $0.30 per 1M output tokens (using higher estimate)
 
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "AdminGetTokenStats",
-  description:
-    "Get token usage statistics and estimated costs (requires admin)",
-  path: "/admin/token-stats",
-  method: "GET",
-  emits: [],
-  flows: ["admin-flow"],
-  responseSchema: {
-    200: z.object({
-      totalInputTokens: z.number(),
-      totalOutputTokens: z.number(),
-      totalTokens: z.number(),
-      estimatedCost: z.number(),
-      solutionCount: z.number(),
-      avgTokensPerSolution: z.number(),
-    }),
-    401: z.object({ error: z.string() }),
-    403: z.object({ error: z.string() }),
-    500: z.object({ error: z.string() }),
-  },
-};
-
-export async function handler(
-  req: {
-    headers?: Record<string, string | string[] | undefined>;
-  },
-  {
-    logger,
-  }: {
-    logger: {
-      info: (msg: string, data?: unknown) => void;
-      error: (msg: string, data?: unknown) => void;
-    };
-  }
-) {
+// GET /admin/token-stats
+export const adminTokenStatsRoute = route(async (req) => {
   // Require admin authentication
   let admin;
   try {
@@ -101,4 +66,4 @@ export async function handler(
     logger.error("Failed to fetch token stats", { error: errorMsg });
     return { status: 500, body: { error: "Failed to fetch token stats" } };
   }
-}
+});

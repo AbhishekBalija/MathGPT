@@ -1,16 +1,14 @@
 /**
  * Analytics Tracking Event Handler
  *
- * Subscribes to: analytics-track
- *
  * Centralized analytics handler that:
  * - Persists events to MongoDB via AnalyticsService
  * - Logs errors to admin error dashboard
  * - Logs events for observability
  */
 
-import { EventConfig, Handlers } from "motia";
 import { z } from "zod";
+import { logger } from "../../lib/logger";
 import { AnalyticsService } from "../../services/analytics/analytics.service";
 
 const AnalyticsEventSchema = z.object({
@@ -29,17 +27,9 @@ const AnalyticsEventSchema = z.object({
   timestamp: z.string().optional(),
 });
 
-export const config: EventConfig = {
-  type: "event",
-  name: "TrackAnalytics",
-  description: "Centralized analytics tracking for all solution events",
-  subscribes: ["analytics-track"],
-  emits: [],
-  input: AnalyticsEventSchema,
-  flows: ["SolutionFlow"],
-};
+export type AnalyticsEvent = z.infer<typeof AnalyticsEventSchema>;
 
-export const handler: Handlers["TrackAnalytics"] = async (data, { logger }) => {
+export async function trackAnalytics(data: AnalyticsEvent): Promise<void> {
   const { event, properties, timestamp } = data;
   const eventTimestamp = timestamp || new Date().toISOString();
 
@@ -80,4 +70,4 @@ export const handler: Handlers["TrackAnalytics"] = async (data, { logger }) => {
       error: errorMsg,
     });
   }
-};
+}

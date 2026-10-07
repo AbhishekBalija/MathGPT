@@ -7,43 +7,18 @@
  */
 
 import { timingSafeEqual } from "crypto";
-import type { ApiRouteConfig } from "motia";
 import { z } from "zod";
 import { requireAdmin } from "../../middlewares/auth.middleware";
 
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "AdminVerifyPasscode",
-  description: "Verify admin passcode for secondary authentication",
-  path: "/admin/verify-passcode",
-  method: "POST",
-  emits: [],
-  flows: ["admin-flow"],
-  bodySchema: z.object({
-    passcode: z.string(), // Allow empty - we validate in handler for proper 400 response
-  }),
-  responseSchema: {
-    200: z.object({ success: z.literal(true) }),
-    400: z.object({ error: z.string() }), // For validation errors
-    401: z.object({ error: z.string() }),
-    403: z.object({ error: z.string() }),
-  },
-};
+// Empty passcode is allowed here so the handler can return a clear 400
+const VerifyPasscodeSchema = z.object({
+  passcode: z.string(),
+});
+import { routeWithBody } from "../../lib/http";
+import { logger } from "../../lib/logger";
 
-export async function handler(
-  req: {
-    headers?: Record<string, string | string[] | undefined>;
-    body: { passcode: string };
-  },
-  {
-    logger,
-  }: {
-    logger: {
-      info: (msg: string, data?: unknown) => void;
-      error: (msg: string, data?: unknown) => void;
-    };
-  }
-) {
+// POST /admin/verify-passcode
+export const adminVerifyPasscodeRoute = routeWithBody(VerifyPasscodeSchema, async (req, body) => {
   // Require admin authentication first
   let admin;
   try {
@@ -61,7 +36,7 @@ export async function handler(
     };
   }
 
-  const { passcode } = req.body;
+  const { passcode } = body;
 
   // Validate empty passcode - return 400 Bad Request
   if (!passcode || passcode.trim().length === 0) {
@@ -106,4 +81,4 @@ export async function handler(
     status: 200,
     body: { success: true as const },
   };
-}
+});

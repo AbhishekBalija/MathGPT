@@ -1,106 +1,70 @@
-# backend
+# NeoMath Backend
 
-A Motia project created with the **multi-language** starter template (TypeScript + Python).
+Express 5 API for NeoMath, run with Bun in development.
 
-## What is Motia?
-
-Motia is an open-source, unified backend framework that eliminates runtime fragmentation by bringing **APIs, background jobs, queueing, streaming, state, workflows, AI agents, observability, scaling, and deployment** into one unified system using a single core primitive, the **Step**.
-
-## Polyglot Architecture
-
-This template demonstrates Motia's polyglot capabilities by combining:
-
-- **TypeScript**: API endpoint (`hello-api.step.ts`) - handles HTTP requests
-- **Python**: Event processor (`process_greeting_step.py`) - handles background processing
-- **JavaScript**: Logger (`log-greeting.step.js`) - handles workflow completion
-
-This shows how you can use the best language for each task while keeping everything in a single unified system.
-
-## Quick Start
+## Quick start
 
 ```bash
-# Start the development server
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+bun install
+cp .env.example .env   # then fill in the values
+bun run dev            # http://localhost:3000, restarts on changes
 ```
 
-This starts the Motia runtime and the **Workbench** - a powerful UI for developing and debugging your workflows. By default, it's available at [`http://localhost:3000`](http://localhost:3000).
+Check it is up:
 
 ```bash
-# Test your first endpoint
-curl http://localhost:3000/hello
+curl http://localhost:3000/health
 ```
 
-## How It Works
+## Scripts
 
-1. **TypeScript API Step** receives the HTTP request at `/hello`
-2. It emits a `process-greeting` event with the request data
-3. **Python Event Step** picks up the event, processes it, and stores the result in state
-4. Python emits a `greeting-processed` event
-5. **JavaScript Event Step** logs the completed workflow
+| Command             | What it does                                   |
+| ------------------- | ---------------------------------------------- |
+| `bun run dev`       | Start the API with file watching               |
+| `bun run start`     | Start the API without watching                 |
+| `bun run typecheck` | TypeScript check, no output files              |
+| `bun run test`      | HTTP test suite (read `tests/README.md` first) |
 
-## Step Types
-
-Every Step has a `type` that defines how it triggers:
-
-| Type | When it runs | Use case |
-|------|--------------|----------|
-| **`api`** | HTTP request | REST APIs, webhooks |
-| **`event`** | Event emitted | Background jobs, workflows |
-| **`cron`** | Schedule | Cleanup, reports, reminders |
-
-## Development Commands
-
-```bash
-# Start Workbench and development server
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-
-# Start production server (without hot reload)
-npm run start
-# or
-yarn start
-# or
-pnpm start
-
-# Generate TypeScript types from Step configs
-npm run generate-types
-# or
-yarn generate-types
-# or
-pnpm generate-types
-
-# Build project for deployment
-npm run build
-# or
-yarn build
-# or
-pnpm build
-```
-
-## Project Structure
+## Layout
 
 ```
-steps/                           # Your Step definitions
-├── hello/
-│   ├── hello-api.step.ts       # TypeScript API endpoint
-│   ├── process_greeting_step.py # Python event processor
-│   └── log-greeting.step.js    # JavaScript logger
-motia.config.ts                  # Motia configuration
-requirements.txt                 # Python dependencies
+src/
+  app.ts            builds the Express app (CORS, JSON, routes, error handling)
+  server.ts         local entry point, calls listen()
+  routes/           one file per endpoint, all registered in routes/index.ts
+  events/           work that runs after a request (emails, analytics, saving)
+  lib/              small shared helpers (http adapter, logger, env, rate limit)
+  middlewares/      JWT auth checks
+  services/         business logic (auth, AI, email, analytics)
+  repositories/     database access
+  types/            shared TypeScript types
+scripts/            one-off admin scripts
+tests/              black-box HTTP tests
 ```
 
-Steps are auto-discovered from your `steps/` or `src/` directories - no manual registration required.
+## How a request flows
 
-## Learn More
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant E as Express (app.ts)
+    participant R as Route (routes/*.route.ts)
+    participant S as Services / Repositories
+    participant B as Background task (events/*)
 
-- [Documentation](https://motia.dev/docs) - Complete guides and API reference
-- [Quick Start Guide](https://motia.dev/docs/getting-started/quick-start) - Detailed getting started tutorial
-- [Core Concepts](https://motia.dev/docs/concepts/overview) - Learn about Steps and Motia architecture
-- [Discord Community](https://discord.gg/motia) - Get help and connect with other developers
+    C->>E: HTTP request
+    E->>R: matched route (body validated by routeWithBody when used)
+    R->>S: business logic and database calls
+    R-->>E: { status, body }
+    E-->>C: JSON response
+    R-)B: runInBackground(...) for emails and analytics
+```
+
+Routes return a plain `{ status, body }` object. `lib/http.ts` turns that into
+the Express response, so routes never touch `res` directly.
+
+## Migration status
+
+1. Motia to Express: done
+2. MongoDB to Postgres (Drizzle + Neon): next
+3. Deploy to Vercel: after Phase 2

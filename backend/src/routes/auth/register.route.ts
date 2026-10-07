@@ -1,6 +1,9 @@
-import type { ApiRouteConfig, Handlers } from "motia";
 import { z } from "zod";
 import { AuthService } from "../../services/auth/auth.service";
+import { routeWithBody } from "../../lib/http";
+import { logger } from "../../lib/logger";
+import { runInBackground } from "../../lib/background";
+import { sendWelcomeEmail } from "../../events/auth/send-welcome-email";
 
 // Defining body schema
 
@@ -26,40 +29,8 @@ const RegisterSchema = z.object({
 
 // Step 1: Define the route config
 
-export const config: ApiRouteConfig = {
-  name: "RegisterUser",
-  type: "api",
-  path: "/auth/register",
-  method: "POST",
-  description: "Register a new user",
-  bodySchema: RegisterSchema,
-  emits: ["send-welcome-email"],
-  flows: ["auth-flow"],
-  responseSchema: {
-    200: z.object({
-      message: z.string(),
-      accessToken: z.string(),
-      refreshToken: z.string(),
-      user: z.object({
-        id: z.string(),
-        email: z.string().email(),
-      }),
-    }),
-    400: z.object({
-      error: z.string(),
-    }),
-    409: z.object({
-      error: z.string(),
-    }),
-  },
-};
-
-// Step 2: Define the handlers
-
-export const handler: Handlers["RegisterUser"] = async (
-  req,
-  { emit, logger }
-) => {
+// POST /auth/register
+export const registerRoute = routeWithBody(RegisterSchema, async (req, body) => {
   const data = RegisterSchema.parse(req.body);
   logger.info("Register attempt for ", { email: data.email });
 
@@ -79,14 +50,13 @@ export const handler: Handlers["RegisterUser"] = async (
 
   // Step 4: Emit an event to send welcome email
 
-  await emit({
-    topic: "send-welcome-email",
-    data: {
-      userId: user.user?.id,
+  runInBackground("send-welcome-email", () =>
+    sendWelcomeEmail({
+      userId: user.user?.id.toString(),
       email: user.user?.email,
       name: user.user?.name,
-    },
-  } as any);
+    })
+  );
 
   // Step 5: Return the response
 
@@ -102,4 +72,4 @@ export const handler: Handlers["RegisterUser"] = async (
       },
     },
   };
-};
+});

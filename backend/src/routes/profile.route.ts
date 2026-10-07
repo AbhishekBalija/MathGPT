@@ -1,57 +1,14 @@
-import type { ApiRouteConfig, Handlers } from "motia";
-import { z } from "zod";
 import { AuthService } from "../services/auth/auth.service";
 import { solutionRepository } from "../repositories/solution.repository";
 import { userRepository } from "../repositories/user.repository";
+import { route } from "../lib/http";
+import { logger } from "../lib/logger";
 
 // Daily free limit for users
 const DAILY_FREE_LIMIT = 5;
 
-// Step 1: Define the route config
-export const config: ApiRouteConfig = {
-  name: "GetProfile",
-  type: "api",
-  path: "/api/profile",
-  method: "GET",
-  description: "Get user profile and usage statistics",
-  emits: [],
-  flows: ["auth-flow"],
-  responseSchema: {
-    200: z.object({
-      user: z.object({
-        id: z.string(),
-        email: z.string().email(),
-        name: z.string(),
-        avatar: z.string().optional(),
-        provider: z.string(),
-        createdAt: z.string(),
-      }),
-      stats: z.object({
-        totalSolutions: z.number(),
-        problemTypes: z.record(z.string(), z.number()),
-        lastSolvedAt: z.string().nullable(),
-      }),
-      dailyCredits: z.object({
-        used: z.number(),
-        limit: z.number(),
-        remaining: z.number(),
-        resetsAt: z.string(),
-      }),
-    }),
-    401: z.object({
-      error: z.string(),
-    }),
-    404: z.object({
-      error: z.string(),
-    }),
-    500: z.object({
-      error: z.string(),
-    }),
-  },
-};
-
-// Step 2: Define the handler
-export const handler: Handlers["GetProfile"] = async (req, { logger }) => {
+// GET /api/profile
+export const profileRoute = route(async (req) => {
   // Extract token from Authorization header
   const authHeader = req.headers?.authorization || req.headers?.Authorization;
   const token =
@@ -149,4 +106,4 @@ export const handler: Handlers["GetProfile"] = async (req, { logger }) => {
       body: { error: "Failed to fetch profile" },
     };
   }
-};
+});

@@ -1,6 +1,7 @@
-import type { ApiRouteConfig, Handlers } from "motia";
 import { z, ZodError } from "zod";
 import { AuthService } from "../../services/auth/auth.service";
+import { route } from "../../lib/http";
+import { logger } from "../../lib/logger";
 
 // Defining body schema
 
@@ -11,40 +12,8 @@ const LoginSchema = z.object({
 
 // Step 1: Define the route config
 
-export const config: ApiRouteConfig = {
-  name: "LoginUser",
-  type: "api",
-  path: "/auth/login",
-  method: "POST",
-  description: "Authenticate user and return a token",
-  bodySchema: LoginSchema,
-  emits: [],
-  flows: ["auth-flow"],
-  responseSchema: {
-    200: z.object({
-      email: z.string().email(),
-      refreshToken: z.string(),
-      accessToken: z.string(),
-      user: z.object({
-        id: z.string(),
-        email: z.string().email(),
-        name: z.string().optional(),
-        avatar: z.string().optional(),
-        isAdmin: z.boolean(),
-      }),
-    }),
-    400: z.object({
-      error: z.string(),
-    }),
-    401: z.object({
-      error: z.string(),
-    }),
-  },
-};
-
-// Step 2: Define the handlers
-
-export const handler: Handlers["LoginUser"] = async (req, { emit, logger }) => {
+// POST /auth/login
+export const loginRoute = route(async (req) => {
   // Validate input with proper error handling
   let email: string;
   let password: string;
@@ -111,4 +80,4 @@ export const handler: Handlers["LoginUser"] = async (req, { emit, logger }) => {
       },
     },
   };
-};
+});

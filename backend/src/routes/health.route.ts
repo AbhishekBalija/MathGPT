@@ -1,22 +1,7 @@
-import type { ApiRouteConfig, Handlers } from "motia";
-import { z } from "zod";
+import { route } from "../lib/http";
 
-export const config: ApiRouteConfig = {
-  name: "HealthCheck",
-  type: "api",
-  path: "/health",
-  method: "GET",
-  description: "Health check endpoint to verify the API is running",
-  emits: [],
-  responseSchema: {
-    200: z.object({
-      status: z.string(),
-      timestamp: z.string(),
-    }),
-  },
-};
-
-export const handler: Handlers["HealthCheck"] = async (_req, _ctx) => {
+// GET /health: lets uptime checks confirm the API is running
+export const healthRoute = route(async () => {
   return {
     status: 200,
     body: {
@@ -24,4 +9,4 @@ export const handler: Handlers["HealthCheck"] = async (_req, _ctx) => {
       timestamp: new Date().toISOString(),
     },
   };
-};
+});

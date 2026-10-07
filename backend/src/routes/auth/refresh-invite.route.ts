@@ -7,10 +7,13 @@
  * Sends a new invite email with the fresh token.
  */
 
-import type { ApiRouteConfig, Handlers } from "motia";
 import { z } from "zod";
 import { MongoClient, Collection } from "mongodb";
 import { randomBytes } from "crypto";
+import { route } from "../../lib/http";
+import { logger } from "../../lib/logger";
+import { runInBackground } from "../../lib/background";
+import { sendWaitlistInvite } from "../../events/waitlist-invite";
 
 // Waitlist document type
 interface WaitlistEntry {
@@ -64,38 +67,8 @@ async function getWaitlistCollection(): Promise<Collection<WaitlistEntry>> {
   return waitlistCollection;
 }
 
-export const config: ApiRouteConfig = {
-  name: "RefreshInviteToken",
-  type: "api",
-  path: "/auth/refresh-invite",
-  method: "POST",
-  description: "Request a new invite token for approved waitlist users",
-  bodySchema: refreshInviteSchema,
-  emits: [{ topic: "waitlist-invite-sent", label: "Send New Invite Email" }],
-  flows: ["WaitlistFlow", "auth-flow"],
-  responseSchema: {
-    200: z.object({
-      success: z.boolean(),
-      message: z.string(),
-    }),
-    400: z.object({
-      error: z.string(),
-    }),
-    403: z.object({
-      error: z.string(),
-      code: z.string().optional(),
-    }),
-    429: z.object({
-      error: z.string(),
-      retryAfter: z.number().optional(),
-    }),
-  },
-};
-
-export const handler: Handlers["RefreshInviteToken"] = async (
-  req,
-  { emit, logger }
-) => {
+// POST /auth/refresh-invite
+export const refreshInviteRoute = route(async (req) => {
   try {
     const data = refreshInviteSchema.parse(req.body);
     const normalizedEmail = data.email.toLowerCase().trim();
@@ -182,15 +155,14 @@ export const handler: Handlers["RefreshInviteToken"] = async (
     );
 
     // Send new invite email
-    await emit({
-      topic: "waitlist-invite-sent",
-      data: {
+    runInBackground("waitlist-invite-sent", () =>
+      sendWaitlistInvite({
         email: normalizedEmail,
         inviteToken: newToken,
         expiresAt: expiresAt.toISOString(),
         timestamp: new Date().toISOString(),
-      },
-    });
+      })
+    );
 
     logger.info("New invite token generated and email sent", {
       email: normalizedEmail,
@@ -221,4 +193,4 @@ export const handler: Handlers["RefreshInviteToken"] = async (
       body: { error: "Failed to send new invite. Please try again." },
     };
   }
-};
+});

@@ -6,45 +6,13 @@
  * REQUIRES AUTHENTICATION (only owner can delete)
  */
 
-import type { ApiRouteConfig } from "motia";
-import { z } from "zod";
 import { requireAuth } from "../middlewares/auth.middleware";
 import { solutionRepository } from "../repositories/solution.repository";
+import { pathParam, route } from "../lib/http";
+import { logger } from "../lib/logger";
 
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "DeleteSolution",
-  description: "Delete a solution by its ID",
-  path: "/api/solution/:id",
-  method: "DELETE",
-  emits: [],
-  flows: ["SolutionFlow"],
-  responseSchema: {
-    200: z.object({
-      success: z.boolean(),
-      message: z.string(),
-    }),
-    401: z.object({ error: z.string() }),
-    403: z.object({ error: z.string() }),
-    404: z.object({ error: z.string() }),
-    500: z.object({ error: z.string() }),
-  },
-};
-
-export async function handler(
-  req: {
-    headers?: Record<string, string | string[] | undefined>;
-    pathParams?: Record<string, string>;
-  },
-  {
-    logger,
-  }: {
-    logger: {
-      info: (msg: string, data?: unknown) => void;
-      error: (msg: string, data?: unknown) => void;
-    };
-  }
-) {
+// DELETE /api/solution/:id
+export const deleteSolutionRoute = route(async (req) => {
   // Require authentication
   let user;
   try {
@@ -56,7 +24,7 @@ export async function handler(
     };
   }
 
-  const solutionId = req.pathParams?.id;
+  const solutionId = pathParam(req, "id");
   if (!solutionId) {
     return {
       status: 404,
@@ -114,4 +82,4 @@ export async function handler(
       body: { error: "Failed to delete solution" },
     };
   }
-}
+});

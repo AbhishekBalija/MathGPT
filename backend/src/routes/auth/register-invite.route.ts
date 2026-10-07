@@ -7,11 +7,14 @@
  * Token must be valid, not expired, and match the email.
  */
 
-import type { ApiRouteConfig, Handlers } from "motia";
 import { z } from "zod";
 import { MongoClient, Collection } from "mongodb";
 import { timingSafeEqual } from "crypto";
 import { AuthService } from "../../services/auth/auth.service";
+import { route } from "../../lib/http";
+import { logger } from "../../lib/logger";
+import { runInBackground } from "../../lib/background";
+import { sendWelcomeEmail } from "../../events/auth/send-welcome-email";
 
 // Waitlist document type
 interface WaitlistEntry {
@@ -80,42 +83,8 @@ async function getWaitlistCollection(): Promise<Collection<WaitlistEntry>> {
   return waitlistCollection;
 }
 
-export const config: ApiRouteConfig = {
-  name: "RegisterWithInvite",
-  type: "api",
-  path: "/auth/register-invite",
-  method: "POST",
-  description: "Register a new user with invite token",
-  bodySchema: registerInviteSchema,
-  emits: [{ topic: "send-welcome-email", label: "Send Welcome Email" }],
-  flows: ["WaitlistFlow", "auth-flow"],
-  responseSchema: {
-    200: z.object({
-      message: z.string(),
-      accessToken: z.string(),
-      refreshToken: z.string(),
-      user: z.object({
-        id: z.string(),
-        email: z.string().email(),
-      }),
-    }),
-    400: z.object({
-      error: z.string(),
-    }),
-    403: z.object({
-      error: z.string(),
-      code: z.string().optional(),
-    }),
-    409: z.object({
-      error: z.string(),
-    }),
-  },
-};
-
-export const handler: Handlers["RegisterWithInvite"] = async (
-  req,
-  { emit, logger }
-) => {
+// POST /auth/register-invite
+export const registerInviteRoute = route(async (req) => {
   try {
     const data = registerInviteSchema.parse(req.body);
     const normalizedEmail = data.email.toLowerCase().trim();
@@ -267,14 +236,13 @@ export const handler: Handlers["RegisterWithInvite"] = async (
     }
 
     // Send welcome email
-    await emit({
-      topic: "send-welcome-email",
-      data: {
-        userId: user.user.id,
+    runInBackground("send-welcome-email", () =>
+      sendWelcomeEmail({
+        userId: user.user.id.toString(),
         email: user.user.email,
         name: user.user.name,
-      },
-    } as any);
+      })
+    );
 
     logger.info("Invite registration successful");
 
@@ -307,4 +275,4 @@ export const handler: Handlers["RegisterWithInvite"] = async (
       body: { error: "Registration failed. Please try again." },
     };
   }
-};
+});

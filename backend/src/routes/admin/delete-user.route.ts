@@ -6,46 +6,14 @@
  * REQUIRES ADMIN AUTHENTICATION
  */
 
-import type { ApiRouteConfig } from "motia";
-import { z } from "zod";
 import { requireAdmin } from "../../middlewares/auth.middleware";
 import { userRepository } from "../../repositories/user.repository";
 import { solutionRepository } from "../../repositories/solution.repository";
+import { pathParam, route } from "../../lib/http";
+import { logger } from "../../lib/logger";
 
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "AdminDeleteUser",
-  description: "Delete a user (requires admin)",
-  path: "/admin/users/:id",
-  method: "DELETE",
-  emits: [],
-  flows: ["admin-flow"],
-  responseSchema: {
-    200: z.object({
-      success: z.literal(true),
-      deletedSolutions: z.number(),
-    }),
-    401: z.object({ error: z.string() }),
-    403: z.object({ error: z.string() }),
-    404: z.object({ error: z.string() }),
-    500: z.object({ error: z.string() }),
-  },
-};
-
-export async function handler(
-  req: {
-    headers?: Record<string, string | string[] | undefined>;
-    pathParams: { id: string };
-  },
-  {
-    logger,
-  }: {
-    logger: {
-      info: (msg: string, data?: unknown) => void;
-      error: (msg: string, data?: unknown) => void;
-    };
-  }
-) {
+// DELETE /admin/users/:id
+export const adminDeleteUserRoute = route(async (req) => {
   // Require admin authentication
   let admin;
   try {
@@ -64,7 +32,7 @@ export async function handler(
   }
 
   try {
-    const { id } = req.pathParams;
+    const id = pathParam(req, "id");
 
     // Prevent admin from deleting themselves
     if (id === admin.id) {
@@ -117,4 +85,4 @@ export async function handler(
       body: { error: "Failed to delete user" },
     };
   }
-}
+});

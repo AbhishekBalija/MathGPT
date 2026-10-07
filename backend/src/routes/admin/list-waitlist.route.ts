@@ -6,10 +6,10 @@
  * Lists all waitlist entries with their status (pending, approved, registered).
  */
 
-import { ApiRouteConfig, Handlers } from "motia";
-import { z } from "zod";
 import { MongoClient, Collection } from "mongodb";
 import { requireAuth } from "../../middlewares/auth.middleware";
+import { route } from "../../lib/http";
+import { logger } from "../../lib/logger";
 
 // Waitlist document type
 interface WaitlistEntry {
@@ -48,50 +48,8 @@ async function getWaitlistCollection(): Promise<Collection<WaitlistEntry>> {
   return waitlistCollection;
 }
 
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "AdminListWaitlist",
-  description: "List all waitlist entries",
-  path: "/admin/waitlist",
-  method: "GET",
-  flows: ["WaitlistFlow"],
-  emits: [],
-  responseSchema: {
-    200: z.object({
-      entries: z.array(
-        z.object({
-          email: z.string(),
-          source: z.string(),
-          status: z.enum(["pending", "approved", "registered"]),
-          createdAt: z.string(),
-          approvedAt: z.string().optional(),
-          inviteExpiresAt: z.string().optional(),
-          inviteExpired: z.boolean().optional(),
-        })
-      ),
-      total: z.number(),
-      counts: z.object({
-        pending: z.number(),
-        approved: z.number(),
-        registered: z.number(),
-      }),
-    }),
-    401: z.object({
-      error: z.string(),
-    }),
-    403: z.object({
-      error: z.string(),
-    }),
-    500: z.object({
-      error: z.string(),
-    }),
-  },
-};
-
-export const handler: Handlers["AdminListWaitlist"] = async (
-  req,
-  { logger }
-) => {
+// GET /admin/waitlist
+export const adminListWaitlistRoute = route(async (req) => {
   try {
     // Require admin authentication
     let user;
@@ -165,4 +123,4 @@ export const handler: Handlers["AdminListWaitlist"] = async (
       body: { error: "Failed to fetch waitlist" },
     };
   }
-};
+});

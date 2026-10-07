@@ -1,13 +1,14 @@
 /**
  * Waitlist Invite Email Event Handler
  *
- * Subscribes to 'waitlist-invite-sent' events and sends invite emails
+ * Sends invite emails
  * with registration link containing the invite token.
  */
 
-import { EventConfig, Handlers } from "motia";
 import { Resend } from "resend";
+import { requireEnv } from "../lib/env";
 import { z } from "zod";
+import { logger } from "../lib/logger";
 
 // Define the input schema for the waitlist-invite-sent event
 const waitlistInviteSchema = z.object({
@@ -17,18 +18,9 @@ const waitlistInviteSchema = z.object({
   timestamp: z.string(),
 });
 
-// Initialize Resend client at module load (fail fast if not configured)
-const resendApiKey = process.env.RESEND_API;
-if (!resendApiKey) {
-  throw new Error("RESEND_API environment variable is not set");
-}
-const resend = new Resend(resendApiKey);
-
-// Validate FROM_EMAIL at module load
-const fromEmail = process.env.FROM_EMAIL;
-if (!fromEmail) {
-  throw new Error("FROM_EMAIL environment variable is not set");
-}
+// Fail fast at startup if email is not configured
+const resend = new Resend(requireEnv("RESEND_API"));
+const fromEmail = requireEnv("FROM_EMAIL");
 
 // Get frontend URL for registration link based on environment
 const getFrontendUrl = () => {
@@ -38,23 +30,9 @@ const getFrontendUrl = () => {
   return process.env.FRONTEND_URL_DEV || "http://localhost:5173";
 };
 
-export const config: EventConfig = {
-  type: "event",
-  name: "SendWaitlistInvite",
-  description:
-    "Send invite email with registration link when admin approves user",
-  subscribes: ["waitlist-invite-sent"],
-  emits: [],
-  flows: ["WaitlistFlow"],
-  input: waitlistInviteSchema,
-};
+export type WaitlistInviteData = z.infer<typeof waitlistInviteSchema>;
 
-type WaitlistInviteData = z.infer<typeof waitlistInviteSchema>;
-
-export const handler: Handlers["SendWaitlistInvite"] = async (
-  data: WaitlistInviteData,
-  { logger }
-) => {
+export async function sendWaitlistInvite(data: WaitlistInviteData): Promise<void> {
   logger.info("Sending waitlist invite email");
 
   const frontendUrl = getFrontendUrl();
@@ -162,4 +140,4 @@ export const handler: Handlers["SendWaitlistInvite"] = async (
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }
-};
+}

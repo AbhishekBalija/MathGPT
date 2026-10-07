@@ -6,62 +6,24 @@
  * Resends the waitlist confirmation email to a user.
  */
 
-import { ApiRouteConfig, Handlers } from "motia";
 import { z } from "zod";
 import { requireAuth } from "../../middlewares/auth.middleware";
 import { Resend } from "resend";
+import { requireEnv } from "../../lib/env";
+import { route } from "../../lib/http";
+import { logger } from "../../lib/logger";
 
 // Request schema
 const resendConfirmationSchema = z.object({
   email: z.string().email("Invalid email address"),
 });
 
-// Initialize Resend client at module load (fail fast if not configured)
-const resendApiKey = process.env.RESEND_API;
-if (!resendApiKey) {
-  throw new Error("RESEND_API environment variable is not set");
-}
-const resend = new Resend(resendApiKey);
+// Fail fast at startup if email is not configured
+const resend = new Resend(requireEnv("RESEND_API"));
+const fromEmail = requireEnv("FROM_EMAIL");
 
-// Validate FROM_EMAIL at module load
-const fromEmail = process.env.FROM_EMAIL;
-if (!fromEmail) {
-  throw new Error("FROM_EMAIL environment variable is not set");
-}
-
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "AdminResendConfirmation",
-  description: "Resend waitlist confirmation email",
-  path: "/admin/resend-confirmation",
-  method: "POST",
-  flows: ["WaitlistFlow"],
-  emits: [],
-  bodySchema: resendConfirmationSchema,
-  responseSchema: {
-    200: z.object({
-      success: z.boolean(),
-      message: z.string(),
-    }),
-    400: z.object({
-      error: z.string(),
-    }),
-    401: z.object({
-      error: z.string(),
-    }),
-    403: z.object({
-      error: z.string(),
-    }),
-    500: z.object({
-      error: z.string(),
-    }),
-  },
-};
-
-export const handler: Handlers["AdminResendConfirmation"] = async (
-  req,
-  { logger }
-) => {
+// POST /admin/resend-confirmation
+export const adminResendConfirmationRoute = route(async (req) => {
   try {
     // Require admin authentication
     let user;
@@ -168,4 +130,4 @@ export const handler: Handlers["AdminResendConfirmation"] = async (
       body: { error: "An error occurred" },
     };
   }
-};
+});

@@ -7,9 +7,12 @@
  * Stores emails in MongoDB and triggers confirmation email.
  */
 
-import { ApiRouteConfig, Handlers } from "motia";
 import { z } from "zod";
 import { MongoClient, Collection } from "mongodb";
+import { route } from "../lib/http";
+import { logger } from "../lib/logger";
+import { runInBackground } from "../lib/background";
+import { sendWaitlistEmail } from "../events/waitlist-email";
 
 // Waitlist entry schema
 const waitlistSchema = z.object({
@@ -85,34 +88,8 @@ async function getWaitlistCollection(): Promise<Collection<WaitlistEntry>> {
   return connectionPromise;
 }
 
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "JoinWaitlist",
-  description: "Add email to the NeoMath waitlist",
-  path: "/api/waitlist",
-  method: "POST",
-  flows: ["WaitlistFlow"],
-  emits: [{ topic: "waitlist-joined", label: "Email Added" }],
-  bodySchema: waitlistSchema,
-  responseSchema: {
-    200: z.object({
-      success: z.boolean(),
-      message: z.string(),
-      isNew: z.boolean().optional(),
-    }),
-    400: z.object({
-      error: z.string(),
-    }),
-    500: z.object({
-      error: z.string(),
-    }),
-  },
-};
-
-export const handler: Handlers["JoinWaitlist"] = async (
-  req,
-  { emit, logger }
-) => {
+// POST /api/waitlist
+export const joinWaitlistRoute = route(async (req) => {
   try {
     const { email, source } = waitlistSchema.parse(req.body);
     const normalizedEmail = email.toLowerCase().trim();
@@ -164,14 +141,13 @@ export const handler: Handlers["JoinWaitlist"] = async (
     }
 
     // Emit event for email sending
-    emit({
-      topic: "waitlist-joined",
-      data: {
+    runInBackground("waitlist-joined", () =>
+      sendWaitlistEmail({
         email: normalizedEmail,
         source,
         timestamp: new Date().toISOString(),
-      },
-    });
+      })
+    );
 
     logger.info("New waitlist signup", { source });
 
@@ -200,4 +176,4 @@ export const handler: Handlers["JoinWaitlist"] = async (
       body: { error: "Failed to join waitlist. Please try again." },
     };
   }
-};
+});

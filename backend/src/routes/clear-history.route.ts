@@ -6,43 +6,13 @@
  * REQUIRES AUTHENTICATION
  */
 
-import type { ApiRouteConfig } from "motia";
-import { z } from "zod";
 import { requireAuth } from "../middlewares/auth.middleware";
 import { solutionRepository } from "../repositories/solution.repository";
+import { route } from "../lib/http";
+import { logger } from "../lib/logger";
 
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "ClearAllHistory",
-  description: "Delete all solutions for the authenticated user",
-  path: "/api/clear-history",
-  method: "DELETE",
-  emits: [],
-  flows: ["SolutionFlow"],
-  responseSchema: {
-    200: z.object({
-      success: z.boolean(),
-      message: z.string(),
-      deletedCount: z.number(),
-    }),
-    401: z.object({ error: z.string() }),
-    500: z.object({ error: z.string() }),
-  },
-};
-
-export async function handler(
-  req: {
-    headers?: Record<string, string | string[] | undefined>;
-  },
-  {
-    logger,
-  }: {
-    logger: {
-      info: (msg: string, data?: unknown) => void;
-      error: (msg: string, data?: unknown) => void;
-    };
-  }
-) {
+// DELETE /api/clear-history
+export const clearHistoryRoute = route(async (req) => {
   // Require authentication
   let user;
   try {
@@ -80,4 +50,4 @@ export async function handler(
       body: { error: "Failed to clear history" },
     };
   }
-}
+});

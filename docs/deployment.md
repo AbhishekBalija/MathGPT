@@ -1,5 +1,9 @@
 # NeoMath Deployment Guide
 
+> **Outdated backend section.** The backend no longer uses Motia (replaced by
+> Express in October 2026). The Motia Cloud steps below no longer apply.
+> This guide will be rewritten for Vercel + Neon in Phase 3 of the migration.
+
 ## Overview
 
 | Component | Platform      | URL                        |

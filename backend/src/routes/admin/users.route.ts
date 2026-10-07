@@ -8,56 +8,13 @@
  * REQUIRES ADMIN AUTHENTICATION
  */
 
-import type { ApiRouteConfig } from "motia";
-import { z } from "zod";
 import { requireAdmin } from "../../middlewares/auth.middleware";
 import { userRepository } from "../../repositories/user.repository";
+import { queryParam, route } from "../../lib/http";
+import { logger } from "../../lib/logger";
 
-// GET /admin/users - List users
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "AdminListUsers",
-  description: "List all users with pagination and search (requires admin)",
-  path: "/admin/users",
-  method: "GET",
-  emits: [],
-  flows: ["admin-flow"],
-  responseSchema: {
-    200: z.object({
-      users: z.array(
-        z.object({
-          id: z.string(),
-          name: z.string(),
-          email: z.string(),
-          isAdmin: z.boolean(),
-          provider: z.string().optional(),
-          createdAt: z.string(),
-        })
-      ),
-      total: z.number(),
-      page: z.number(),
-      limit: z.number(),
-    }),
-    401: z.object({ error: z.string() }),
-    403: z.object({ error: z.string() }),
-    500: z.object({ error: z.string() }),
-  },
-};
-
-export async function handler(
-  req: {
-    headers?: Record<string, string | string[] | undefined>;
-    query?: Record<string, string>;
-  },
-  {
-    logger,
-  }: {
-    logger: {
-      info: (msg: string, data?: unknown) => void;
-      error: (msg: string, data?: unknown) => void;
-    };
-  }
-) {
+// GET /admin/users
+export const adminListUsersRoute = route(async (req) => {
   // Require admin authentication
   let admin;
   try {
@@ -76,40 +33,13 @@ export async function handler(
   }
 
   try {
-    // Handle different possible query param structures from Motia
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const reqAny = req as any;
-
-    // Try multiple possible sources for query params
-    const queryParams =
-      reqAny.query || reqAny.searchParams || reqAny.params || {};
-
-    // Also check if there's a URL property we need to parse
-    let parsedParams: Record<string, string> = {};
-    if (
-      typeof queryParams === "object" &&
-      Object.keys(queryParams).length > 0
-    ) {
-      parsedParams = queryParams;
-    } else if (
-      reqAny.url &&
-      typeof reqAny.url === "string" &&
-      reqAny.url.includes("?")
-    ) {
-      // Parse query string from URL if present
-      const urlParts = reqAny.url.split("?");
-      if (urlParts[1]) {
-        const searchParams = new URLSearchParams(urlParts[1]);
-        parsedParams = Object.fromEntries(searchParams.entries());
-      }
-    }
-
-    const page = parsedParams.page ? parseInt(parsedParams.page, 10) : 1;
-    const limit = parsedParams.limit ? parseInt(parsedParams.limit, 10) : 20;
-    const search = parsedParams.search || undefined;
+    const pageParam = queryParam(req, "page");
+    const limitParam = queryParam(req, "limit");
+    const page = pageParam ? parseInt(pageParam, 10) : 1;
+    const limit = limitParam ? parseInt(limitParam, 10) : 20;
+    const search = queryParam(req, "search") || undefined;
 
     logger.info("Admin users search request", {
-      parsedParams,
       search,
       page,
       limit,
@@ -153,4 +83,4 @@ export async function handler(
       body: { error: "Failed to list users" },
     };
   }
-}
+});

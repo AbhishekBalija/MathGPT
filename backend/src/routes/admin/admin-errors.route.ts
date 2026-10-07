@@ -8,65 +8,13 @@
  * REQUIRES ADMIN AUTHENTICATION
  */
 
-import type { ApiRouteConfig } from "motia";
-import { z } from "zod";
 import { requireAdmin } from "../../middlewares/auth.middleware";
 import { AnalyticsService } from "../../services/analytics/analytics.service";
+import { queryParam, route } from "../../lib/http";
+import { logger } from "../../lib/logger";
 
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "AdminGetErrors",
-  description: "Get recent errors for admin dashboard (requires admin)",
-  path: "/admin/errors",
-  method: "GET",
-  emits: [],
-  flows: ["admin-flow"],
-  responseSchema: {
-    200: z.object({
-      stats: z.object({
-        total: z.number(),
-        unresolved: z.number(),
-        last24Hours: z.number(),
-        byCode: z.array(
-          z.object({
-            errorCode: z.string(),
-            count: z.number(),
-          })
-        ),
-      }),
-      errors: z.array(
-        z.object({
-          id: z.string(),
-          errorCode: z.string(),
-          errorMessage: z.string(),
-          problemText: z.string(),
-          userId: z.string().optional(),
-          resolved: z.boolean(),
-          createdAt: z.string(),
-        })
-      ),
-    }),
-    401: z.object({ error: z.string() }),
-    403: z.object({ error: z.string() }),
-    500: z.object({ error: z.string() }),
-  },
-};
-
-// Using explicit types since Handlers may not have this step yet
-export async function handler(
-  req: {
-    headers?: Record<string, string | string[] | undefined>;
-    query?: Record<string, string>;
-  },
-  {
-    logger,
-  }: {
-    logger: {
-      info: (msg: string, data?: unknown) => void;
-      error: (msg: string, data?: unknown) => void;
-    };
-  }
-) {
+// GET /admin/errors
+export const adminErrorsRoute = route(async (req) => {
   // Require admin authentication
   let admin;
   try {
@@ -88,11 +36,11 @@ export async function handler(
   }
 
   try {
-    const query = req.query || {};
-    const limit = query.limit ? parseInt(query.limit, 10) : 50;
-    const errorCode = query.errorCode;
-    const userId = query.userId;
-    const includeResolved = query.includeResolved === "true";
+    const limitParam = queryParam(req, "limit");
+    const limit = limitParam ? parseInt(limitParam, 10) : 50;
+    const errorCode = queryParam(req, "errorCode");
+    const userId = queryParam(req, "userId");
+    const includeResolved = queryParam(req, "includeResolved") === "true";
 
     // Get dashboard data
     const { stats, recentErrors } = await AnalyticsService.getErrorDashboard();
@@ -137,4 +85,4 @@ export async function handler(
       body: { error: "Failed to load errors dashboard" },
     };
   }
-}
+});

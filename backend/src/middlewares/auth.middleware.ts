@@ -1,7 +1,9 @@
 import jwt from "jsonwebtoken";
+import { requireEnv } from "../lib/env";
 import { userRepository } from "../repositories/user.repository";
 
-const JWT_SECRET = process.env.JWT_SECRET || "My-MathSolver-App-JWT-Secret";
+// No fallback: a default secret in the source code would let anyone forge tokens
+const JWT_SECRET = requireEnv("JWT_SECRET");
 
 interface TokenPayload {
     userId: string;

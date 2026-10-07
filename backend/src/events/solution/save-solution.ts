@@ -1,14 +1,14 @@
 /**
  * Save Solution Event Handler
  *
- * Subscribes to: problem-solved
- *
  * Saves the solution to MongoDB for history and retrieval.
  * Also updates user statistics.
  */
 
-import { EventConfig, Handlers } from "motia";
 import { z } from "zod";
+import { runInBackground } from "../../lib/background";
+import { logger } from "../../lib/logger";
+import { trackAnalytics } from "./track-analytics";
 import { SolutionService } from "../../services/solution/solution.service";
 import type {
   Solution,
@@ -52,20 +52,10 @@ const SolutionSavedSchema = z.object({
   timestamp: z.string(),
 });
 
-export const config: EventConfig = {
-  type: "event",
-  name: "SaveSolution",
-  description: "Saves solution to database for history tracking",
-  subscribes: ["problem-solved"],
-  emits: [{ topic: "analytics-track", label: "Track Analytics" }],
-  input: SolutionSavedSchema,
-  flows: ["SolutionFlow"],
-};
+export type SolutionSolvedEvent = z.infer<typeof SolutionSavedSchema>;
 
-export const handler: Handlers["SaveSolution"] = async (
-  data,
-  { emit, logger, state }
-) => {
+// Saves a solved problem to MongoDB so it shows up in the user's history
+export async function saveSolution(data: SolutionSolvedEvent): Promise<void> {
   const {
     chatId,
     userId,
@@ -84,12 +74,6 @@ export const handler: Handlers["SaveSolution"] = async (
     stepsCount,
   });
 
-  // DEBUG: Log tokenUsage from event
-  console.log(
-    "[DEBUG] save-solution.step - solution.tokenUsage:",
-    JSON.stringify(solution.tokenUsage)
-  );
-
   try {
     // Convert to proper Solution type for the service
     const solutionData: Solution = {
@@ -107,7 +91,6 @@ export const handler: Handlers["SaveSolution"] = async (
       createdAt: solution.createdAt,
     };
 
-    // Save to MongoDB via SolutionService
     const savedSolution = await SolutionService.saveSolution(
       solutionData,
       chatId,
@@ -119,19 +102,9 @@ export const handler: Handlers["SaveSolution"] = async (
       originalId: solution.id,
     });
 
-    // Also cache in state for quick retrieval
-    await state.set("solutions", solution.id, {
-      ...solution,
-      mongoId: savedSolution._id.toString(),
-      chatId,
-      userId,
-      savedAt: new Date().toISOString(),
-    });
-
-    // Track analytics
-    emit({
-      topic: "analytics-track",
-      data: {
+    // Analytics is not urgent, so it runs without delaying the response
+    runInBackground("track-analytics", () =>
+      trackAnalytics({
         event: "solution_saved",
         properties: {
           problemType,
@@ -140,33 +113,12 @@ export const handler: Handlers["SaveSolution"] = async (
           userId,
         },
         timestamp,
-      },
-    });
+      })
+    );
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
     logger.error("Failed to save solution to MongoDB", {
       solutionId: solution.id,
-      error: errorMessage,
+      error: error instanceof Error ? error.message : "Unknown error",
     });
-
-    // Still try to cache in state even if MongoDB fails
-    try {
-      await state.set("solutions", solution.id, {
-        ...solution,
-        chatId,
-        userId,
-        savedAt: new Date().toISOString(),
-        mongoSaveError: errorMessage,
-      });
-      logger.info("Solution cached in state as fallback", {
-        solutionId: solution.id,
-      });
-    } catch (stateError) {
-      logger.error("Failed to cache solution in state", {
-        solutionId: solution.id,
-        error: stateError instanceof Error ? stateError.message : "Unknown",
-      });
-    }
   }
-};
+}

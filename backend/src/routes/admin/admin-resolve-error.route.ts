@@ -6,52 +6,13 @@
  * REQUIRES ADMIN AUTHENTICATION
  */
 
-import type { ApiRouteConfig } from "motia";
-import { z } from "zod";
 import { requireAdmin } from "../../middlewares/auth.middleware";
 import { AnalyticsService } from "../../services/analytics/analytics.service";
+import { pathParam, route } from "../../lib/http";
+import { logger } from "../../lib/logger";
 
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "AdminResolveError",
-  description: "Mark an error as resolved (requires admin)",
-  path: "/admin/errors/:id/resolve",
-  method: "PATCH",
-  emits: [],
-  flows: ["admin-flow"],
-  responseSchema: {
-    200: z.object({
-      message: z.string(),
-      error: z.object({
-        id: z.string(),
-        resolved: z.boolean(),
-        resolvedBy: z.string(),
-        resolvedAt: z.string(),
-      }),
-    }),
-    400: z.object({ error: z.string() }),
-    401: z.object({ error: z.string() }),
-    403: z.object({ error: z.string() }),
-    404: z.object({ error: z.string() }),
-    500: z.object({ error: z.string() }),
-  },
-};
-
-// Using explicit types since Handlers may not have this step yet
-export async function handler(
-  req: {
-    headers?: Record<string, string | string[] | undefined>;
-    params?: Record<string, string>;
-  },
-  {
-    logger,
-  }: {
-    logger: {
-      info: (msg: string, data?: unknown) => void;
-      error: (msg: string, data?: unknown) => void;
-    };
-  }
-) {
+// PATCH /admin/errors/:id/resolve
+export const adminResolveErrorRoute = route(async (req) => {
   // Require admin authentication
   let admin;
   try {
@@ -69,7 +30,7 @@ export async function handler(
     };
   }
 
-  const errorId = req.params?.id;
+  const errorId = pathParam(req, "id");
   if (!errorId) {
     return { status: 400, body: { error: "Error ID required" } };
   }
@@ -106,4 +67,4 @@ export async function handler(
     logger.error("Failed to resolve error", { error: errorMsg, errorId });
     return { status: 500, body: { error: "Failed to resolve error" } };
   }
-}
+});

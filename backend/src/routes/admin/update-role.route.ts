@@ -6,55 +6,19 @@
  * REQUIRES ADMIN AUTHENTICATION
  */
 
-import type { ApiRouteConfig } from "motia";
 import { z } from "zod";
 import { requireAdmin } from "../../middlewares/auth.middleware";
 import { userRepository } from "../../repositories/user.repository";
 
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "AdminUpdateUserRolePut",
-  description: "Update user admin role via PUT (requires admin)",
-  path: "/admin/users/update-role",
-  method: "PUT",
-  emits: [],
-  flows: ["admin-flow"],
-  bodySchema: z.object({
-    userId: z.string().min(1, "userId is required"),
-    isAdmin: z.boolean(),
-  }),
-  responseSchema: {
-    200: z.object({
-      success: z.literal(true),
-      user: z.object({
-        id: z.string(),
-        name: z.string(),
-        email: z.string(),
-        isAdmin: z.boolean(),
-      }),
-    }),
-    400: z.object({ error: z.string() }),
-    401: z.object({ error: z.string() }),
-    403: z.object({ error: z.string() }),
-    404: z.object({ error: z.string() }),
-    500: z.object({ error: z.string() }),
-  },
-};
+const UpdateRoleSchema = z.object({
+  userId: z.string().min(1, "userId is required"),
+  isAdmin: z.boolean(),
+});
+import { routeWithBody } from "../../lib/http";
+import { logger } from "../../lib/logger";
 
-export async function handler(
-  req: {
-    headers?: Record<string, string | string[] | undefined>;
-    body: { userId: string; isAdmin: boolean };
-  },
-  {
-    logger,
-  }: {
-    logger: {
-      info: (msg: string, data?: unknown) => void;
-      error: (msg: string, data?: unknown) => void;
-    };
-  }
-) {
+// PUT /admin/users/update-role
+export const adminUpdateRolePutRoute = routeWithBody(UpdateRoleSchema, async (req, body) => {
   // Require admin authentication
   let admin;
   try {
@@ -73,7 +37,7 @@ export async function handler(
   }
 
   try {
-    const { userId, isAdmin } = req.body;
+    const { userId, isAdmin } = body;
 
     if (!userId) {
       return {
@@ -125,4 +89,4 @@ export async function handler(
       body: { error: "Failed to update user role" },
     };
   }
-}
+});

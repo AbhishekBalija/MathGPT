@@ -6,59 +6,14 @@
  * REQUIRES ADMIN AUTHENTICATION
  */
 
-import type { ApiRouteConfig } from "motia";
-import { z } from "zod";
 import { requireAdmin } from "../../middlewares/auth.middleware";
 import { AnalyticsService } from "../../services/analytics/analytics.service";
 import { analyticsRepository } from "../../repositories/analytics.repository";
+import { route } from "../../lib/http";
+import { logger } from "../../lib/logger";
 
-export const config: ApiRouteConfig = {
-  type: "api",
-  name: "AdminGetAnalytics",
-  description: "Get analytics data for admin dashboard (requires admin)",
-  path: "/admin/analytics",
-  method: "GET",
-  emits: [],
-  flows: ["admin-flow"],
-  responseSchema: {
-    200: z.object({
-      eventsByType: z.array(
-        z.object({
-          eventName: z.string(),
-          count: z.number(),
-        })
-      ),
-      recentEvents: z.array(
-        z.object({
-          id: z.string(),
-          eventName: z.string(),
-          properties: z.record(z.string(), z.unknown()),
-          userId: z.string().optional(),
-          createdAt: z.string(),
-        })
-      ),
-      totalEvents: z.number(),
-    }),
-    401: z.object({ error: z.string() }),
-    403: z.object({ error: z.string() }),
-    500: z.object({ error: z.string() }),
-  },
-};
-
-export async function handler(
-  req: {
-    headers?: Record<string, string | string[] | undefined>;
-    query?: Record<string, string>;
-  },
-  {
-    logger,
-  }: {
-    logger: {
-      info: (msg: string, data?: unknown) => void;
-      error: (msg: string, data?: unknown) => void;
-    };
-  }
-) {
+// GET /admin/analytics
+export const adminAnalyticsRoute = route(async (req) => {
   // Require admin authentication
   let admin;
   try {
@@ -112,4 +67,4 @@ export async function handler(
     logger.error("Failed to fetch analytics", { error: errorMsg });
     return { status: 500, body: { error: "Failed to fetch analytics" } };
   }
-}
+});

@@ -1,6 +1,6 @@
 # NeoMath API Reference
 
-Base URL: `https://your-backend-url.motia.cloud`
+Base URL: `http://localhost:3000` locally. Production URL will be the Vercel backend project (Phase 3).
 
 ## Authentication
 
