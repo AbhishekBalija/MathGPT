@@ -73,12 +73,7 @@ export const AuthService = {
     };
   },
 
-  async register(data: {
-    email: string;
-    password: string;
-    name: string;
-    isAdmin?: boolean;
-  }) {
+  async register(data: { email: string; password: string; name: string }) {
     // Check if user exists
     const existingUser = await userRepository.findByEmail(data.email);
 
@@ -98,7 +93,8 @@ export const AuthService = {
       email: data.email,
       password: hashedPassword,
       name: data.name,
-      isAdmin: data.isAdmin ?? false,
+      // New Users are never Admins; an existing Admin grants the role
+      isAdmin: false,
       provider: "email",
     });
 

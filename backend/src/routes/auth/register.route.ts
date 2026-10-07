@@ -25,7 +25,8 @@ const RegisterSchema = z.object({
   email: z.string().email(),
   password: passwordSchema,
   name: z.string().min(1, "Name is required").max(100, "Name too long"),
-  isAdmin: z.boolean().optional(),
+  // No isAdmin here: admin rights are never set by the person signing up.
+  // Unknown fields (including isAdmin) are dropped by zod.
 });
 
 // Step 1: Define the route config
