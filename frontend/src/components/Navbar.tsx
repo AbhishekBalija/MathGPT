@@ -7,6 +7,15 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+
+  // Close the menu whenever the page changes (a link, back or forward).
+  // React's pattern for adjusting state when a value changes: compare during
+  // render instead of using an effect.
+  const [menuPath, setMenuPath] = useState(location.pathname);
+  if (menuPath !== location.pathname) {
+    setMenuPath(location.pathname);
+    setMobileMenuOpen(false);
+  }
   const isLanding = location.pathname === "/";
 
   // Use centralized theme store
@@ -20,10 +29,6 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close mobile menu on route change
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [location.pathname]);
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
@@ -142,12 +147,14 @@ const Navbar = () => {
           <div className="flex flex-col h-full pt-20 px-6">
             <Link
               to="/login"
+              onClick={() => setMobileMenuOpen(false)}
               className="py-4 text-lg font-medium text-gray-700 dark:text-gray-200 hover:text-black dark:hover:text-white border-b border-gray-100 dark:border-gray-800 transition-colors"
             >
               Log in
             </Link>
             <Link
               to="/register"
+              onClick={() => setMobileMenuOpen(false)}
               className="py-4 text-lg font-medium text-gray-700 dark:text-gray-200 hover:text-black dark:hover:text-white border-b border-gray-100 dark:border-gray-800 transition-colors"
             >
               Sign up
@@ -157,6 +164,7 @@ const Navbar = () => {
             <div className="mt-auto pb-8">
               <Link
                 to="/register"
+                onClick={() => setMobileMenuOpen(false)}
                 className="block w-full py-4 text-center text-white dark:text-black bg-black dark:bg-white rounded-xl font-medium text-lg transition-all active:scale-95"
               >
                 Get Started

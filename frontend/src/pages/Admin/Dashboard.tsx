@@ -6,12 +6,12 @@ import type { TokenStatsResponse } from "../../services/admin.service";
 const Dashboard = () => {
   const { stats, fetchStats, isLoading, error } = useAdminStore();
   const [tokenStats, setTokenStats] = useState<TokenStatsResponse | null>(null);
-  const [tokenStatsLoading, setTokenStatsLoading] = useState(false);
+  // Start loading so the first paint shows skeletons
+  const [tokenStatsLoading, setTokenStatsLoading] = useState(true);
 
   useEffect(() => {
     fetchStats();
-    // Fetch token stats
-    setTokenStatsLoading(true);
+    // Fetch token stats, loading ends in the callbacks below
     adminService
       .getTokenStats()
       .then(setTokenStats)
