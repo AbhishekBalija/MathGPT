@@ -19,7 +19,8 @@ import { logger } from "../lib/logger";
 import { rateLimitRepository } from "../modules/rate-limits/rate-limit.repository";
 import { runInBackground } from "../lib/background";
 import { handleSolveError } from "../events/solution/handle-solve-error";
-import { saveSolution } from "../events/solution/save-solution";
+import { trackAnalytics } from "../events/solution/track-analytics";
+import { solutionRepository } from "../modules/solutions/solution.repository";
 
 // Daily free limit for users
 const DAILY_FREE_LIMIT = 5;
@@ -179,19 +180,49 @@ export function createSolveRoute(solver: MathSolver) {
         userId,
       });
 
-      // Save to MongoDB before responding so the solution is never lost
-      await saveSolution({
-        chatId,
-        userId,
-        solution: {
-          ...solution,
-          createdAt: solution.createdAt,
-        },
-        problemType: solution.problemType,
-        stepsCount: solution.steps.length,
-        processingTimeMs: solution.processingTimeMs,
-        timestamp: new Date().toISOString(),
-      });
+      // Saved before responding, under the solver's id, so the id we return
+      // is the one the User can open and delete. If saving fails, no Credit
+      // is spent and the User gets a generic error (the real one is logged).
+      try {
+        await solutionRepository.create(userId, solution, chatId);
+      } catch (saveError) {
+        const saveErrorMessage =
+          saveError instanceof Error ? saveError.message : "Unknown error";
+        logger.error("Failed to save solution", {
+          solutionId: solution.id,
+          userId,
+          error: saveErrorMessage,
+        });
+        // Shows up on the admin error dashboard like any other failed solve
+        runInBackground("problem-error", () =>
+          handleSolveError({
+            chatId,
+            userId,
+            problem: problem.slice(0, 200),
+            errorCode: "SOLUTION_SAVE_FAILED",
+            errorMessage: saveErrorMessage,
+            processingTimeMs: Date.now() - startTime,
+            timestamp: new Date().toISOString(),
+          })
+        );
+        return {
+          status: 500 as const,
+          body: { success: false, error: "Internal server error" },
+        };
+      }
+
+      runInBackground("track-analytics", () =>
+        trackAnalytics({
+          event: "solution_saved",
+          properties: {
+            problemType: solution.problemType,
+            stepsCount: solution.steps.length,
+            processingTimeMs: solution.processingTimeMs,
+            userId,
+          },
+          timestamp: new Date().toISOString(),
+        })
+      );
 
       // INCREMENT DAILY USAGE COUNTER (after successful solve)
       try {

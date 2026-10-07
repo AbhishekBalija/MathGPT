@@ -536,9 +536,10 @@ describe("🧮 SOLVE API - Brutal Stress Tests", () => {
       expect(validStatuses.length).toBe(20);
     });
 
-    // Known failure, see #12: the shared test User hits the solve Rate Limit
-    it.skip("should return consistent results for same problem", async () => {
+    it("should return consistent results for same problem", async () => {
       const problem = "2 + 2 = ?";
+      // Its own User: earlier tests have used up the shared User's solve limit
+      const { accessToken: freshToken } = await registerVerifiedUser();
 
       const promises = Array(5)
         .fill(null)
@@ -547,7 +548,7 @@ describe("🧮 SOLVE API - Brutal Stress Tests", () => {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${authToken}`,
+              Authorization: `Bearer ${freshToken}`,
             },
             body: JSON.stringify({ problem }),
           }).then((r) => r.json())
@@ -689,13 +690,9 @@ describe("📜 HISTORY - IDOR & Data Isolation", () => {
     });
 
     it("should NOT allow User2 to delete User1 solutions", async () => {
-      const deleteRes = await fetch(`${API_URL}/api/delete-solution`, {
+      const deleteRes = await fetch(`${API_URL}/api/solution/${user1SolutionId}`, {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user2Token}`,
-        },
-        body: JSON.stringify({ solutionId: user1SolutionId }),
+        headers: { Authorization: `Bearer ${user2Token}` },
       });
 
       // Should be 403 Forbidden or 404 Not Found
@@ -718,39 +715,27 @@ describe("📜 HISTORY - IDOR & Data Isolation", () => {
   });
 
   describe("Edge Cases", () => {
-    // Known failure, see #12: the shared test User hits the solve Rate Limit
-    it.skip("should handle deleting already-deleted solution", async () => {
-      // Create and delete a solution
+    it("should handle deleting already-deleted solution", async () => {
+      // Its own User: earlier tests have used up the shared User's solve limit
+      const { accessToken: ownerToken } = await registerVerifiedUser();
       const createRes = await fetch(`${API_URL}/api/solve`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${user1Token}`,
+          Authorization: `Bearer ${ownerToken}`,
         },
         body: JSON.stringify({ problem: "To be deleted" }),
       });
 
       const { solution } = await createRes.json();
+      const deleteIt = () =>
+        fetch(`${API_URL}/api/solution/${solution.id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${ownerToken}` },
+        });
 
-      // Delete it
-      await fetch(`${API_URL}/api/delete-solution`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user1Token}`,
-        },
-        body: JSON.stringify({ solutionId: solution.id }),
-      });
-
-      // Try to delete again
-      const secondDelete = await fetch(`${API_URL}/api/delete-solution`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user1Token}`,
-        },
-        body: JSON.stringify({ solutionId: solution.id }),
-      });
+      expect((await deleteIt()).status).toBe(200);
+      const secondDelete = await deleteIt();
 
       expect(secondDelete.status).toBe(404);
     });

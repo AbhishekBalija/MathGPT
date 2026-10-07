@@ -563,8 +563,7 @@ describe("💾 SOLUTION CACHING - State Verification", () => {
   });
 
   describe("Solution Retrieval", () => {
-    // Known failure, see #12: shared-User Rate Limit, and the saved Solution ID differs (#7)
-    it.skip("should retrieve solution by ID after creation", async () => {
+    it("should retrieve solution by ID after creation", async () => {
       const solveRes = await fetch(`${API_URL}/api/solve`, {
         method: "POST",
         headers: {

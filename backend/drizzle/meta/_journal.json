@@ -22,6 +22,13 @@
       "when": 1791367750548,
       "tag": "0002_email_verification_and_rate_limits",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791392041027,
+      "tag": "0003_solutions",
+      "breakpoints": true
     }
   ]
 }

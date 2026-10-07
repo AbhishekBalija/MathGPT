@@ -171,11 +171,11 @@ export const userRepository = {
       .where(eq(users.id, id));
   },
 
-  async delete(id: string): Promise<boolean> {
+  async delete(id: string, executor: DbExecutor = db): Promise<boolean> {
     if (!isUserId(id)) {
       return false;
     }
-    const deleted = await db
+    const deleted = await executor
       .delete(users)
       .where(eq(users.id, id))
       .returning({ id: users.id });

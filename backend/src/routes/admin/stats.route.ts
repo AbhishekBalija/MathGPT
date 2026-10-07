@@ -8,7 +8,7 @@
 
 import { getCurrentUser } from "../../modules/auth/auth.middleware";
 import { userRepository } from "../../modules/users/user.repository";
-import { solutionRepository } from "../../repositories/solution.repository";
+import { solutionRepository } from "../../modules/solutions/solution.repository";
 import { route } from "../../lib/http";
 import { logger } from "../../lib/logger";
 
