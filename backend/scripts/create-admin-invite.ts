@@ -5,7 +5,7 @@
  */
 
 import { MongoClient } from "mongodb";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 import * as dotenv from "dotenv";
 
 // Load environment variables
@@ -44,7 +44,7 @@ async function createAdminInvite() {
     const waitlist = db.collection("waitlist");
 
     // Generate a new invite token
-    const inviteToken = uuidv4();
+    const inviteToken = randomUUID();
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
 

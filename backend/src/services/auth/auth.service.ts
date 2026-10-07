@@ -1,11 +1,12 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
+import { requireEnv } from "../../lib/env";
 import { userRepository } from "../../repositories/user.repository";
 
-const JWT_SECRET = process.env.JWT_SECRET || "My-MathSolver-App-JWT-Secret";
-const JWT_REFRESH_SECRET =
-  process.env.JWT_REFRESH_SECRET || "My-MathSolver-App-Refresh-Secret";
+// No fallbacks: a default secret in the source code would let anyone forge tokens
+const JWT_SECRET = requireEnv("JWT_SECRET");
+const JWT_REFRESH_SECRET = requireEnv("JWT_REFRESH_SECRET");
 const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || "15m";
 const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRY || "7d";
 const GOOGLE_CLIENT_ID =

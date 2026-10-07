@@ -21,8 +21,8 @@ graph TB
         AXIOS["Axios Client"]
     end
 
-    subgraph "Backend - Motia Cloud"
-        API["🔌 API Gateway"]
+    subgraph "Backend - Express API"
+        API["🔌 Express Router"]
         AUTH["🔐 Auth Service"]
         AI["🤖 AI Service"]
         SOLUTION["📝 Solution Service"]
@@ -284,7 +284,8 @@ graph TB
 
 | Technology                                                                              | Purpose        |
 | --------------------------------------------------------------------------------------- | -------------- |
-| ![Motia](https://img.shields.io/badge/Motia-0.17-orange)                                | Orchestration  |
+| ![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)  | HTTP API       |
+| ![Bun](https://img.shields.io/badge/Bun-1.3-000000?logo=bun&logoColor=white)            | Runtime (dev)  |
 | ![MongoDB](https://img.shields.io/badge/MongoDB-7-47A248?logo=mongodb&logoColor=white)  | Database       |
 | ![JWT](https://img.shields.io/badge/JWT-Auth-000000?logo=jsonwebtokens&logoColor=white) | Authentication |
 
@@ -405,10 +406,10 @@ graph TB
         SSR["📦 Static Files"]
     end
 
-    subgraph "Motia Cloud"
-        LB["⚖️ Load Balancer"]
-        APP1["🔧 App Instance 1"]
-        APP2["🔧 App Instance 2"]
+    subgraph "Vercel Functions (planned, Phase 3)"
+        LB["⚖️ Vercel Routing"]
+        APP1["🔧 Express Function"]
+        APP2["🔧 Express Function"]
     end
 
     subgraph "Data Layer"
@@ -429,4 +430,4 @@ graph TB
 
 ---
 
-_Last updated: December 22, 2025_
+_Last updated: October 7, 2026 (Motia replaced with Express)_

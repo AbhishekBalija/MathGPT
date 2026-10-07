@@ -6,13 +6,28 @@ The brutal test suite (`tests/brutal.test.ts`) is designed to test security vuln
 
 ## Running Tests
 
-```bash
-# Run all tests
-npm test
+The tests talk to a running API at `TEST_API_URL` (default `http://localhost:3000`).
+They register users, call `/api/solve` and trigger emails, so run them against an
+isolated server only:
 
-# Run brutal test suite only
-npm test -- --run brutal.test.ts
+```bash
+# 1. Throwaway local MongoDB (data lives in a temp folder)
+mkdir -p /tmp/neomath-test-db
+mongod --dbpath /tmp/neomath-test-db --port 27018 --fork --logpath /tmp/neomath-test-db/mongod.log
+
+# 2. API with test-only settings. --no-env-file stops Bun from loading your real .env
+PORT=3100 NODE_ENV=test MONGODB_URI=mongodb://127.0.0.1:27018 \
+JWT_SECRET=test-access JWT_REFRESH_SECRET=test-refresh \
+RESEND_API=re_dummy FROM_EMAIL="Test <test@example.invalid>" \
+GEMINI_MATH_AI_API=dummy ADMIN_PASSCODE=test-admin-passcode \
+bun --no-env-file src/server.ts
+
+# 3. In another terminal
+TEST_API_URL=http://localhost:3100 ADMIN_PASSCODE=test-admin-passcode bun run test -- --run
 ```
+
+With a dummy `GEMINI_MATH_AI_API`, tests that need a real AI answer fail with
+500. Use a real key only when you need those tests, and expect some Gemini usage.
 
 ## Test Categories
 

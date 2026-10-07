@@ -47,7 +47,7 @@ cd math-solver
 
 ```bash
 cd frontend
-bun install  # or npm install
+bun install
 
 # Create .env.local
 cp .env.example .env.local
@@ -64,37 +64,20 @@ VITE_GOOGLE_CLIENT_ID=your_google_client_id
 
 ```bash
 cd backend
-npm install
+bun install
 
-# Create .env
+# Create .env from the template, then fill in the values
 cp .env.example .env
 ```
 
-**backend/.env:**
+The backend refuses to start without `JWT_SECRET`, `JWT_REFRESH_SECRET`,
+`RESEND_API` and `FROM_EMAIL`. Generate each JWT secret with:
 
-```env
-# Database
-MONGODB_URI=mongodb://localhost:27017/mathgpt
-
-# JWT (use strong secrets in production!)
-JWT_SECRET=your-super-secret-jwt-key
-JWT_REFRESH_SECRET=your-super-secret-refresh-key
-ACCESS_TOKEN_EXPIRY=15m
-REFRESH_TOKEN_EXPIRY=7d
-
-# Google OAuth
-GOOGLE_CLIENT_ID=your_google_client_id
-VITE_GOOGLE_CLIENT_ID=your_google_client_id
-
-# Gemini AI
-GEMINI_MATH_AI_API=your_gemini_api_key
-
-# Email (optional)
-RESEND_API_KEY=your_resend_api_key
-
-# Admin (optional - for admin passcode verification)
-ADMIN_PASSCODE=your_admin_passcode
+```bash
+openssl rand -base64 48
 ```
+
+See `backend/.env.example` for every variable and what it does.
 
 ### 4. Start Development Servers
 
@@ -102,15 +85,15 @@ ADMIN_PASSCODE=your_admin_passcode
 
 ```bash
 cd backend
-npm run dev
-# Runs on http://localhost:3000
+bun run dev
+# Express API on http://localhost:3000, restarts on file changes
 ```
 
 **Terminal 2 - Frontend:**
 
 ```bash
 cd frontend
-bun dev  # or npm run dev
+bun run dev
 # Runs on http://localhost:5173
 ```
 
@@ -203,12 +186,13 @@ To enable admin features:
 ```bash
 # Frontend tests
 cd frontend
-npm run test
-
-# Backend tests
-cd backend
-npm run test
+bun run test
 ```
+
+Backend tests call a running API over HTTP, and they create users and send
+requests that trigger emails and AI calls. **Never point them at a server
+connected to a real database.** See `backend/tests/README.md` for the safe
+setup (local MongoDB, dummy email and AI keys).
 
 ---
 
