@@ -138,7 +138,7 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("token");
-        // Also clear admin verification storage
+        // Also clear stored data from the old admin passcode (removed in #20)
         localStorage.removeItem("admin-storage");
 
         set({

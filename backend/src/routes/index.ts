@@ -5,11 +5,8 @@
 
 import { Router } from "express";
 import type { AppServices } from "../app";
-import {
-  requireAdmin,
-  requireUser,
-  requireVerifiedEmail,
-} from "../modules/auth/auth.middleware";
+import { requireUser, requireVerifiedEmail } from "../modules/auth/auth.middleware";
+import { createAdminRouter } from "../modules/admin/admin.router";
 import { limitByIp } from "../modules/rate-limits/rate-limit.middleware";
 
 import { healthRoute } from "./health.route";
@@ -31,16 +28,6 @@ import { publicStatsRoute } from "./public-stats.route";
 import { getSolutionRoute } from "./solution.route";
 import { createSolveRoute } from "./solve.route";
 
-import { adminErrorsRoute } from "./admin/admin-errors.route";
-import { adminResolveErrorRoute } from "./admin/admin-resolve-error.route";
-import { adminAnalyticsRoute } from "./admin/analytics.route";
-import { adminDeleteUserRoute } from "./admin/delete-user.route";
-import { adminStatsRoute } from "./admin/stats.route";
-import { adminTokenStatsRoute } from "./admin/token-stats.route";
-import { adminUpdateRolePutRoute } from "./admin/update-role.route";
-import { adminUpdateUserRoleRoute } from "./admin/update-user-role.route";
-import { adminListUsersRoute } from "./admin/users.route";
-import { adminVerifyPasscodeRoute } from "./admin/verify-passcode.route";
 
 export function createRouter(services: AppServices) {
   const router = Router();
@@ -84,17 +71,8 @@ export function createRouter(services: AppServices) {
   // Public
   router.get("/api/public-stats", publicStatsRoute);
 
-  // Admin
-  router.post("/admin/verify-passcode", adminVerifyPasscodeRoute);
-  router.get("/admin/stats", requireUser, requireAdmin, adminStatsRoute);
-  router.get("/admin/analytics", adminAnalyticsRoute);
-  router.get("/admin/token-stats", adminTokenStatsRoute);
-  router.get("/admin/errors", adminErrorsRoute);
-  router.patch("/admin/errors/:id/resolve", adminResolveErrorRoute);
-  router.get("/admin/users", requireUser, requireAdmin, adminListUsersRoute);
-  router.put("/admin/users/update-role", requireUser, requireAdmin, adminUpdateRolePutRoute);
-  router.patch("/admin/users/:id/role", requireUser, requireAdmin, adminUpdateUserRoleRoute);
-  router.delete("/admin/users/:id", requireUser, requireAdmin, adminDeleteUserRoute);
+  // Admin: one module, behind requireUser and requireAdmin
+  router.use("/admin", createAdminRouter());
 
   return router;
 }

@@ -33,19 +33,6 @@ export interface UsersListResponse {
 // Admin service
 export const adminService = {
   /**
-   * Verify admin passcode for secondary authentication
-   */
-  verifyPasscode: async (passcode: string): Promise<{ success: true }> => {
-    const response = await api.post<{ success: true }>(
-      "/admin/verify-passcode",
-      {
-        passcode,
-      }
-    );
-    return response.data;
-  },
-
-  /**
    * Get dashboard stats
    */
   getStats: async (): Promise<AdminStats> => {

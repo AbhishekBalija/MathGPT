@@ -6,9 +6,9 @@
  * REQUIRES ADMIN AUTHENTICATION (requireUser + requireAdmin middleware)
  */
 
-import { getCurrentUser } from "../../modules/auth/auth.middleware";
-import { userRepository } from "../../modules/users/user.repository";
-import { solutionRepository } from "../../modules/solutions/solution.repository";
+import { getCurrentUser } from "../auth/auth.middleware";
+import { userRepository } from "../users/user.repository";
+import { solutionRepository } from "../solutions/solution.repository";
 import { inTransaction } from "../../db/transaction";
 import { pathParam, route } from "../../lib/http";
 import { logger } from "../../lib/logger";

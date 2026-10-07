@@ -73,12 +73,11 @@ database rows.
 
 ### Known failures
 
-Six older tests in `brutal.test.ts` and `brutal-advanced.test.ts` are marked
-`it.skip` with a `// Known failure, see #12` comment. They failed before this
-harness too, because of current app behaviour (the solve Rate Limit shared by
-tests using the same User, the saved Solution ID differing from the returned
-one, an empty admin passcode returning 401, refresh tokens issued in the same
-second being identical). #12 tracks fixing and un-skipping them.
+Two older tests in `brutal-advanced.test.ts` are marked `it.skip` with a
+`// Known failure, see #12` comment: the Daily Limit test (the per-minute
+solve limit fires first; `tests/solve.test.ts` covers the Daily Limit
+instead) and refresh tokens issued in the same second being identical. #12
+tracks them.
 
 ## Test Categories
 

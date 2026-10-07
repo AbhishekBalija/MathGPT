@@ -386,7 +386,6 @@ graph LR
         ACCESS["15m Access Token"]
         REFRESH["7d Refresh Token"]
         BCRYPT["🔒 bcrypt Hash"]
-        PASSCODE["🔐 Admin Passcode"]
     end
 
     TOKEN --> VERIFY
@@ -397,7 +396,6 @@ graph LR
     ACCESS -.->|Short-lived| TOKEN
     REFRESH -.->|Long-lived| TOKEN
     BCRYPT -.->|Passwords| CHECK
-    PASSCODE -.->|Admin Verify| ADMIN_CHECK
 
     style TOKEN fill:#f39c12,color:#000
     style BCRYPT fill:#27ae60,color:#fff

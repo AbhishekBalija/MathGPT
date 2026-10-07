@@ -33,6 +33,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
   Unverified Users can still log in and see their profile and History.
 - The welcome email is sent after verification instead of at sign-up; email
   sign-ups get the Verification Code first.
+- Analytics Events and Error Logs are stored in Postgres. Every admin
+  endpoint lives in one admin module behind `requireUser` and `requireAdmin`.
+  Error Log filters combine, and resolved logs are hidden unless
+  `includeResolved=true`.
+- Admins sign in normally: the Admin Passcode screen, `POST
+  /admin/verify-passcode` and `ADMIN_PASSCODE` are removed (#20).
 - Solutions are stored in Postgres. A Solution's id is the id solving
   returned, so opening and deleting a just-solved Problem works (before, the
   stored id was different). Deleting a User deletes their Solutions through a
@@ -56,6 +62,9 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - Package manager for the backend is now Bun (`bun.lock`).
 
 ### Fixed
+
+- Error Logs store the actual Problem text (they stored "Unknown problem").
+- Admin dashboard `totalSolutions` counts Solutions (it was always 0).
 
 - "Clear History" in the app: the frontend called `DELETE /api/history`,
   which did not exist. Both that and `DELETE /api/clear-history` now work.

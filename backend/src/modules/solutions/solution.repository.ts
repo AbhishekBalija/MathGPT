@@ -7,8 +7,8 @@
  */
 
 import { and, count, desc, eq, max, sql, sum } from "drizzle-orm";
-import { z } from "zod";
 import { db } from "../../db/client";
+import { isUuid as isId } from "../../lib/ids";
 import type { DbExecutor } from "../../db/transaction";
 import { solutions, type SolutionRow } from "../../db/schema";
 import type { ProblemType, Solution } from "../../types/solve.types";
@@ -21,12 +21,6 @@ export interface HistoryItem {
   problemType: ProblemType;
   finalAnswer: string;
   createdAt: Date;
-}
-
-const idSchema = z.uuid();
-
-function isId(id: string): boolean {
-  return idSchema.safeParse(id).success;
 }
 
 // Turns [{ problemType: "algebra", count: 2 }] into { algebra: 2 }
@@ -144,6 +138,12 @@ export const solutionRepository = {
       .select({ total: count() })
       .from(solutions)
       .where(eq(solutions.userId, userId));
+    return row?.total ?? 0;
+  },
+
+  /** For admin statistics: every saved Solution. */
+  async countAll(): Promise<number> {
+    const [row] = await db.select({ total: count() }).from(solutions);
     return row?.total ?? 0;
   },
 

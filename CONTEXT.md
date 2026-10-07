@@ -61,11 +61,8 @@ A short-lived 6-digit code emailed to a User to confirm they own their email add
 _Avoid_: OTP, PIN, token
 
 **Admin**:
-A User allowed into the admin dashboard.
-
-**Admin Passcode**:
-A shared secret an Admin enters as a second check before the dashboard opens.
-_Avoid_: Admin password
+A User allowed into the admin dashboard. Admins sign in like any other User;
+rights come only from an existing Admin or the create-admin script.
 
 ## Operations
 

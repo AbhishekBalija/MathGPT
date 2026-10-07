@@ -6,9 +6,9 @@
  * REQUIRES ADMIN AUTHENTICATION (requireUser + requireAdmin middleware)
  */
 
-import { getCurrentUser } from "../../modules/auth/auth.middleware";
-import { userRepository } from "../../modules/users/user.repository";
-import { solutionRepository } from "../../modules/solutions/solution.repository";
+import { getCurrentUser } from "../auth/auth.middleware";
+import { userRepository } from "../users/user.repository";
+import { solutionRepository } from "../solutions/solution.repository";
 import { route } from "../../lib/http";
 import { logger } from "../../lib/logger";
 
@@ -19,8 +19,9 @@ export const adminStatsRoute = route(async (req) => {
 
   try {
     // Fetch stats in parallel
-    const [totalUsers, solutionsByType, recentUsers] = await Promise.all([
+    const [totalUsers, totalSolutions, solutionsByType, recentUsers] = await Promise.all([
       userRepository.count(),
+      solutionRepository.countAll(),
       solutionRepository.countByProblemType(),
       userRepository.findRecent(5),
     ]);
@@ -31,8 +32,7 @@ export const adminStatsRoute = route(async (req) => {
       status: 200,
       body: {
         totalUsers,
-        // Always 0 so far (unchanged from before); the admin work in #9 fills it in
-        totalSolutions: 0,
+        totalSolutions,
         solutionsByType,
         recentUsers: recentUsers.map((u) => ({
           id: u.id,

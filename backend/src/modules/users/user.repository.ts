@@ -6,8 +6,8 @@
  */
 
 import { count, desc, eq, ilike, or, sql } from "drizzle-orm";
-import { z } from "zod";
 import { db } from "../../db/client";
+import { isUuid as isUserId } from "../../lib/ids";
 import type { DbExecutor } from "../../db/transaction";
 import { users, type AuthProvider, type UserRow } from "../../db/schema";
 
@@ -31,12 +31,6 @@ export class EmailTakenError extends Error {
     super("Email is already registered");
     this.name = "EmailTakenError";
   }
-}
-
-const userIdSchema = z.uuid();
-
-function isUserId(id: string): boolean {
-  return userIdSchema.safeParse(id).success;
 }
 
 /** Emails are stored lowercase, so lookups must use the same form. */

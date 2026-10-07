@@ -19,7 +19,6 @@ const API_URL = process.env.TEST_API_URL || "http://localhost:3000";
 // Each test file gets its own User, so files running in parallel never share one
 const TEST_USER_EMAIL = uniqueEmail();
 const TEST_USER_PASSWORD = "Test123!";
-const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || "test-admin-passcode";
 
 // Helper to get auth token
 async function getAuthToken(
@@ -267,62 +266,13 @@ describe("💳 DAILY CREDIT LIMITS - Abuse Prevention", () => {
 
 describe("🛡️ ADMIN ENDPOINTS - Security Tests", () => {
   let regularUserToken: string;
-  let adminToken: string;
 
   beforeAll(async () => {
     await ensureTestUser();
     regularUserToken = (await getAuthToken()) || "";
-
-    const adminRes = await fetch(`${API_URL}/admin/verify-passcode`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ passcode: ADMIN_PASSCODE }),
-    });
-
-    if (adminRes.ok) {
-      const data = await adminRes.json();
-      adminToken = data.accessToken;
-    }
   });
 
-  describe("Passcode Security", () => {
-    it("should reject invalid admin passcode", async () => {
-      const res = await fetch(`${API_URL}/admin/verify-passcode`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ passcode: "wrong-passcode-123" }),
-      });
-
-      expect(res.status).toBe(401);
-    });
-
-    // Known failure, see #12: the API returns 401 for an empty passcode
-    it.skip("should reject empty passcode with 400 Bad Request", async () => {
-      const res = await fetch(`${API_URL}/admin/verify-passcode`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ passcode: "" }),
-      });
-
-      // Empty input is a validation error - should be 400, not 401
-      expect(res.status).toBe(400);
-    });
-
-    it("should reject SQL injection in passcode", async () => {
-      const injections = ["' OR '1'='1", "admin'--", "'; DROP TABLE users; --"];
-
-      for (const injection of injections) {
-        const res = await fetch(`${API_URL}/admin/verify-passcode`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ passcode: injection }),
-        });
-
-        expect(res.status).toBe(401);
-      }
-    });
-  });
-
+  // The Admin Passcode was removed (#20): Admins sign in normally
   describe("Admin Route Authorization", () => {
     it("should reject non-admin user from /admin/stats", async () => {
       const res = await fetch(`${API_URL}/admin/stats`, {
