@@ -8,6 +8,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import { randomIp } from "./support/network";
 import { registerVerifiedUser, uniqueEmail } from "./support/users";
 
 // Mock API base URL
@@ -133,16 +134,17 @@ describe("🔐 AUTH - Brutal Security Tests", () => {
       expect(res.status).not.toBe(200);
     });
 
-    // SKIPPED: Rate limiting is handled at infrastructure level (API Gateway/AWS WAF)
-    // per AGENTS.md: "NEVER implement rate limiting/CORS in code (infrastructure handles this)"
-    it.skip("should rate limit after 10 failed attempts", async () => {
+    // Login is limited to 10 attempts per 15 minutes per IP (ADR-0003)
+    it("should rate limit after 10 failed attempts", async () => {
       const promises = [];
+      // All attempts from one client address
+      const attackerIp = randomIp();
 
       for (let i = 0; i < 15; i++) {
         promises.push(
           fetch(`${API_URL}/auth/login`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "X-Forwarded-For": attackerIp },
             body: JSON.stringify({ email: TEST_USER_EMAIL, password: "wrong" }),
           })
         );
@@ -151,8 +153,8 @@ describe("🔐 AUTH - Brutal Security Tests", () => {
       const responses = await Promise.all(promises);
       const rateLimited = responses.filter((r) => r.status === 429);
 
-      // At least some should be rate limited
-      expect(rateLimited.length).toBeGreaterThan(0);
+      // Exactly the 5 attempts over the limit are refused
+      expect(rateLimited.length).toBe(5);
     });
 
     it("should reject malformed JSON gracefully", async () => {

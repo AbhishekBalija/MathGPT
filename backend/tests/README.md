@@ -47,6 +47,14 @@ Only two things are faked, both outside the app (see `tests/support/`):
 
 Everything else (routes, repositories, databases, Rate Limits) is real.
 
+### Client IPs
+
+Per-IP Rate Limits (sign-up, login) would trip constantly if every test
+request came from 127.0.0.1. `start-app.ts` gives each request to the app a
+random `X-Forwarded-For` address, like separate visitors behind Vercel's
+proxy. A test that checks an IP limit sets the header itself so its requests
+share one address (see `tests/rate-limits.test.ts`).
+
 ### Writing a test
 
 ```ts

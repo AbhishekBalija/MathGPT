@@ -232,3 +232,12 @@ motia rollback
 ---
 
 _Last updated: December 22, 2025_
+
+## Backend must sit behind a proxy
+
+Per-IP Rate Limits (sign-up, login, Google sign-in) read the client address
+from `X-Forwarded-For`, because the app trusts one proxy hop
+(`app.set("trust proxy", 1)`). Vercel overwrites that header with the real
+client address, so this is safe there. Never expose the API directly (a bare
+VPS port, a container without a proxy): clients could then send a fake
+address with each request and never hit a limit.

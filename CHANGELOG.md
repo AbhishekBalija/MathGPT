@@ -20,7 +20,9 @@ and the project uses [Semantic Versioning](https://semver.org/).
   and `POST /auth/resend-verification` (1 per minute, 5 per hour). Codes last
   15 minutes, are stored as an HMAC and allow 5 wrong attempts.
 - Rate Limits stored in Postgres (`rate_limits`), shared by every server
-  instance.
+  instance: sign-up 5 per hour per IP, login 10 per 15 minutes per IP, solve
+  5 per minute per User. Blocked requests get 429 with `code: "RATE_LIMITED"`
+  and `retryAfter`.
 - `EMAIL_TRANSPORT=console` prints emails to the server log in development.
 
 ### Changed
@@ -71,6 +73,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+- The in-memory solve rate limiter (`backend/src/lib/rate-limit.ts`), which
+  could not hold across serverless instances.
 - The waitlist and invite system: `POST /api/waitlist`,
   `POST /auth/register-invite`, `POST /auth/refresh-invite`,
   `GET /admin/waitlist`, `POST /admin/invite-user` and

@@ -63,10 +63,23 @@ fast at startup (`lib/env.ts`) makes a missing secret impossible to miss.
 
 ### Intermediate: How is rate limiting implemented?
 
-A sliding window: we keep timestamps of each user's recent solve requests and
-reject the request if there are already 5 in the last 60 seconds, returning 429
-with `retryAfter`. It lives in memory today; on serverless each instance has
-its own memory, so it moves to Postgres in the database phase.
+A fixed window per key (`solve:user:<id>`, `login:ip:<ip>`,
+`register:ip:<ip>`) stored in a Postgres `rate_limits` table, checked and
+incremented in one atomic upsert. It started as an in-memory sliding window,
+but on serverless every instance has its own memory, so a client could get
+around it by hitting different instances. A shared table holds across all of
+them. Over the limit: 429 with `code: "RATE_LIMITED"` and `retryAfter`.
+
+### Intermediate: How do you get the real client IP behind a proxy, and why not just read X-Forwarded-For?
+
+Clients can send any `X-Forwarded-For` they like. Vercel's proxy overwrites
+that header with the address it actually saw, so behind Vercel the header is
+trustworthy. Express's `trust proxy` set to 1 means "trust exactly one proxy
+hop", and `req.ip` then returns the address from that hop. The catch: this is
+only safe when a proxy really sits in front. If the server were reachable
+directly, a client could send a new fake address with every request and never
+hit a per-IP limit. So "always deploy behind the proxy" is part of the design,
+and is written down next to the middleware.
 
 ### Intermediate: How do you test a backend safely?
 

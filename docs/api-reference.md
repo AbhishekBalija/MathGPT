@@ -63,6 +63,9 @@ Emails are stored lowercase, so `User@Example.com` and `user@example.com`
 are the same account. Signing up with an email that is already registered
 returns **409**. Any `isAdmin` field in the body is ignored.
 
+Limited to **5 sign-ups per hour per IP**. Over the limit: **429**
+`{ "error": "...", "code": "RATE_LIMITED", "retryAfter": <seconds> }`.
+
 ---
 
 ### POST /auth/login
@@ -95,7 +98,8 @@ Login with email and password.
 }
 ```
 
-The email is matched in any letter case.
+The email is matched in any letter case. Limited to **10 attempts per 15
+minutes per IP** (429 `RATE_LIMITED` with `retryAfter`).
 
 ---
 
@@ -234,7 +238,9 @@ Logout user. **Requires auth.**
 
 ### POST /api/solve
 
-Solve a math problem. **Requires auth and a verified email.** An unverified
+Solve a math problem. **Requires auth and a verified email.** Limited to 5
+per minute per User (429 `RATE_LIMITED` with `retryAfter`), separate from the
+Daily Limit of 5 per day. An unverified
 User gets **403** `{ "error": "...", "code": "EMAIL_NOT_VERIFIED" }`.
 
 **Request Body:**
