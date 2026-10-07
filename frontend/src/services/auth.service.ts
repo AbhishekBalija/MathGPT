@@ -41,21 +41,17 @@ export const authService = {
   },
 
   /**
-   * Register a new user with invite token
+   * Register a new user (open sign-up, no invite needed)
    */
   register: async (
     email: string,
     password: string,
-    name: string,
-    inviteToken?: string
+    name: string
   ): Promise<AuthResponse> => {
-    // Use invite endpoint if token provided, otherwise fall back to regular
-    const endpoint = inviteToken ? "/auth/register-invite" : "/auth/register";
-    const response = await api.post<AuthResponse>(endpoint, {
+    const response = await api.post<AuthResponse>("/auth/register", {
       email,
       password,
       name,
-      ...(inviteToken && { inviteToken }),
     });
     return response.data;
   },

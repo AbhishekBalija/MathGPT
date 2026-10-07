@@ -18,7 +18,6 @@ import {
   Users,
   Errors,
   Analytics,
-  Waitlist,
 } from "./pages/Admin/index";
 import AnalyticsTracker from "./components/AnalyticsTracker";
 
@@ -46,7 +45,6 @@ const App = () => {
             <Route path="users" element={<Users />} />
             <Route path="errors" element={<Errors />} />
             <Route path="analytics" element={<Analytics />} />
-            <Route path="waitlist" element={<Waitlist />} />
           </Route>
         </Route>
         <Route

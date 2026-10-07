@@ -18,6 +18,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The landing page shows a "Get started" button to sign-up and the user
+  count, and the navbar shows Log in and Sign up on the landing page again.
 - Users are stored in Postgres instead of MongoDB. User ids are now UUIDs,
   so tokens issued before this change stop working and Users log in again.
 - Emails are stored lowercase and matched in any letter case.
@@ -57,5 +59,13 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+- The waitlist and invite system: `POST /api/waitlist`,
+  `POST /auth/register-invite`, `POST /auth/refresh-invite`,
+  `GET /admin/waitlist`, `POST /admin/invite-user` and
+  `POST /admin/resend-confirmation` now return 404, along with the waitlist
+  emails and `scripts/create-admin-invite.ts`. Anyone can sign up (ADR-0003).
+- `waitlistCount` from `GET /api/public-stats`, which returns `userCount` only.
+- Frontend waitlist form, invite-token handling on Register and Login, the
+  login page's waitlist-only redirect, and the admin Waitlist tab and page.
 - Motia packages, config, Workbench files and Motia-specific agent docs.
 - Unused Python example project and Python runtime files.
