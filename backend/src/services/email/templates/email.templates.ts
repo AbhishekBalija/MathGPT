@@ -1,3 +1,13 @@
+// Names are typed by Users, so they are escaped before going into HTML
+export function escapeHtml(text: string): string {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 export const welcomeEmailTemplate = (name: string): string => `
 <!DOCTYPE html>
 <html>
@@ -47,7 +57,7 @@ export const welcomeEmailTemplate = (name: string): string => `
             <td style="padding:40px 30px;background-image:linear-gradient(#e5e7eb 1px, transparent 1px);background-size:100% 32px;line-height:32px;">
               
               <h2 style="margin:0 0 20px;font-family:'Indie Flower', cursive;font-size:28px;color:#000;">
-                Hi ${name}! 👋
+                Hi ${escapeHtml(name)}! 👋
               </h2>
 
               <p style="margin:0 0 32px;font-size:16px;color:#374151;background-color:rgba(255,255,255,0.8);">
@@ -92,6 +102,40 @@ export const welcomeEmailTemplate = (name: string): string => `
           Sent with ❤️ from Indie Dev
         </p>
 
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+
+// The data attribute lets tests read the code the way a User reads the email
+export const verificationCodeEmailTemplate = (name: string, code: string): string => `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your NeoMath verification code</title>
+</head>
+<body style="margin:0;padding:0;background:#f8f9fa;font-family:'Inter', Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:500px;background:#ffffff;border:1px solid #e5e7eb;box-shadow:5px 5px 0px #000000;border-radius:2px;">
+          <tr>
+            <td style="background:#fefce8;border-bottom:2px dashed #000000;padding:20px 30px;">
+              <h1 style="margin:0;font-size:28px;color:#000000;">NeoMath</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px 30px;">
+              <p style="margin:0 0 16px;font-size:16px;color:#374151;">Hi ${escapeHtml(name)}, here is your verification code:</p>
+              <p data-verification-code="${code}" style="margin:0 0 16px;font-size:36px;font-weight:600;letter-spacing:8px;color:#000000;">${code}</p>
+              <p style="margin:0;font-size:14px;color:#6b7280;">It expires in 15 minutes. If you did not sign up for NeoMath, you can ignore this email.</p>
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
   </table>

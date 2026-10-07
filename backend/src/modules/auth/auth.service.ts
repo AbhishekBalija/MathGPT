@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import { z } from "zod";
+import { inTransaction } from "../../db/transaction";
 import { requireEnv } from "../../lib/env";
 import {
   EmailTakenError,
@@ -9,6 +10,7 @@ import {
   userRepository,
   type User,
 } from "../users/user.repository";
+import { EmailVerificationService } from "./email-verification.service";
 
 // No fallbacks: a default secret in the source code would let anyone forge tokens
 const JWT_SECRET = requireEnv("JWT_SECRET");
@@ -104,13 +106,16 @@ export const AuthService = {
 
     const passwordHash = await bcrypt.hash(data.password, 10);
 
-    let user: User;
+    // The User and their first Verification Code are created together
+    let created: { user: User; verificationCode: string };
     try {
-      user = await userRepository.create({
-        email: data.email,
-        passwordHash,
-        name: data.name,
-        provider: "email",
+      created = await inTransaction(async (tx) => {
+        const user = await userRepository.create(
+          { email: data.email, passwordHash, name: data.name, provider: "email" },
+          tx
+        );
+        const verificationCode = await EmailVerificationService.issueCode(user.id, tx);
+        return { user, verificationCode };
       });
     } catch (error) {
       if (error instanceof EmailTakenError) {
@@ -121,8 +126,9 @@ export const AuthService = {
 
     return {
       success: true as const,
-      user: toPublicUser(user),
-      ...createTokens(user.id),
+      user: toPublicUser(created.user),
+      verificationCode: created.verificationCode,
+      ...createTokens(created.user.id),
     };
   },
 

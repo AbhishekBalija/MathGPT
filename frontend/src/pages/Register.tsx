@@ -50,7 +50,8 @@ const Register = () => {
 
     try {
       await registerWithEmail(email, password, name);
-      navigate("/app", { replace: true });
+      // Email sign-ups confirm their address before they can solve
+      navigate("/verify-email", { replace: true });
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.error) {
         setError(err.response.data.error);

@@ -34,3 +34,20 @@ export function createResendEmailSender(apiKey: string, from: string): EmailSend
     },
   };
 }
+
+/**
+ * Development only: prints emails to the server log instead of sending them,
+ * so you can read Verification Codes without a Resend account.
+ */
+export function createConsoleEmailSender(): EmailSender {
+  return {
+    async send(message) {
+      const code = message.html.match(/data-verification-code="(\d{6})"/)?.[1];
+      console.log(
+        `\n[email] to: ${message.to}\n[email] subject: ${message.subject}` +
+          (code ? `\n[email] verification code: ${code}` : "") +
+          "\n"
+      );
+    },
+  };
+}

@@ -15,11 +15,22 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - CI on every PR: lint, typecheck and tests for backend and frontend.
 - `emailVerified` on the user object in sign-up, login, Google sign-in and
   `GET /auth/me` responses.
+- Email verification (ADR-0003): email sign-ups get a 6-digit Verification
+  Code, entered on a new "Verify your email" screen. `POST /auth/verify-email`
+  and `POST /auth/resend-verification` (1 per minute, 5 per hour). Codes last
+  15 minutes, are stored as an HMAC and allow 5 wrong attempts.
+- Rate Limits stored in Postgres (`rate_limits`), shared by every server
+  instance.
+- `EMAIL_TRANSPORT=console` prints emails to the server log in development.
 
 ### Changed
 
 - The landing page shows a "Get started" button to sign-up and the user
   count, and the navbar shows Log in and Sign up on the landing page again.
+- Solving requires a verified email (403 `EMAIL_NOT_VERIFIED` otherwise).
+  Unverified Users can still log in and see their profile and History.
+- The welcome email is sent after verification instead of at sign-up; email
+  sign-ups get the Verification Code first.
 - Users are stored in Postgres instead of MongoDB. User ids are now UUIDs,
   so tokens issued before this change stop working and Users log in again.
 - Emails are stored lowercase and matched in any letter case.
@@ -50,6 +61,7 @@ and the project uses [Semantic Versioning](https://semver.org/).
   replaces an existing Google link on an account. Before, an unverified Google
   address could be linked to someone else's NeoMath account.
 - `scripts/create-admin.ts` applies the same password rules as sign-up.
+- User names are HTML-escaped in emails.
 - Malformed user ids (in tokens or admin URLs) are rejected before any
   database query and return 401 or 404.
 - Removed hardcoded JWT secret fallbacks. The server now refuses to start

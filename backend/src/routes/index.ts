@@ -5,7 +5,11 @@
 
 import { Router } from "express";
 import type { AppServices } from "../app";
-import { requireAdmin, requireUser } from "../modules/auth/auth.middleware";
+import {
+  requireAdmin,
+  requireUser,
+  requireVerifiedEmail,
+} from "../modules/auth/auth.middleware";
 
 import { healthRoute } from "./health.route";
 
@@ -15,6 +19,8 @@ import { logoutRoute } from "./auth/logout.route";
 import { meRoute } from "./auth/me.route";
 import { refreshTokenRoute } from "./auth/refresh-token.route";
 import { createRegisterRoute } from "./auth/register.route";
+import { createResendVerificationRoute } from "./auth/resend-verification.route";
+import { createVerifyEmailRoute } from "./auth/verify-email.route";
 
 import { clearHistoryRoute } from "./clear-history.route";
 import { deleteSolutionRoute } from "./delete-solution.route";
@@ -47,9 +53,15 @@ export function createRouter(services: AppServices) {
   router.post("/auth/refresh", refreshTokenRoute);
   router.post("/auth/logout", logoutRoute);
   router.get("/auth/me", requireUser, meRoute);
+  router.post("/auth/verify-email", requireUser, createVerifyEmailRoute(services.emailSender));
+  router.post(
+    "/auth/resend-verification",
+    requireUser,
+    createResendVerificationRoute(services.emailSender)
+  );
 
   // Solving and history
-  router.post("/api/solve", requireUser, createSolveRoute(services.solver));
+  router.post("/api/solve", requireUser, requireVerifiedEmail, createSolveRoute(services.solver));
   router.get("/api/history", historyRoute);
   router.delete("/api/clear-history", clearHistoryRoute);
   router.get("/api/solution/:id", getSolutionRoute);

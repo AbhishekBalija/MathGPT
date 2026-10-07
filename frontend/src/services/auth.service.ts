@@ -8,6 +8,8 @@ export interface User {
   avatar?: string;
   isAdmin?: boolean;
   role?: "admin" | "user";
+  // Only Verified Users can solve. Missing on sessions saved before this field existed.
+  emailVerified?: boolean;
 }
 
 export interface AuthResponse {
@@ -53,6 +55,27 @@ export const authService = {
       password,
       name,
     });
+    return response.data;
+  },
+
+  /**
+   * Confirm the email with the 6-digit code that was emailed
+   */
+  verifyEmail: async (code: string): Promise<{ emailVerified: true }> => {
+    const response = await api.post<{ emailVerified: true }>(
+      "/auth/verify-email",
+      { code }
+    );
+    return response.data;
+  },
+
+  /**
+   * Email a new code. Limited to 1 per minute and 5 per hour (429 otherwise).
+   */
+  resendVerification: async (): Promise<{ message: string }> => {
+    const response = await api.post<{ message: string }>(
+      "/auth/resend-verification"
+    );
     return response.data;
   },
 

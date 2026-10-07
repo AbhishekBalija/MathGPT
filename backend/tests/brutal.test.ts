@@ -8,24 +8,17 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import { registerVerifiedUser, uniqueEmail } from "./support/users";
 
 // Mock API base URL
 const API_URL = process.env.TEST_API_URL || "http://localhost:3000";
-const TEST_USER_EMAIL = "test@test.com";
+// Each test file gets its own User, so files running in parallel never share one
+const TEST_USER_EMAIL = uniqueEmail();
 const TEST_USER_PASSWORD = "Test123!";
 
-// Global setup - ensure test user exists
+// Global setup: a verified test User, since only Verified Users can solve
 beforeAll(async () => {
-  // Try to register test user (will fail if already exists, which is fine)
-  await fetch(`${API_URL}/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email: TEST_USER_EMAIL,
-      password: TEST_USER_PASSWORD,
-      name: "Test User",
-    }),
-  }).catch(() => {}); // Ignore errors - user may already exist
+  await registerVerifiedUser(TEST_USER_EMAIL);
 });
 
 // ============================================================================
@@ -118,7 +111,7 @@ describe("🔐 AUTH - Brutal Security Tests", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: "test@test.com",
+          email: TEST_USER_EMAIL,
           password: longPassword,
         }),
       });
@@ -150,7 +143,7 @@ describe("🔐 AUTH - Brutal Security Tests", () => {
           fetch(`${API_URL}/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: "test@test.com", password: "wrong" }),
+            body: JSON.stringify({ email: TEST_USER_EMAIL, password: "wrong" }),
           })
         );
       }
@@ -177,7 +170,7 @@ describe("🔐 AUTH - Brutal Security Tests", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: "test@test.com",
+          email: TEST_USER_EMAIL,
           password: "test",
           __proto__: { isAdmin: true },
           constructor: { prototype: { isAdmin: true } },
@@ -216,7 +209,7 @@ describe("🔐 AUTH - Brutal Security Tests", () => {
       const loginRes = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "test@test.com", password: "Test123!" }),
+        body: JSON.stringify({ email: TEST_USER_EMAIL, password: "Test123!" }),
       });
 
       if (loginRes.ok) {
@@ -636,7 +629,7 @@ describe("📜 HISTORY - IDOR & Data Isolation", () => {
     const user1Res = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "test@test.com", password: "Test123!" }),
+      body: JSON.stringify({ email: TEST_USER_EMAIL, password: "Test123!" }),
     });
     if (user1Res.ok) {
       const data = await user1Res.json();
@@ -808,7 +801,7 @@ describe("👤 PROFILE - Privilege Escalation Prevention", () => {
     const res = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "test@test.com", password: "Test123!" }),
+      body: JSON.stringify({ email: TEST_USER_EMAIL, password: "Test123!" }),
     });
     if (res.ok) {
       const data = await res.json();
