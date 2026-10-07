@@ -1,5 +1,6 @@
 import { logger } from "../../lib/logger";
-import { EmailService } from "../../services/email/email.service";
+import type { EmailSender } from "../../modules/email/email-sender";
+import { welcomeEmailTemplate } from "../../services/email/templates/email.templates";
 
 export interface WelcomeEmailData {
     userId?: string;
@@ -8,7 +9,10 @@ export interface WelcomeEmailData {
 }
 
 // Sends the welcome email after a new user signs up
-export async function sendWelcomeEmail(emailData: WelcomeEmailData): Promise<void> {
+export async function sendWelcomeEmail(
+    emailSender: EmailSender,
+    emailData: WelcomeEmailData
+): Promise<void> {
     if (!emailData.email) {
         logger.warn("No email provided for welcome email");
         return;
@@ -18,14 +22,17 @@ export async function sendWelcomeEmail(emailData: WelcomeEmailData): Promise<voi
 
     logger.info("Sending welcome email", { email: emailData.email, name });
 
-    const result = await EmailService.sendWelcomeEmail(emailData.email, name);
-
-    if (result.success) {
+    try {
+        await emailSender.send({
+            to: emailData.email,
+            subject: "Welcome to NeoMath! 🎓",
+            html: welcomeEmailTemplate(name),
+        });
         logger.info("Welcome email sent successfully", { email: emailData.email });
-    } else {
+    } catch (error) {
         logger.error("Failed to send welcome email", {
             email: emailData.email,
-            error: result.error
+            error: error instanceof Error ? error.message : "Unknown error",
         });
     }
 }

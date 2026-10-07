@@ -112,7 +112,8 @@ bun run dev
 
 | Variable               | Description                             | Required |
 | ---------------------- | --------------------------------------- | -------- |
-| `MONGODB_URI`          | MongoDB connection string               | Yes      |
+| `DATABASE_URL`         | Postgres connection string              | Yes      |
+| `MONGODB_URI`          | MongoDB connection string (until moved) | Yes      |
 | `JWT_SECRET`           | Secret for signing access tokens        | Yes      |
 | `JWT_REFRESH_SECRET`   | Secret for signing refresh tokens       | Yes      |
 | `GEMINI_MATH_AI_API`   | Gemini AI API key                       | Yes      |
@@ -135,6 +136,29 @@ bun run dev
    - `http://localhost:5173` (dev)
    - `https://your-domain.com` (prod)
 7. Copy the **Client ID** to your env files
+
+---
+
+## Postgres Setup
+
+Local development and tests use a local Postgres; preview and production use
+Neon (ADR-0002).
+
+```bash
+# macOS
+brew install postgresql@17
+brew services start postgresql@17
+createdb neomath
+
+# backend/.env
+DATABASE_URL=postgres://localhost:5432/neomath
+
+# create the tables
+cd backend && bun run db:migrate
+```
+
+The test database (`neomath_test`) is created and reset by the test run
+itself.
 
 ---
 
@@ -189,10 +213,16 @@ cd frontend
 bun run test
 ```
 
-Backend tests call a running API over HTTP, and they create users and send
-requests that trigger emails and AI calls. **Never point them at a server
-connected to a real database.** See `backend/tests/README.md` for the safe
-setup (local MongoDB, dummy email and AI keys).
+```bash
+# Backend tests: needs local Postgres running and MongoDB installed
+cd backend
+bun run test
+```
+
+The backend run starts the app in-process with a fake AI solver and a fake
+email outbox, on a throwaway local database it wipes first. It refuses to run
+if a database URL points anywhere but localhost. See
+`backend/tests/README.md`.
 
 ---
 

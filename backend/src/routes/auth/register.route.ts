@@ -4,6 +4,7 @@ import { routeWithBody } from "../../lib/http";
 import { logger } from "../../lib/logger";
 import { runInBackground } from "../../lib/background";
 import { sendWelcomeEmail } from "../../events/auth/send-welcome-email";
+import type { EmailSender } from "../../modules/email/email-sender";
 
 // Defining body schema
 
@@ -30,46 +31,48 @@ const RegisterSchema = z.object({
 // Step 1: Define the route config
 
 // POST /auth/register
-export const registerRoute = routeWithBody(RegisterSchema, async (req, body) => {
-  const data = RegisterSchema.parse(req.body);
-  logger.info("Register attempt for ", { email: data.email });
+export function createRegisterRoute(emailSender: EmailSender) {
+  return routeWithBody(RegisterSchema, async (req, body) => {
+    const data = RegisterSchema.parse(req.body);
+    logger.info("Register attempt for ", { email: data.email });
 
-  // Step 3: Call the service to handle business logic
+    // Step 3: Call the service to handle business logic
 
-  const user = await AuthService.register(data);
+    const user = await AuthService.register(data);
 
-  if (!user.success) {
-    logger.warn("Register failed", { email: data.email, reason: user.error });
+    if (!user.success) {
+      logger.warn("Register failed", { email: data.email, reason: user.error });
+      return {
+        status: 409,
+        body: {
+          error: user.error ?? "Registration failed",
+        },
+      };
+    }
+
+    // Step 4: Emit an event to send welcome email
+
+    runInBackground("send-welcome-email", () =>
+      sendWelcomeEmail(emailSender, {
+        userId: user.user?.id.toString(),
+        email: user.user?.email,
+        name: user.user?.name,
+      })
+    );
+
+    // Step 5: Return the response
+
     return {
-      status: 409,
+      status: 200,
       body: {
-        error: user.error ?? "Registration failed",
+        message: "User registered successfully",
+        accessToken: user.accessToken!,
+        refreshToken: user.refreshToken!,
+        user: {
+          id: user.user!.id.toString(),
+          email: user.user!.email,
+        },
       },
     };
-  }
-
-  // Step 4: Emit an event to send welcome email
-
-  runInBackground("send-welcome-email", () =>
-    sendWelcomeEmail({
-      userId: user.user?.id.toString(),
-      email: user.user?.email,
-      name: user.user?.name,
-    })
-  );
-
-  // Step 5: Return the response
-
-  return {
-    status: 200,
-    body: {
-      message: "User registered successfully",
-      accessToken: user.accessToken!,
-      refreshToken: user.refreshToken!,
-      user: {
-        id: user.user!.id.toString(),
-        email: user.user!.email,
-      },
-    },
-  };
-});
+  });
+}

@@ -70,9 +70,36 @@ its own memory, so it moves to Postgres in the database phase.
 
 ### Intermediate: How do you test a backend safely?
 
-The tests are black-box HTTP tests. They run against a throwaway local MongoDB
-with dummy email and AI keys, and Bun's automatic `.env` loading is turned off
-(`--no-env-file`) so the real secrets and databases are never touched.
+The tests are black-box HTTP tests against the real Express app, started
+in-process on a random port. They use a throwaway local Postgres database
+(dropped and re-migrated on every run) and a throwaway `mongod` in a temp
+folder. Before anything connects, a guard checks that both database URLs
+point to localhost and stops the run otherwise. Every secret is a dummy, and
+the real `.env` is never loaded.
+
+### Intermediate: What do you fake in tests, and why only that?
+
+Only the two services outside our control: the AI solver (Gemini) and the
+email sender (Resend). They are slow, cost money, and are not deterministic.
+The app receives them through `createApp({ solver, emailSender })`, so tests
+pass fakes in: the fake solver returns a fixed Solution, the fake sender keeps
+an outbox tests can read. This is dependency injection at the boundary.
+Everything inside (routes, repositories, databases) stays real, so tests catch
+bugs a mocked repository would hide.
+
+### Intermediate: Why generated SQL migrations instead of `drizzle-kit push`?
+
+`push` changes the database straight from the schema file, with nothing to
+review and no history. Generated migrations are plain SQL files committed to
+git, so a schema change is reviewed like code, applied the same way
+everywhere, and can be read before it runs against production.
+
+### Basic: What is a connection pool and why share one?
+
+Opening a Postgres connection is slow (network handshake, auth). A pool keeps
+a few connections open and lends them out per query. Sharing one pool for the
+whole app (`src/db/client.ts`) caps how many connections we open, which
+matters on Neon where connections are limited.
 
 ## Dependencies
 
