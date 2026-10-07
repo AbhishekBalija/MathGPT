@@ -13,9 +13,11 @@
  */
 
 import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { registerVerifiedUser, uniqueEmail } from "./support/users";
 
 const API_URL = process.env.TEST_API_URL || "http://localhost:3000";
-const TEST_USER_EMAIL = "test@test.com";
+// Each test file gets its own User, so files running in parallel never share one
+const TEST_USER_EMAIL = uniqueEmail();
 const TEST_USER_PASSWORD = "Test123!";
 const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || "test-admin-passcode";
 
@@ -36,25 +38,11 @@ async function getAuthToken(
   return null;
 }
 
-// Helper to create and login test user
+// Helper to create a verified test user once per file (only Verified Users can solve)
+let testUserReady: Promise<unknown> | undefined;
 async function ensureTestUser(): Promise<void> {
-  try {
-    const res = await fetch(`${API_URL}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: TEST_USER_EMAIL,
-        password: TEST_USER_PASSWORD,
-        name: "Test User",
-      }),
-    });
-    // 409 (user exists) is expected and OK, but log other errors
-    if (!res.ok && res.status !== 409) {
-      console.warn(`Test setup warning: Registration returned ${res.status}`);
-    }
-  } catch (err) {
-    console.warn("Test setup warning:", err);
-  }
+  testUserReady ??= registerVerifiedUser(TEST_USER_EMAIL);
+  await testUserReady;
 }
 
 // ============================================================================

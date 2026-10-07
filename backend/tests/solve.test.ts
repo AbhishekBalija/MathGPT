@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { FAKE_FINAL_ANSWER } from "./support/fake-math-solver";
 import { apiUrl } from "./support/test-app";
-import { authedFetch, registerUser } from "./support/users";
+import { authedFetch, registerVerifiedUser } from "./support/users";
 
 describe("POST /api/solve", () => {
   it("returns the Solution produced by the AI solver", async () => {
-    const { accessToken } = await registerUser();
+    const { accessToken } = await registerVerifiedUser();
 
     const res = await fetch(apiUrl("/api/solve"), {
       method: "POST",
@@ -27,7 +27,7 @@ describe("POST /api/solve", () => {
 
 describe("Credits", () => {
   it("counts a solved Problem against today's Credits", async () => {
-    const { accessToken } = await registerUser();
+    const { accessToken } = await registerVerifiedUser();
 
     await authedFetch(accessToken, "/api/solve", {
       method: "POST",
@@ -41,7 +41,7 @@ describe("Credits", () => {
   });
 
   it("blocks solving once the Daily Limit is used up", async () => {
-    const { email, accessToken } = await registerUser();
+    const { email, accessToken } = await registerVerifiedUser();
     // Setup: spend today's 5 Credits directly. Solving 5 times over HTTP
     // would hit the per-minute Rate Limit first (see #12).
     const { userRepository } = await import("../src/modules/users/user.repository");

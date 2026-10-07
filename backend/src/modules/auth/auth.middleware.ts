@@ -3,6 +3,7 @@
  *
  *   router.get("/auth/me", requireUser, meRoute);
  *   router.get("/admin/users", requireUser, requireAdmin, listUsersRoute);
+ *   router.post("/api/solve", requireUser, requireVerifiedEmail, solveRoute);
  *
  * `requireUser` checks the access token, loads the User from Postgres and
  * remembers them for this request. Routes then call `getCurrentUser(req)`.
@@ -69,6 +70,19 @@ export const requireUser: RequestHandler = async (req, res, next) => {
 export const requireAdmin: RequestHandler = (req, res, next) => {
   if (!currentUsers.get(req)?.isAdmin) {
     res.status(403).json({ error: "Admin access required" });
+    return;
+  }
+
+  next();
+};
+
+/** Responds 403 with `EMAIL_NOT_VERIFIED` until the User confirms their email. Use after `requireUser`. */
+export const requireVerifiedEmail: RequestHandler = (req, res, next) => {
+  if (!currentUsers.get(req)?.emailVerified) {
+    res.status(403).json({
+      error: "Please verify your email before solving problems.",
+      code: "EMAIL_NOT_VERIFIED",
+    });
     return;
   }
 

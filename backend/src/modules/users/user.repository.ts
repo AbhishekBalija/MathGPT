@@ -8,6 +8,7 @@
 import { count, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../../db/client";
+import type { DbExecutor } from "../../db/transaction";
 import { users, type AuthProvider, type UserRow } from "../../db/schema";
 
 export type User = UserRow;
@@ -89,9 +90,9 @@ export const userRepository = {
   },
 
   /** Throws `EmailTakenError` if the email is already used. */
-  async create(data: NewUser): Promise<User> {
+  async create(data: NewUser, executor: DbExecutor = db): Promise<User> {
     try {
-      const [user] = await db
+      const [user] = await executor
         .insert(users)
         .values({ ...data, email: normalizeEmail(data.email) })
         .returning();

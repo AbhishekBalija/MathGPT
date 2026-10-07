@@ -3,7 +3,7 @@ import { AuthService } from "../../modules/auth/auth.service";
 import { routeWithBody } from "../../lib/http";
 import { logger } from "../../lib/logger";
 import { runInBackground } from "../../lib/background";
-import { sendWelcomeEmail } from "../../events/auth/send-welcome-email";
+import { sendVerificationCode } from "../../events/auth/send-verification-code";
 import type { EmailSender } from "../../modules/email/email-sender";
 import { passwordSchema } from "../../modules/auth/password";
 
@@ -38,13 +38,12 @@ export function createRegisterRoute(emailSender: EmailSender) {
       };
     }
 
-    // Step 4: Emit an event to send welcome email
-
-    runInBackground("send-welcome-email", () =>
-      sendWelcomeEmail(emailSender, {
-        userId: user.user.id,
+    // Step 4: Email the Verification Code. The welcome email follows once verified.
+    runInBackground("send-verification-code", () =>
+      sendVerificationCode(emailSender, {
         email: user.user.email,
         name: user.user.name,
+        code: user.verificationCode,
       })
     );
 
