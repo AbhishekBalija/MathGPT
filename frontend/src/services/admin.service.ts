@@ -162,47 +162,6 @@ export const adminService = {
     }>(`/admin/errors/${errorId}/resolve`);
     return response.data;
   },
-
-  /**
-   * Get waitlist entries
-   */
-  getWaitlist: async (): Promise<WaitlistResponse> => {
-    const response = await api.get<WaitlistResponse>("/admin/waitlist");
-    return response.data;
-  },
-
-  /**
-   * Send invite to a waitlist user
-   */
-  inviteUser: async (
-    email: string
-  ): Promise<{
-    success: boolean;
-    message: string;
-    inviteToken: string;
-    expiresAt: string;
-  }> => {
-    const response = await api.post<{
-      success: boolean;
-      message: string;
-      inviteToken: string;
-      expiresAt: string;
-    }>("/admin/invite-user", { email });
-    return response.data;
-  },
-
-  /**
-   * Resend confirmation email to a waitlist user
-   */
-  resendConfirmation: async (
-    email: string
-  ): Promise<{ success: boolean; message: string }> => {
-    const response = await api.post<{ success: boolean; message: string }>(
-      "/admin/resend-confirmation",
-      { email }
-    );
-    return response.data;
-  },
 };
 
 // Error types
@@ -251,27 +210,6 @@ export interface TokenStatsResponse {
   estimatedCost: number;
   solutionCount: number;
   avgTokensPerSolution: number;
-}
-
-// Waitlist types
-export interface WaitlistEntry {
-  email: string;
-  source: string;
-  status: "pending" | "approved" | "registered";
-  createdAt: string;
-  approvedAt?: string;
-  inviteExpiresAt?: string;
-  inviteExpired?: boolean;
-}
-
-export interface WaitlistResponse {
-  entries: WaitlistEntry[];
-  total: number;
-  counts: {
-    pending: number;
-    approved: number;
-    registered: number;
-  };
 }
 
 export default adminService;

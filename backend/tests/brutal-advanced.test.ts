@@ -6,7 +6,6 @@
  * - Redis/State verification (rate limiting actually works)
  * - Admin endpoint security
  * - Daily credit limit abuse prevention
- * - Waitlist security
  * - Token rotation security
  * - Google OAuth edge cases
  *
@@ -401,20 +400,12 @@ describe("🛡️ ADMIN ENDPOINTS - Security Tests", () => {
       expect([401, 403]).toContain(res.status);
     });
 
-    it("should reject non-admin user from /admin/waitlist", async () => {
-      const res = await fetch(`${API_URL}/admin/waitlist`, {
-        headers: { Authorization: `Bearer ${regularUserToken}` },
-      });
-      expect([401, 403]).toContain(res.status);
-    });
-
     it("should reject unauthenticated requests to admin routes", async () => {
       const adminRoutes = [
         "/admin/stats",
         "/admin/users",
         "/admin/analytics",
         "/admin/errors",
-        "/admin/waitlist",
       ];
 
       for (const route of adminRoutes) {
@@ -450,105 +441,6 @@ describe("🛡️ ADMIN ENDPOINTS - Security Tests", () => {
 
       // Must reject: 401 (not authenticated), 403 (not authorized), or 404 (not implemented)
       expect([401, 403, 404]).toContain(res.status);
-    });
-  });
-});
-
-// ============================================================================
-// WAITLIST SECURITY
-// ============================================================================
-
-describe("📧 WAITLIST - Security Tests", () => {
-  describe("Email Validation", () => {
-    it("should reject invalid email formats", async () => {
-      const invalidEmails = [
-        "notanemail",
-        "@nodomain.com",
-        "spaces in@email.com",
-        "missing@",
-        "double@@email.com",
-      ];
-
-      for (const email of invalidEmails) {
-        const res = await fetch(`${API_URL}/api/waitlist`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        });
-
-        expect(res.status).toBe(400);
-      }
-    });
-
-    it("should normalize email case", async () => {
-      const email = `UPPERCASE-${Date.now()}@TEST.COM`;
-
-      const res = await fetch(`${API_URL}/api/waitlist`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      expect(res.status).toBe(200);
-    });
-
-    it("should handle duplicate email gracefully", async () => {
-      const email = `duplicate-${Date.now()}@test.com`;
-
-      await fetch(`${API_URL}/api/waitlist`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      const res = await fetch(`${API_URL}/api/waitlist`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.isNew).toBe(false);
-    });
-  });
-
-  describe("Abuse Prevention", () => {
-    it("should reject XSS in email field", async () => {
-      const xssEmails = [
-        '<script>alert("xss")</script>@test.com',
-        'test@test.com"><script>alert(1)</script>',
-      ];
-
-      for (const email of xssEmails) {
-        const res = await fetch(`${API_URL}/api/waitlist`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        });
-
-        expect(res.status).toBe(400);
-      }
-    });
-
-    it("should reject SQL injection in source field", async () => {
-      const res = await fetch(`${API_URL}/api/waitlist`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: `sql-${Date.now()}@test.com`,
-          source: "'; DROP TABLE waitlist; --",
-        }),
-      });
-
-      // Should reject malicious input or sanitize it - must NOT return 500 (server error)
-      expect([200, 400]).toContain(res.status);
-
-      // If accepted (200), verify data was handled safely
-      if (res.status === 200) {
-        const data = await res.json();
-        expect(data.message).toBeDefined();
-      }
     });
   });
 });

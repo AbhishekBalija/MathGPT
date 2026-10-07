@@ -13,9 +13,7 @@ import { createGoogleOAuthRoute } from "./auth/google-oauth.route";
 import { loginRoute } from "./auth/login.route";
 import { logoutRoute } from "./auth/logout.route";
 import { meRoute } from "./auth/me.route";
-import { refreshInviteRoute } from "./auth/refresh-invite.route";
 import { refreshTokenRoute } from "./auth/refresh-token.route";
-import { createRegisterInviteRoute } from "./auth/register-invite.route";
 import { createRegisterRoute } from "./auth/register.route";
 
 import { clearHistoryRoute } from "./clear-history.route";
@@ -25,15 +23,11 @@ import { profileRoute } from "./profile.route";
 import { publicStatsRoute } from "./public-stats.route";
 import { getSolutionRoute } from "./solution.route";
 import { createSolveRoute } from "./solve.route";
-import { joinWaitlistRoute } from "./waitlist.route";
 
 import { adminErrorsRoute } from "./admin/admin-errors.route";
 import { adminResolveErrorRoute } from "./admin/admin-resolve-error.route";
 import { adminAnalyticsRoute } from "./admin/analytics.route";
 import { adminDeleteUserRoute } from "./admin/delete-user.route";
-import { adminInviteUserRoute } from "./admin/invite-user.route";
-import { adminListWaitlistRoute } from "./admin/list-waitlist.route";
-import { adminResendConfirmationRoute } from "./admin/resend-confirmation.route";
 import { adminStatsRoute } from "./admin/stats.route";
 import { adminTokenStatsRoute } from "./admin/token-stats.route";
 import { adminUpdateRolePutRoute } from "./admin/update-role.route";
@@ -48,8 +42,6 @@ export function createRouter(services: AppServices) {
 
   // Auth
   router.post("/auth/register", createRegisterRoute(services.emailSender));
-  router.post("/auth/register-invite", createRegisterInviteRoute(services.emailSender));
-  router.post("/auth/refresh-invite", refreshInviteRoute);
   router.post("/auth/login", loginRoute);
   router.post("/auth/google", createGoogleOAuthRoute(services.emailSender));
   router.post("/auth/refresh", refreshTokenRoute);
@@ -66,7 +58,6 @@ export function createRouter(services: AppServices) {
 
   // Public
   router.get("/api/public-stats", publicStatsRoute);
-  router.post("/api/waitlist", joinWaitlistRoute);
 
   // Admin
   router.post("/admin/verify-passcode", adminVerifyPasscodeRoute);
@@ -79,9 +70,6 @@ export function createRouter(services: AppServices) {
   router.put("/admin/users/update-role", requireUser, requireAdmin, adminUpdateRolePutRoute);
   router.patch("/admin/users/:id/role", requireUser, requireAdmin, adminUpdateUserRoleRoute);
   router.delete("/admin/users/:id", requireUser, requireAdmin, adminDeleteUserRoute);
-  router.get("/admin/waitlist", adminListWaitlistRoute);
-  router.post("/admin/invite-user", adminInviteUserRoute);
-  router.post("/admin/resend-confirmation", adminResendConfirmationRoute);
 
   return router;
 }
