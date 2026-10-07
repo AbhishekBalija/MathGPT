@@ -1,0 +1,20 @@
+CREATE TABLE "users" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"email" text NOT NULL,
+	"name" text NOT NULL,
+	"password_hash" text,
+	"is_admin" boolean DEFAULT false NOT NULL,
+	"provider" text DEFAULT 'email' NOT NULL,
+	"google_id" text,
+	"avatar_url" text,
+	"email_verified_at" timestamp with time zone,
+	"daily_credits_used" integer DEFAULT 0 NOT NULL,
+	"last_credit_reset" timestamp with time zone DEFAULT now() NOT NULL,
+	"total_credits_used" integer DEFAULT 0 NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "users_email_unique" UNIQUE("email"),
+	CONSTRAINT "users_google_id_unique" UNIQUE("google_id"),
+	CONSTRAINT "users_email_lowercase" CHECK ("users"."email" = lower("users"."email")),
+	CONSTRAINT "users_provider_valid" CHECK ("users"."provider" in ('email', 'google'))
+);

@@ -199,7 +199,8 @@ MONGODB_URI=mongodb://localhost:27017/mathgpt
 
 To enable admin features:
 
-1. Set `isAdmin: true` for a user in MongoDB
+1. Run `bun run scripts/create-admin.ts` in `backend/`. It creates an Admin,
+   or makes an existing User one, in the database `DATABASE_URL` points to
 2. Optionally set `ADMIN_PASSCODE` env variable for secondary authentication
 3. Admin users can access `/admin` dashboard after login
 

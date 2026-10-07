@@ -1,6 +1,6 @@
-import { AuthService } from "../services/auth/auth.service";
 import { solutionRepository } from "../repositories/solution.repository";
-import { userRepository } from "../repositories/user.repository";
+import { getCurrentUser } from "../modules/auth/auth.middleware";
+import { userRepository } from "../modules/users/user.repository";
 import { route } from "../lib/http";
 import { logger } from "../lib/logger";
 
@@ -8,38 +8,10 @@ import { logger } from "../lib/logger";
 const DAILY_FREE_LIMIT = 5;
 
 // GET /api/profile
+// Mounted behind requireUser
 export const profileRoute = route(async (req) => {
-  // Extract token from Authorization header
-  const authHeader = req.headers?.authorization || req.headers?.Authorization;
-  const token =
-    typeof authHeader === "string" ? authHeader.replace("Bearer ", "") : "";
-
-  if (!token) {
-    logger.warn("No authorization token provided");
-    return {
-      status: 401,
-      body: {
-        error: "No authorization token provided",
-      },
-    };
-  }
-
+  const userId = getCurrentUser(req).id;
   logger.info("Getting user profile");
-
-  // Step 3: Verify token and get user
-  const authResult = await AuthService.verifyToken(token);
-
-  if (!authResult.success || !authResult.user) {
-    logger.warn("Token verification failed", { reason: authResult.error });
-    return {
-      status: 401,
-      body: {
-        error: authResult.error ?? "Invalid token",
-      },
-    };
-  }
-
-  const userId = authResult.user.id.toString();
 
   try {
     // Step 4: Fetch user details from database
@@ -76,11 +48,11 @@ export const profileRoute = route(async (req) => {
       status: 200,
       body: {
         user: {
-          id: user._id.toString(),
+          id: user.id,
           email: user.email,
           name: user.name,
-          avatar: user.avatar,
-          provider: user.provider || "email",
+          avatar: user.avatarUrl ?? undefined,
+          provider: user.provider,
           createdAt: user.createdAt.toISOString(),
         },
         stats: {

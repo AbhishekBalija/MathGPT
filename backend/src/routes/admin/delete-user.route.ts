@@ -3,33 +3,19 @@
  *
  * DELETE /admin/users/:id - Delete a user
  *
- * REQUIRES ADMIN AUTHENTICATION
+ * REQUIRES ADMIN AUTHENTICATION (requireUser + requireAdmin middleware)
  */
 
-import { requireAdmin } from "../../middlewares/auth.middleware";
-import { userRepository } from "../../repositories/user.repository";
+import { getCurrentUser } from "../../modules/auth/auth.middleware";
+import { userRepository } from "../../modules/users/user.repository";
 import { solutionRepository } from "../../repositories/solution.repository";
 import { pathParam, route } from "../../lib/http";
 import { logger } from "../../lib/logger";
 
 // DELETE /admin/users/:id
 export const adminDeleteUserRoute = route(async (req) => {
-  // Require admin authentication
-  let admin;
-  try {
-    admin = await requireAdmin(req.headers || {});
-  } catch (error) {
-    const isUnauthorized =
-      error instanceof Error && error.message === "Unauthorized";
-    return {
-      status: isUnauthorized ? 401 : 403,
-      body: {
-        error: isUnauthorized
-          ? "Authentication required"
-          : "Admin access required",
-      },
-    };
-  }
+  // Mounted behind requireUser and requireAdmin
+  const admin = getCurrentUser(req);
 
   try {
     const id = pathParam(req, "id");
@@ -51,10 +37,9 @@ export const adminDeleteUserRoute = route(async (req) => {
       };
     }
 
-    // Delete user's solutions first
-    const deletedSolutions = await solutionRepository.deleteByUserId(id);
-
-    // Delete the user
+    // The User goes first: if removing their Solutions then fails, we are left
+    // with unreachable Solutions instead of a User who lost all their work.
+    // Solutions move to Postgres in #7, where a cascade does both at once.
     const deleted = await userRepository.delete(id);
 
     if (!deleted) {
@@ -63,6 +48,8 @@ export const adminDeleteUserRoute = route(async (req) => {
         body: { error: "Failed to delete user" },
       };
     }
+
+    const deletedSolutions = await solutionRepository.deleteByUserId(id);
 
     logger.info("Admin deleted user", {
       adminId: admin.id,

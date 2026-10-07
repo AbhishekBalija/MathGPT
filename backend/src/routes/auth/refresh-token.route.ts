@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { routeWithBody } from "../../lib/http";
 import { logger } from "../../lib/logger";
-import { AuthService } from "../../services/auth/auth.service";
+import { AuthService } from "../../modules/auth/auth.service";
 
 // Defining body schema
 const RefreshTokenSchema = z.object({

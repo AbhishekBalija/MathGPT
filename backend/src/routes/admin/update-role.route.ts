@@ -3,12 +3,12 @@
  *
  * PUT /admin/users/update-role - Update user admin role
  *
- * REQUIRES ADMIN AUTHENTICATION
+ * REQUIRES ADMIN AUTHENTICATION (requireUser + requireAdmin middleware)
  */
 
 import { z } from "zod";
-import { requireAdmin } from "../../middlewares/auth.middleware";
-import { userRepository } from "../../repositories/user.repository";
+import { getCurrentUser } from "../../modules/auth/auth.middleware";
+import { userRepository } from "../../modules/users/user.repository";
 
 const UpdateRoleSchema = z.object({
   userId: z.string().min(1, "userId is required"),
@@ -19,22 +19,8 @@ import { logger } from "../../lib/logger";
 
 // PUT /admin/users/update-role
 export const adminUpdateRolePutRoute = routeWithBody(UpdateRoleSchema, async (req, body) => {
-  // Require admin authentication
-  let admin;
-  try {
-    admin = await requireAdmin(req.headers || {});
-  } catch (error) {
-    const isUnauthorized =
-      error instanceof Error && error.message === "Unauthorized";
-    return {
-      status: isUnauthorized ? 401 : 403,
-      body: {
-        error: isUnauthorized
-          ? "Authentication required"
-          : "Admin access required",
-      },
-    };
-  }
+  // Mounted behind requireUser and requireAdmin
+  const admin = getCurrentUser(req);
 
   try {
     const { userId, isAdmin } = body;
@@ -54,7 +40,7 @@ export const adminUpdateRolePutRoute = routeWithBody(UpdateRoleSchema, async (re
       };
     }
 
-    const user = await userRepository.update(userId, { isAdmin });
+    const user = await userRepository.setAdmin(userId, isAdmin);
 
     if (!user) {
       return {
@@ -74,10 +60,10 @@ export const adminUpdateRolePutRoute = routeWithBody(UpdateRoleSchema, async (re
       body: {
         success: true as const,
         user: {
-          id: user._id.toString(),
+          id: user.id,
           name: user.name,
           email: user.email,
-          isAdmin: user.isAdmin || false,
+          isAdmin: user.isAdmin,
         },
       },
     };

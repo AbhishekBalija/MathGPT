@@ -7,8 +7,9 @@
  * No authentication required.
  */
 
-import { MongoClient, Collection } from "mongodb";
+import { MongoClient } from "mongodb";
 import { route } from "../lib/http";
+import { userRepository } from "../modules/users/user.repository";
 import { logger } from "../lib/logger";
 
 // MongoDB connection cache (reused across invocations)
@@ -47,15 +48,15 @@ async function getMongoClient(): Promise<MongoClient> {
 }
 
 // GET /api/public-stats
-export const publicStatsRoute = route(async (req) => {
+export const publicStatsRoute = route(async () => {
   try {
     const mongoClient = await getMongoClient();
     const db = mongoClient.db("MathGPTDB");
 
-    // Fetch counts in parallel
+    // Users live in Postgres; the waitlist stays in MongoDB until #5 removes it.
     // waitlistCount only counts entries that haven't registered yet
     const [userCount, waitlistCount] = await Promise.all([
-      db.collection("users").countDocuments(),
+      userRepository.count(),
       db.collection("waitlist").countDocuments({ registered: { $ne: true } }),
     ]);
 

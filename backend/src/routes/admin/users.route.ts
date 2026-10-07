@@ -5,38 +5,27 @@
  * PATCH /admin/users/:id/role - Toggle admin role
  * DELETE /admin/users/:id - Delete a user
  *
- * REQUIRES ADMIN AUTHENTICATION
+ * REQUIRES ADMIN AUTHENTICATION (requireUser + requireAdmin middleware)
  */
 
-import { requireAdmin } from "../../middlewares/auth.middleware";
-import { userRepository } from "../../repositories/user.repository";
+import { z } from "zod";
+import { getCurrentUser } from "../../modules/auth/auth.middleware";
+import { userRepository } from "../../modules/users/user.repository";
 import { queryParam, route } from "../../lib/http";
 import { logger } from "../../lib/logger";
 
+// Bad or missing values fall back to the defaults instead of reaching the database
+const pageSchema = z.coerce.number().int().min(1).catch(1);
+const limitSchema = z.coerce.number().int().min(1).max(100).catch(20);
+
 // GET /admin/users
 export const adminListUsersRoute = route(async (req) => {
-  // Require admin authentication
-  let admin;
-  try {
-    admin = await requireAdmin(req.headers || {});
-  } catch (error) {
-    const isUnauthorized =
-      error instanceof Error && error.message === "Unauthorized";
-    return {
-      status: isUnauthorized ? 401 : 403,
-      body: {
-        error: isUnauthorized
-          ? "Authentication required"
-          : "Admin access required",
-      },
-    };
-  }
+  // Mounted behind requireUser and requireAdmin
+  const admin = getCurrentUser(req);
 
   try {
-    const pageParam = queryParam(req, "page");
-    const limitParam = queryParam(req, "limit");
-    const page = pageParam ? parseInt(pageParam, 10) : 1;
-    const limit = limitParam ? parseInt(limitParam, 10) : 20;
+    const page = pageSchema.parse(queryParam(req, "page") ?? 1);
+    const limit = limitSchema.parse(queryParam(req, "limit") ?? 20);
     const search = queryParam(req, "search") || undefined;
 
     logger.info("Admin users search request", {
@@ -45,11 +34,7 @@ export const adminListUsersRoute = route(async (req) => {
       limit,
     });
 
-    const { users, total } = await userRepository.findAll(
-      { search },
-      page,
-      limit
-    );
+    const { users, total } = await userRepository.list({ search, page, limit });
 
     logger.info("Admin listed users", {
       adminId: admin.id,
@@ -62,12 +47,12 @@ export const adminListUsersRoute = route(async (req) => {
       status: 200,
       body: {
         users: users.map((u) => ({
-          id: u._id.toString(),
+          id: u.id,
           name: u.name,
           email: u.email,
-          isAdmin: u.isAdmin || false,
+          isAdmin: u.isAdmin,
           provider: u.provider,
-          avatar: u.avatar,
+          avatar: u.avatarUrl ?? undefined,
           createdAt: u.createdAt.toISOString(),
         })),
         total,

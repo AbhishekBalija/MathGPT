@@ -10,7 +10,7 @@
 import { z } from "zod";
 import { MongoClient, Collection } from "mongodb";
 import { timingSafeEqual } from "crypto";
-import { AuthService } from "../../services/auth/auth.service";
+import { AuthService } from "../../modules/auth/auth.service";
 import { route } from "../../lib/http";
 import { logger } from "../../lib/logger";
 import { runInBackground } from "../../lib/background";

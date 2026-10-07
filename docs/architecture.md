@@ -301,23 +301,32 @@ graph TB
 
 ## Data Models
 
+Users live in Postgres. Solutions, Analytics Events and Error Logs are still
+in MongoDB and move in #7 and #9; until then they point at Users by id only,
+without a database-enforced foreign key.
+
 ```mermaid
 erDiagram
     USER {
-        ObjectId _id PK
-        string email UK
-        string name
-        string password
-        string avatar
-        string googleId
-        boolean isAdmin
-        string provider
-        Date createdAt
+        uuid id PK "Postgres"
+        text email UK "always lowercase"
+        text name
+        text password_hash "null for Google-only Users"
+        boolean is_admin
+        text provider "email or google"
+        text google_id UK
+        text avatar_url
+        timestamptz email_verified_at "null = not verified"
+        int daily_credits_used
+        timestamptz last_credit_reset
+        int total_credits_used
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     SOLUTION {
         ObjectId _id PK
-        ObjectId userId FK
+        string userId FK "a Postgres User id"
         string problem
         string problemType
         array steps

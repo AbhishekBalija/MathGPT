@@ -1,5 +1,5 @@
 import { z, ZodError } from "zod";
-import { AuthService } from "../../services/auth/auth.service";
+import { AuthService } from "../../modules/auth/auth.service";
 import { route } from "../../lib/http";
 import { logger } from "../../lib/logger";
 
@@ -45,7 +45,7 @@ export const loginRoute = route(async (req) => {
     return {
       status: 401,
       body: {
-        error: user.error ?? "Login failed",
+        error: user.error,
       },
     };
   }
@@ -68,16 +68,10 @@ export const loginRoute = route(async (req) => {
     status: 200,
     body: {
       message: "Login successful.",
-      email: user.user!.email,
-      refreshToken: user.refreshToken!,
-      accessToken: user.accessToken!,
-      user: {
-        id: user.user!.id.toString(),
-        email: user.user!.email,
-        name: user.user!.name,
-        avatar: user.user!.avatar,
-        isAdmin: user.user!.isAdmin || false,
-      },
+      email: user.user.email,
+      refreshToken: user.refreshToken,
+      accessToken: user.accessToken,
+      user: user.user,
     },
   };
 });
