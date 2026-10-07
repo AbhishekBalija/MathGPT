@@ -55,14 +55,14 @@ describe("🔐 AUTH - Brutal Security Tests", () => {
     });
 
     it("should reject NoSQL injection in email field", async () => {
-      const mongoPayloads = [
+      const nosqlPayloads = [
         { email: { $gt: "" }, password: "test" },
         { email: { $regex: ".*" }, password: "test" },
         { email: { $ne: null }, password: "test" },
         { email: { $where: "this.password.length > 0" }, password: "test" },
       ];
 
-      for (const payload of mongoPayloads) {
+      for (const payload of nosqlPayloads) {
         const res = await fetch(`${API_URL}/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -755,7 +755,7 @@ describe("📜 HISTORY - IDOR & Data Isolation", () => {
       expect(data.deletedCount).toBeGreaterThanOrEqual(0);
     });
 
-    it("should handle invalid MongoDB ObjectId format", async () => {
+    it("should handle invalid solution id format", async () => {
       const invalidIds = [
         "invalid",
         "12345",
@@ -869,7 +869,7 @@ describe("🚨 ERROR HANDLING - No Info Leakage", () => {
     });
 
     const text = await res.text();
-    expect(text).not.toMatch(/mongodb/i);
+    expect(text).not.toMatch(/postgres/i);
     expect(text).not.toMatch(/password/i);
     expect(text).not.toMatch(/secret/i);
   });

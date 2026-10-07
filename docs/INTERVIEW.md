@@ -85,10 +85,10 @@ and is written down next to the middleware.
 
 The tests are black-box HTTP tests against the real Express app, started
 in-process on a random port. They use a throwaway local Postgres database
-(dropped and re-migrated on every run) and a throwaway `mongod` in a temp
-folder. Before anything connects, a guard checks that both database URLs
-point to localhost and stops the run otherwise. Every secret is a dummy, and
-the real `.env` is never loaded.
+(dropped and re-migrated on every run). Before anything connects, a guard
+checks that the database URL points to localhost and the database name ends
+in `_test`, and stops the run otherwise. Every secret is a dummy, and the
+real `.env` is never loaded.
 
 ### Intermediate: What do you fake in tests, and why only that?
 

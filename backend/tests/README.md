@@ -11,28 +11,24 @@ bun run test          # whole suite, once
 bun run test:watch    # re-run on changes
 ```
 
-You only need Postgres running locally (`brew services start postgresql@17`)
-and MongoDB installed (`mongod` on your PATH). Nothing else to start by hand.
+You only need Postgres running locally (`brew services start postgresql@17`).
+Nothing else to start by hand.
 
 ### What happens on each run
 
 ```mermaid
 flowchart TD
     A[bun run test] --> B[global-setup.ts]
-    B --> C{Both databases on localhost, Postgres name ends in _test?}
+    B --> C{Postgres on localhost, name ends in _test?}
     C -- no --> X[Stop with an error, nothing connects]
-    C -- yes --> D[Start a throwaway mongod in a temp folder]
-    D --> E[Create neomath_test if missing, drop all tables, run migrations]
+    C -- yes --> E[Create neomath_test if missing, drop all tables, run migrations]
     E --> F[Each test file: start-app.ts starts the real app on a random port]
     F --> G[Tests call the app over HTTP]
-    G --> H[Teardown: stop mongod, delete its temp folder]
 ```
 
 - **Postgres**: `postgres://localhost:5432/neomath_test` by default. Override
   with `TEST_DATABASE_URL`; it must still point to localhost and the database
   name must end in `_test`, so your dev database can never be wiped.
-- **MongoDB**: a fresh `mongod` on a random port, deleted afterwards. Used
-  only by features not yet moved to Postgres.
 - **Settings**: every secret is a dummy set in `global-setup.ts`. Your real
   `.env` is never loaded (`envDir: false` in `vitest.config.ts`).
 
