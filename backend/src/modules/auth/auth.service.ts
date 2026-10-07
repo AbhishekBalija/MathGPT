@@ -67,25 +67,24 @@ function readUserId(token: string, secret: string): string | null {
   }
 }
 
+// One answer for every failed login, so it never reveals whether an email
+// is registered or signs in with Google (#17)
+const LOGIN_FAILED = "Invalid email or password.";
+
+// Compared against when there is no real hash, so a missing account takes
+// about as long to reject as a wrong password does
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync("not-a-real-password", 10);
+
 export const AuthService = {
   async login(email: string, password: string) {
     const user = await userRepository.findByEmail(email);
 
-    if (!user) {
-      return { success: false as const, error: "User not found" };
-    }
+    // Users who only signed up with Google have no password hash
+    const passwordHash = user?.passwordHash ?? DUMMY_PASSWORD_HASH;
+    const isPasswordValid = await bcrypt.compare(password, passwordHash);
 
-    // Users who only signed up with Google have no password
-    if (!user.passwordHash) {
-      return {
-        success: false as const,
-        error: "This account uses Google Sign-In. Please use Google to login.",
-      };
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isPasswordValid) {
-      return { success: false as const, error: "Invalid password" };
+    if (!user || !user.passwordHash || !isPasswordValid) {
+      return { success: false as const, error: LOGIN_FAILED };
     }
 
     return {

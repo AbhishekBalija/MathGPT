@@ -98,7 +98,10 @@ Login with email and password.
 }
 ```
 
-The email is matched in any letter case. Limited to **10 attempts per 15
+The email is matched in any letter case. Every failed login (unknown email,
+wrong password, or an account that only uses Google) returns the same
+**401** `{ "error": "Invalid email or password." }`, so the response never
+reveals whether an email is registered. Limited to **10 attempts per 15
 minutes per IP** (429 `RATE_LIMITED` with `retryAfter`).
 
 ---
