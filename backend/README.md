@@ -23,6 +23,7 @@ curl http://localhost:3000/health
 | `bun run dev`         | Start the API with file watching               |
 | `bun run start`       | Start the API without watching                 |
 | `bun run typecheck`   | TypeScript check, no output files              |
+| `bun run lint`        | ESLint (not blocking in CI yet, see #14)       |
 | `bun run test`        | HTTP test suite on a throwaway local database  |
 | `bun run db:generate` | Create a SQL migration from `src/db/schema.ts` |
 | `bun run db:migrate`  | Apply pending migrations to `DATABASE_URL`     |
