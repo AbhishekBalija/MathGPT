@@ -79,20 +79,8 @@ describe("🔴 REDIS STATE - Rate Limiting Verification", () => {
     });
 
     it("should return 429 after exceeding rate limit (5 requests/minute)", async () => {
-      const freshEmail = `ratelimit-${Date.now()}@test.com`;
-      await fetch(`${API_URL}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: freshEmail,
-          password: "Test123!",
-          name: "Rate Limit Test",
-        }),
-      });
-
-      const freshToken = await getAuthToken(freshEmail, "Test123!");
-      expect(freshToken).toBeTruthy();
-      if (!freshToken) return; // TypeScript narrowing
+      // A fresh verified User, so earlier tests' solves don't count against this one
+      const { accessToken: freshToken } = await registerVerifiedUser();
 
       const responses = [];
       for (let i = 0; i < 6; i++) {
@@ -114,20 +102,8 @@ describe("🔴 REDIS STATE - Rate Limiting Verification", () => {
     });
 
     it("should include retryAfter in rate limit response", async () => {
-      const freshEmail = `retry-after-${Date.now()}@test.com`;
-      await fetch(`${API_URL}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: freshEmail,
-          password: "Test123!",
-          name: "Retry Test",
-        }),
-      });
-
-      const freshToken = await getAuthToken(freshEmail, "Test123!");
-      expect(freshToken).toBeTruthy();
-      if (!freshToken) return; // TypeScript narrowing
+      // A fresh verified User, so earlier tests' solves don't count against this one
+      const { accessToken: freshToken } = await registerVerifiedUser();
 
       let rateLimitHit = false;
       for (let i = 0; i < 6; i++) {
@@ -155,20 +131,8 @@ describe("🔴 REDIS STATE - Rate Limiting Verification", () => {
     });
 
     it("should handle concurrent requests without state corruption", async () => {
-      const freshEmail = `concurrent-${Date.now()}@test.com`;
-      await fetch(`${API_URL}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: freshEmail,
-          password: "Test123!",
-          name: "Concurrent Test",
-        }),
-      });
-
-      const freshToken = await getAuthToken(freshEmail, "Test123!");
-      expect(freshToken).toBeTruthy();
-      if (!freshToken) return; // TypeScript narrowing
+      // A fresh verified User, so earlier tests' solves don't count against this one
+      const { accessToken: freshToken } = await registerVerifiedUser();
 
       // Send 5 requests concurrently
       const promises = Array(5)

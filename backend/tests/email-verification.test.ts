@@ -174,4 +174,18 @@ describe("welcome email", () => {
 
     await vi.waitFor(() => expect(welcomes()).toHaveLength(1));
   });
+
+  it("arrives once even when the right code is submitted twice at the same moment", async () => {
+    const { email, accessToken } = await registerUser();
+    const code = await latestVerificationCode(email);
+
+    await Promise.all([verify(accessToken, code), verify(accessToken, code)]);
+
+    // Give a second background email time to show up if it was going to
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const welcomes = fakeEmailSender
+      .emailsTo(email)
+      .filter((sent) => sent.subject.includes("Welcome"));
+    expect(welcomes).toHaveLength(1);
+  });
 });

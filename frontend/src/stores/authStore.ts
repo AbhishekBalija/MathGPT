@@ -19,6 +19,7 @@ interface AuthState {
   loginWithGoogle: (credential: string) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: User) => void;
+  setEmailVerified: (emailVerified: boolean) => void;
   setLoading: (loading: boolean) => void;
   clearAuth: () => void;
 }
@@ -48,6 +49,7 @@ export const useAuthStore = create<AuthState>()(
               avatar: response.user.avatar,
               isAdmin: response.user.isAdmin,
               role: response.user.isAdmin ? "admin" : "user",
+              emailVerified: response.user.emailVerified,
             },
             token: response.accessToken,
             refreshToken: response.refreshToken,
@@ -78,6 +80,7 @@ export const useAuthStore = create<AuthState>()(
               avatar: response.user.avatar,
               isAdmin: response.user.isAdmin,
               role: response.user.isAdmin ? "admin" : "user",
+              emailVerified: response.user.emailVerified,
             },
             token: response.accessToken,
             refreshToken: response.refreshToken,
@@ -105,6 +108,7 @@ export const useAuthStore = create<AuthState>()(
               avatar: response.user.avatar,
               isAdmin: response.user.isAdmin,
               role: response.user.isAdmin ? "admin" : "user",
+              emailVerified: response.user.emailVerified,
             },
             token: response.accessToken,
             refreshToken: response.refreshToken,
@@ -114,6 +118,12 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false });
           throw error;
         }
+      },
+
+      setEmailVerified: (emailVerified: boolean) => {
+        set((state) =>
+          state.user ? { user: { ...state.user, emailVerified } } : {}
+        );
       },
 
       logout: async () => {

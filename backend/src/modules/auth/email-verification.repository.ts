@@ -2,7 +2,7 @@
  * Verification Codes waiting to be entered. One row per User at most.
  */
 
-import { and, eq, lt, sql } from "drizzle-orm";
+import { and, eq, isNull, lt, sql } from "drizzle-orm";
 import { db } from "../../db/client";
 import { emailVerifications, users } from "../../db/schema";
 import type { DbExecutor } from "../../db/transaction";
@@ -54,17 +54,20 @@ export const emailVerificationRepository = {
     return row !== undefined;
   },
 
-  /** Marks the User verified and removes their code, together. */
-  async markVerified(userId: string): Promise<void> {
-    await db.transaction(async (tx) => {
-      await tx
+  /**
+   * Marks the User verified and removes their code, together. Returns true
+   * only for the request that actually verified them, so two simultaneous
+   * correct submissions cannot both act on it (e.g. both send a welcome).
+   */
+  async markVerified(userId: string): Promise<boolean> {
+    return db.transaction(async (tx) => {
+      const verified = await tx
         .update(users)
-        .set({
-          emailVerifiedAt: sql`coalesce(${users.emailVerifiedAt}, now())`,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, userId));
+        .set({ emailVerifiedAt: new Date(), updatedAt: new Date() })
+        .where(and(eq(users.id, userId), isNull(users.emailVerifiedAt)))
+        .returning({ id: users.id });
       await tx.delete(emailVerifications).where(eq(emailVerifications.userId, userId));
+      return verified.length === 1;
     });
   },
 };

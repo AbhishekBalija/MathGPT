@@ -153,6 +153,33 @@ repository checks the id with `z.uuid()` first and treats anything else as
 "not found", so bad ids become a clean 401 or 404 and never reach the
 database.
 
+### Intermediate: Why store a 6-digit code as an HMAC instead of a plain hash or bcrypt?
+
+There are only a million possible codes. With a plain SHA-256, anyone holding
+a leaked table can try all of them in under a second and find each code.
+bcrypt slows that down but does not stop it. An HMAC keyed with a server
+secret (which is not in the database) makes the stored value useless on its
+own, and binding it to the User id stops one User's hash from matching
+another's. The comparison uses `timingSafeEqual`, so response time leaks
+nothing.
+
+### Advanced: How do you stop parallel guesses from going past "5 attempts"?
+
+If the code is read, checked, and only then counted, 10 parallel requests can
+all read `attempts = 0` and all get a guess. Instead each attempt is claimed
+first with one statement, `UPDATE ... SET attempts = attempts + 1 WHERE
+attempts < 5 RETURNING ...`. Postgres runs these one at a time on the row, so
+only 5 ever succeed; the rest get no row back. A test fires 10 guesses at once
+and then checks that even the right code is refused.
+
+### Intermediate: How does a fixed-window rate limit work in one SQL statement?
+
+`INSERT ... ON CONFLICT (key) DO UPDATE` either creates the counter or, in
+the same statement, starts a new window if the old one has passed or adds 1.
+`RETURNING count` tells you whether this request is over the limit. Because it
+is one atomic statement in a shared database, it holds across every serverless
+instance, which an in-memory counter cannot.
+
 ## Dependencies
 
 ### Advanced: The server crashed under Bun after a fresh install. What happened?

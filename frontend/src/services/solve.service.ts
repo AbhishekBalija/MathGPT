@@ -43,6 +43,8 @@ export async function solveProblem(request: SolveRequest): Promise<{
   success: boolean;
   solution?: Solution;
   error?: string;
+  // Set when the backend refuses because the email is not verified yet
+  code?: "EMAIL_NOT_VERIFIED";
 }> {
   try {
     const response = await api.post<SolveApiResponse>("/api/solve", {
@@ -76,8 +78,16 @@ export async function solveProblem(request: SolveRequest): Promise<{
     // Handle axios errors - always sanitize before passing to UI
     if (error && typeof error === "object" && "response" in error) {
       const axiosError = error as {
-        response?: { status: number; data?: { error?: string } };
+        response?: { status: number; data?: { error?: string; code?: string } };
       };
+
+      if (axiosError.response?.data?.code === "EMAIL_NOT_VERIFIED") {
+        return {
+          success: false,
+          error: "Please verify your email to start solving.",
+          code: "EMAIL_NOT_VERIFIED",
+        };
+      }
 
       if (axiosError.response?.status === 401) {
         return {

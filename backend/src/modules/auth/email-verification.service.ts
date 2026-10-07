@@ -20,7 +20,8 @@ const RESEND_LIMITS = [
 ] as const;
 
 export type VerifyResult =
-  | { ok: true }
+  // newlyVerified is false when a parallel request verified the User first
+  | { ok: true; newlyVerified: boolean }
   | { ok: false; error: string };
 
 export type ResendResult =
@@ -62,8 +63,8 @@ export const EmailVerificationService = {
       return { ok: false, error: "That code is not correct." };
     }
 
-    await emailVerificationRepository.markVerified(userId);
-    return { ok: true };
+    const newlyVerified = await emailVerificationRepository.markVerified(userId);
+    return { ok: true, newlyVerified };
   },
 
   async resend(userId: string): Promise<ResendResult> {

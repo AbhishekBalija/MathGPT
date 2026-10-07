@@ -158,6 +158,41 @@ missing, invalid, expired, or belongs to a User that no longer exists.
 
 ---
 
+### POST /auth/verify-email
+
+Confirm the email with the 6-digit Verification Code sent at sign-up.
+**Requires auth.** Only Verified Users can solve.
+
+**Request Body:**
+
+```json
+{ "code": "123456" }
+```
+
+**Response (200):** `{ "emailVerified": true }`. Also returned if the User
+is already verified. The welcome email is sent after the first success.
+
+**Errors (400):** a code that is not 6 digits, a wrong code, an expired code
+(codes last 15 minutes), no active code, or 5 wrong attempts already used
+(a new code is then required).
+
+---
+
+### POST /auth/resend-verification
+
+Email a new Verification Code, replacing the old one. **Requires auth.**
+
+**Response (200):** `{ "message": "A new code is on its way." }`
+
+**Errors:**
+
+| Status | When                                                              |
+| ------ | ----------------------------------------------------------------- |
+| 400    | The email is already verified                                     |
+| 429    | More than 1 request per minute or 5 per hour. Body includes `code: "RATE_LIMITED"` and `retryAfter` (seconds) |
+
+---
+
 ### POST /auth/refresh
 
 Refresh access token.
@@ -199,7 +234,8 @@ Logout user. **Requires auth.**
 
 ### POST /api/solve
 
-Solve a math problem. **Requires auth.**
+Solve a math problem. **Requires auth and a verified email.** An unverified
+User gets **403** `{ "error": "...", "code": "EMAIL_NOT_VERIFIED" }`.
 
 **Request Body:**
 

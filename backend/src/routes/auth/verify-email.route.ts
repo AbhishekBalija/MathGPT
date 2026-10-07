@@ -26,12 +26,13 @@ export function createVerifyEmailRoute(emailSender: EmailSender) {
       return { status: 400, body: { error: result.error } };
     }
 
-    logger.info("Email verified", { userId: user.id });
-
-    // Welcome only once the account is real
-    runInBackground("send-welcome-email", () =>
-      sendWelcomeEmail(emailSender, { userId: user.id, email: user.email, name: user.name })
-    );
+    // Welcome only once the account is real, and only from the request that verified it
+    if (result.newlyVerified) {
+      logger.info("Email verified", { userId: user.id });
+      runInBackground("send-welcome-email", () =>
+        sendWelcomeEmail(emailSender, { userId: user.id, email: user.email, name: user.name })
+      );
+    }
 
     return { status: 200, body: { emailVerified: true } };
   });

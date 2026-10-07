@@ -61,6 +61,12 @@ const Login = () => {
       await loginWithEmail(email, password);
       // Get user from store after login
       const currentUser = useAuthStore.getState().user;
+      // Email sign-ups must confirm their address before solving; their old
+      // code has likely expired, so the verify page sends a fresh one
+      if (currentUser?.emailVerified === false) {
+        navigate("/verify-email", { replace: true, state: { sendCode: true } });
+        return;
+      }
       const redirectPath = getRedirectPath(currentUser?.isAdmin);
       navigate(redirectPath, { replace: true });
     } catch (err) {

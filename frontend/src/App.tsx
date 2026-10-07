@@ -7,6 +7,7 @@ import {
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import VerifyEmail from "./pages/VerifyEmail";
 import Admin from "./pages/Admin";
 import AppLayout from "./pages/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -29,6 +30,14 @@ const App = () => {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route
+          path="/verify-email"
+          element={
+            <ProtectedRoute>
+              <VerifyEmail />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         {/* Admin Routes with nested layout */}

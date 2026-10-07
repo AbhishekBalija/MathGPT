@@ -38,7 +38,9 @@ src/
   events/           work that runs after a request (emails, analytics, saving)
   db/               Postgres: Drizzle schema and the one shared connection pool
   modules/          feature modules (ADR-0004): auth/ (service, requireUser and
-                    requireAdmin middleware), users/ (repository), ai/ and
+                    requireAdmin / requireVerifiedEmail middleware, email
+                    verification), users/ (repository), rate-limits/ (Postgres
+                    fixed-window counters), ai/ and
                     email/ (solver and email sender interfaces); the rest fill in later
   lib/              small shared helpers (http adapter, logger, env, rate limit)
   middlewares/      JWT auth checks
