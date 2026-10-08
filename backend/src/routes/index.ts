@@ -4,7 +4,7 @@
  */
 
 import { Router } from "express";
-import type { AppServices } from "../app";
+import type { AppServices } from "../create-app";
 import { requireUser, requireVerifiedEmail } from "../modules/auth/auth.middleware";
 import { createAdminRouter } from "../modules/admin/admin.router";
 import { limitByIp } from "../modules/rate-limits/rate-limit.middleware";

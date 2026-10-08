@@ -1,5 +1,11 @@
-// Local development entry point: `bun run dev`
-import { createApp } from "./app";
+/**
+ * The backend's one entry point.
+ *
+ * - Local development (`bun run dev`): starts listening on PORT.
+ * - Vercel: imports this file and serves the default export as a function,
+ *   so it must not listen itself. Vercel sets VERCEL=1.
+ */
+import { createApp } from "./create-app";
 import { logger } from "./lib/logger";
 import { requireEnv } from "./lib/env";
 import { geminiMathSolver } from "./modules/ai/math-solver";
@@ -32,6 +38,10 @@ const app = createApp({
   emailSender: chooseEmailSender(),
 });
 
-app.listen(port, () => {
-  logger.info(`NeoMath API listening on http://localhost:${port}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(port, () => {
+    logger.info(`NeoMath API listening on http://localhost:${port}`);
+  });
+}
+
+export default app;
