@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { randomUUID } from "node:crypto";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import { z } from "zod";
@@ -48,10 +49,13 @@ export function toPublicUser(user: User): PublicUser {
 }
 
 function createTokens(userId: string) {
+  // A unique jwtid makes every token different, even within the same second
   const accessToken = jwt.sign({ userId }, JWT_SECRET, {
+    jwtid: randomUUID(),
     expiresIn: ACCESS_TOKEN_EXPIRY as jwt.SignOptions["expiresIn"],
   });
   const refreshToken = jwt.sign({ userId }, JWT_REFRESH_SECRET, {
+    jwtid: randomUUID(),
     expiresIn: REFRESH_TOKEN_EXPIRY as jwt.SignOptions["expiresIn"],
   });
   return { accessToken, refreshToken };

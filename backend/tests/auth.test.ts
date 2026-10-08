@@ -64,6 +64,16 @@ describe("sessions", () => {
     expect(me.status).toBe(200);
   });
 
+  it("issues a different refresh token each time, even within the same second", async () => {
+    const res = await signUp(uniqueEmail());
+    const { refreshToken } = await res.json();
+
+    const first = await (await post("/auth/refresh", { refreshToken })).json();
+    const second = await (await post("/auth/refresh", { refreshToken })).json();
+
+    expect(first.refreshToken).not.toBe(second.refreshToken);
+  });
+
   it("rejects a request without a token", async () => {
     const res = await fetch(apiUrl("/auth/me"));
 

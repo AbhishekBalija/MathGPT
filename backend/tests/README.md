@@ -69,11 +69,7 @@ database rows.
 
 ### Known failures
 
-Two older tests in `brutal-advanced.test.ts` are marked `it.skip` with a
-`// Known failure, see #12` comment: the Daily Limit test (the per-minute
-solve limit fires first; `tests/solve.test.ts` covers the Daily Limit
-instead) and refresh tokens issued in the same second being identical. #12
-tracks them.
+No tests are skipped.
 
 ## Test Categories
 
