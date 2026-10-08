@@ -24,11 +24,6 @@ const Landing = () => {
           <div className="flex flex-col items-center gap-6 md:gap-10 text-center">
             {/* Hero Text */}
             <div className="max-w-4xl mx-auto">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900 border border-brand-500/30 rounded-full text-brand-600 dark:text-brand-300 text-xs font-medium mb-8">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-500" />
-                <span>Free while in beta</span>
-              </div>
-
               <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-semibold tracking-tighter text-gray-900 dark:text-white mb-6 md:mb-8 leading-none">
                 <span className="block">Stuck on a problem?</span>
                 <span className="block text-brand-600 dark:text-brand-300">
