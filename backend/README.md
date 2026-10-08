@@ -90,5 +90,5 @@ on each run, so a broken migration fails the test run.
 ## Migration status
 
 1. Motia to Express: done
-2. MongoDB to Postgres (Drizzle + Neon): in progress. Users and auth are on Postgres; Solutions and analytics are still on MongoDB; the waitlist is removed (open sign-up)
+2. Postgres (Drizzle + Neon): done. All data lives in Postgres; the waitlist is removed (open sign-up)
 3. Deploy to Vercel: after Phase 2

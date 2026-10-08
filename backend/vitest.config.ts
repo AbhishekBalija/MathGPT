@@ -6,7 +6,7 @@ export default defineConfig({
   test: {
     globals: true,
     include: ["tests/**/*.test.ts"],
-    // Once per run: safety guard, throwaway MongoDB, fresh Postgres schema
+    // Once per run: safety guard, fresh Postgres schema
     globalSetup: ["tests/support/global-setup.ts"],
     // Once per test file: the real app on a random port with fake AI and email
     setupFiles: ["tests/support/start-app.ts"],

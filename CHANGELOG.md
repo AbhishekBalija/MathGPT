@@ -94,6 +94,7 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
+- MongoDB: the driver, the bson version pin, the throwaway mongod in the test run and the CI install step. All data lives in Postgres.
 - The in-memory solve rate limiter (`backend/src/lib/rate-limit.ts`), which
   could not hold across serverless instances.
 - The waitlist and invite system: `POST /api/waitlist`,

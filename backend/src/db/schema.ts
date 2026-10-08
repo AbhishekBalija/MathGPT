@@ -1,7 +1,7 @@
 /**
  * Every Postgres table, defined with Drizzle.
  *
- * Tables arrive here as features move off MongoDB.
+ * All data lives in Postgres.
  * After changing this file, run `bun run db:generate` to create a migration.
  */
 
