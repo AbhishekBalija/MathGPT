@@ -43,7 +43,7 @@ and the project uses [Semantic Versioning](https://semver.org/).
   version with a white rim, and is used in the navbar, sidebar, sign-in pages
   and admin. Neo replaces the 5.7 MB avatar image in the chat. New favicons,
   home-screen icons and a link preview card (og:image). Accent colour is now
-  the logo pink, contrast-checked; dark mode uses warm blacks. See
+  the logo pink, contrast-checked; dark mode uses warm blacks and a solid pink. See
   docs/brand.md.
 
 - The landing waves are smoother: no stretching, softer curves that fade at

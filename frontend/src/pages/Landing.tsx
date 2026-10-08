@@ -26,7 +26,7 @@ const Landing = () => {
             <div className="max-w-4xl mx-auto">
               <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-semibold tracking-tighter text-gray-900 dark:text-white mb-6 md:mb-8 leading-none">
                 <span className="block">Stuck on a problem?</span>
-                <span className="block text-brand-600 dark:bg-linear-to-r dark:from-[#ffd166] dark:to-brand-300 dark:bg-clip-text dark:text-transparent">
+                <span className="block text-brand-600 dark:text-brand-300">
                   See every step.
                 </span>
               </h1>
