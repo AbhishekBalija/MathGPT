@@ -11,28 +11,24 @@ bun run test          # whole suite, once
 bun run test:watch    # re-run on changes
 ```
 
-You only need Postgres running locally (`brew services start postgresql@17`)
-and MongoDB installed (`mongod` on your PATH). Nothing else to start by hand.
+You only need Postgres running locally (`brew services start postgresql@17`).
+Nothing else to start by hand.
 
 ### What happens on each run
 
 ```mermaid
 flowchart TD
     A[bun run test] --> B[global-setup.ts]
-    B --> C{Both databases on localhost, Postgres name ends in _test?}
+    B --> C{Postgres on localhost, name ends in _test?}
     C -- no --> X[Stop with an error, nothing connects]
-    C -- yes --> D[Start a throwaway mongod in a temp folder]
-    D --> E[Create neomath_test if missing, drop all tables, run migrations]
+    C -- yes --> E[Create neomath_test if missing, drop all tables, run migrations]
     E --> F[Each test file: start-app.ts starts the real app on a random port]
     F --> G[Tests call the app over HTTP]
-    G --> H[Teardown: stop mongod, delete its temp folder]
 ```
 
 - **Postgres**: `postgres://localhost:5432/neomath_test` by default. Override
   with `TEST_DATABASE_URL`; it must still point to localhost and the database
   name must end in `_test`, so your dev database can never be wiped.
-- **MongoDB**: a fresh `mongod` on a random port, deleted afterwards. Used
-  only by features not yet moved to Postgres.
 - **Settings**: every secret is a dummy set in `global-setup.ts`. Your real
   `.env` is never loaded (`envDir: false` in `vitest.config.ts`).
 
@@ -46,6 +42,14 @@ Only two things are faked, both outside the app (see `tests/support/`):
 | `fakeEmailSender`  | Resend   | Read sent emails: `fakeEmailSender.emailsTo(...)` |
 
 Everything else (routes, repositories, databases, Rate Limits) is real.
+
+### Client IPs
+
+Per-IP Rate Limits (sign-up, login) would trip constantly if every test
+request came from 127.0.0.1. `start-app.ts` gives each request to the app a
+random `X-Forwarded-For` address, like separate visitors behind Vercel's
+proxy. A test that checks an IP limit sets the header itself so its requests
+share one address (see `tests/rate-limits.test.ts`).
 
 ### Writing a test
 
@@ -65,12 +69,11 @@ database rows.
 
 ### Known failures
 
-Six older tests in `brutal.test.ts` and `brutal-advanced.test.ts` are marked
-`it.skip` with a `// Known failure, see #12` comment. They failed before this
-harness too, because of current app behaviour (the solve Rate Limit shared by
-tests using the same User, the saved Solution ID differing from the returned
-one, an empty admin passcode returning 401, refresh tokens issued in the same
-second being identical). #12 tracks fixing and un-skipping them.
+Two older tests in `brutal-advanced.test.ts` are marked `it.skip` with a
+`// Known failure, see #12` comment: the Daily Limit test (the per-minute
+solve limit fires first; `tests/solve.test.ts` covers the Daily Limit
+instead) and refresh tokens issued in the same second being identical. #12
+tracks them.
 
 ## Test Categories
 

@@ -16,13 +16,18 @@ import { getCurrentUser } from "../modules/auth/auth.middleware";
 import { userRepository } from "../modules/users/user.repository";
 import { route } from "../lib/http";
 import { logger } from "../lib/logger";
-import { checkRateLimit } from "../lib/rate-limit";
+import { rateLimitRepository } from "../modules/rate-limits/rate-limit.repository";
 import { runInBackground } from "../lib/background";
 import { handleSolveError } from "../events/solution/handle-solve-error";
-import { saveSolution } from "../events/solution/save-solution";
+import { trackAnalytics } from "../events/solution/track-analytics";
+import { solutionRepository } from "../modules/solutions/solution.repository";
 
 // Daily free limit for users
 const DAILY_FREE_LIMIT = 5;
+
+// Short-window limit on solving, separate from the Daily Limit
+const RATE_LIMIT_MAX_REQUESTS = 5;
+const RATE_LIMIT_WINDOW_SECONDS = 60;
 
 // Request validation schema - userId comes from token, not body
 const solveRequestSchema = z.object({
@@ -69,14 +74,11 @@ export function createSolveRoute(solver: MathSolver) {
     const user = getCurrentUser(req);
     const userId = user.id;
 
-    // RATE LIMITING - 5 requests per minute per user
-    const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-    const RATE_LIMIT_MAX_REQUESTS = 5;
-
-    const rateLimit = checkRateLimit(
-      `ratelimit:${userId}`,
+    // RATE LIMITING - 5 requests per minute per User, shared by every server instance
+    const rateLimit = await rateLimitRepository.hit(
+      `solve:user:${userId}`,
       RATE_LIMIT_MAX_REQUESTS,
-      RATE_LIMIT_WINDOW_MS
+      RATE_LIMIT_WINDOW_SECONDS
     );
 
     if (!rateLimit.allowed) {
@@ -89,6 +91,7 @@ export function createSolveRoute(solver: MathSolver) {
         status: 429 as const,
         body: {
           error: `Too many requests. Please wait ${rateLimit.retryAfterSeconds} seconds before trying again.`,
+          code: "RATE_LIMITED",
           retryAfter: rateLimit.retryAfterSeconds,
         },
       };
@@ -177,19 +180,49 @@ export function createSolveRoute(solver: MathSolver) {
         userId,
       });
 
-      // Save to MongoDB before responding so the solution is never lost
-      await saveSolution({
-        chatId,
-        userId,
-        solution: {
-          ...solution,
-          createdAt: solution.createdAt,
-        },
-        problemType: solution.problemType,
-        stepsCount: solution.steps.length,
-        processingTimeMs: solution.processingTimeMs,
-        timestamp: new Date().toISOString(),
-      });
+      // Saved before responding, under the solver's id, so the id we return
+      // is the one the User can open and delete. If saving fails, no Credit
+      // is spent and the User gets a generic error (the real one is logged).
+      try {
+        await solutionRepository.create(userId, solution, chatId);
+      } catch (saveError) {
+        const saveErrorMessage =
+          saveError instanceof Error ? saveError.message : "Unknown error";
+        logger.error("Failed to save solution", {
+          solutionId: solution.id,
+          userId,
+          error: saveErrorMessage,
+        });
+        // Shows up on the admin error dashboard like any other failed solve
+        runInBackground("problem-error", () =>
+          handleSolveError({
+            chatId,
+            userId,
+            problem: problem.slice(0, 200),
+            errorCode: "SOLUTION_SAVE_FAILED",
+            errorMessage: saveErrorMessage,
+            processingTimeMs: Date.now() - startTime,
+            timestamp: new Date().toISOString(),
+          })
+        );
+        return {
+          status: 500 as const,
+          body: { success: false, error: "Internal server error" },
+        };
+      }
+
+      runInBackground("track-analytics", () =>
+        trackAnalytics({
+          event: "solution_saved",
+          properties: {
+            problemType: solution.problemType,
+            stepsCount: solution.steps.length,
+            processingTimeMs: solution.processingTimeMs,
+            userId,
+          },
+          timestamp: new Date().toISOString(),
+        })
+      );
 
       // INCREMENT DAILY USAGE COUNTER (after successful solve)
       try {

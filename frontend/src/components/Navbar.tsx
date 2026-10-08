@@ -7,6 +7,15 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+
+  // Close the menu whenever the page changes (a link, back or forward).
+  // React's pattern for adjusting state when a value changes: compare during
+  // render instead of using an effect.
+  const [menuPath, setMenuPath] = useState(location.pathname);
+  if (menuPath !== location.pathname) {
+    setMenuPath(location.pathname);
+    setMobileMenuOpen(false);
+  }
   const isLanding = location.pathname === "/";
 
   // Use centralized theme store
@@ -20,10 +29,6 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close mobile menu on route change
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [location.pathname]);
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
@@ -77,23 +82,18 @@ const Navbar = () => {
               )}
             </button>
 
-            {/* Login/Signup hidden on landing page for waitlist-only mode */}
-            {!isLanding && (
-              <>
-                <Link
-                  to="/login"
-                  className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors"
-                >
-                  Log in
-                </Link>
-                <Link
-                  to="/register"
-                  className="px-5 py-2.5 text-sm font-medium text-white dark:text-black bg-black dark:bg-white rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-all hover:shadow-lg active:scale-95"
-                >
-                  Sign up
-                </Link>
-              </>
-            )}
+            <Link
+              to="/login"
+              className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors"
+            >
+              Log in
+            </Link>
+            <Link
+              to="/register"
+              className="px-5 py-2.5 text-sm font-medium text-white dark:text-black bg-black dark:bg-white rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-all hover:shadow-lg active:scale-95"
+            >
+              Sign up
+            </Link>
           </div>
 
           {/* Mobile Navigation Controls */}
@@ -145,34 +145,30 @@ const Navbar = () => {
           }`}
         >
           <div className="flex flex-col h-full pt-20 px-6">
-            {/* Login/Signup hidden on landing page for waitlist-only mode */}
-            {!isLanding && (
-              <>
-                <Link
-                  to="/login"
-                  className="py-4 text-lg font-medium text-gray-700 dark:text-gray-200 hover:text-black dark:hover:text-white border-b border-gray-100 dark:border-gray-800 transition-colors"
-                >
-                  Log in
-                </Link>
-                <Link
-                  to="/register"
-                  className="py-4 text-lg font-medium text-gray-700 dark:text-gray-200 hover:text-black dark:hover:text-white border-b border-gray-100 dark:border-gray-800 transition-colors"
-                >
-                  Sign up
-                </Link>
-              </>
-            )}
+            <Link
+              to="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-4 text-lg font-medium text-gray-700 dark:text-gray-200 hover:text-black dark:hover:text-white border-b border-gray-100 dark:border-gray-800 transition-colors"
+            >
+              Log in
+            </Link>
+            <Link
+              to="/register"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-4 text-lg font-medium text-gray-700 dark:text-gray-200 hover:text-black dark:hover:text-white border-b border-gray-100 dark:border-gray-800 transition-colors"
+            >
+              Sign up
+            </Link>
 
             {/* CTA Button at bottom */}
             <div className="mt-auto pb-8">
-              {!isLanding && (
-                <Link
-                  to="/register"
-                  className="block w-full py-4 text-center text-white dark:text-black bg-black dark:bg-white rounded-xl font-medium text-lg transition-all active:scale-95"
-                >
-                  Get Started
-                </Link>
-              )}
+              <Link
+                to="/register"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block w-full py-4 text-center text-white dark:text-black bg-black dark:bg-white rounded-xl font-medium text-lg transition-all active:scale-95"
+              >
+                Get Started
+              </Link>
             </div>
           </div>
         </div>

@@ -8,24 +8,18 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import { randomIp } from "./support/network";
+import { registerVerifiedUser, uniqueEmail } from "./support/users";
 
 // Mock API base URL
 const API_URL = process.env.TEST_API_URL || "http://localhost:3000";
-const TEST_USER_EMAIL = "test@test.com";
+// Each test file gets its own User, so files running in parallel never share one
+const TEST_USER_EMAIL = uniqueEmail();
 const TEST_USER_PASSWORD = "Test123!";
 
-// Global setup - ensure test user exists
+// Global setup: a verified test User, since only Verified Users can solve
 beforeAll(async () => {
-  // Try to register test user (will fail if already exists, which is fine)
-  await fetch(`${API_URL}/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email: TEST_USER_EMAIL,
-      password: TEST_USER_PASSWORD,
-      name: "Test User",
-    }),
-  }).catch(() => {}); // Ignore errors - user may already exist
+  await registerVerifiedUser(TEST_USER_EMAIL);
 });
 
 // ============================================================================
@@ -61,14 +55,14 @@ describe("🔐 AUTH - Brutal Security Tests", () => {
     });
 
     it("should reject NoSQL injection in email field", async () => {
-      const mongoPayloads = [
+      const nosqlPayloads = [
         { email: { $gt: "" }, password: "test" },
         { email: { $regex: ".*" }, password: "test" },
         { email: { $ne: null }, password: "test" },
         { email: { $where: "this.password.length > 0" }, password: "test" },
       ];
 
-      for (const payload of mongoPayloads) {
+      for (const payload of nosqlPayloads) {
         const res = await fetch(`${API_URL}/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -118,7 +112,7 @@ describe("🔐 AUTH - Brutal Security Tests", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: "test@test.com",
+          email: TEST_USER_EMAIL,
           password: longPassword,
         }),
       });
@@ -140,17 +134,18 @@ describe("🔐 AUTH - Brutal Security Tests", () => {
       expect(res.status).not.toBe(200);
     });
 
-    // SKIPPED: Rate limiting is handled at infrastructure level (API Gateway/AWS WAF)
-    // per AGENTS.md: "NEVER implement rate limiting/CORS in code (infrastructure handles this)"
-    it.skip("should rate limit after 10 failed attempts", async () => {
+    // Login is limited to 10 attempts per 15 minutes per IP (ADR-0003)
+    it("should rate limit after 10 failed attempts", async () => {
       const promises = [];
+      // All attempts from one client address
+      const attackerIp = randomIp();
 
       for (let i = 0; i < 15; i++) {
         promises.push(
           fetch(`${API_URL}/auth/login`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: "test@test.com", password: "wrong" }),
+            headers: { "Content-Type": "application/json", "X-Forwarded-For": attackerIp },
+            body: JSON.stringify({ email: TEST_USER_EMAIL, password: "wrong" }),
           })
         );
       }
@@ -158,8 +153,8 @@ describe("🔐 AUTH - Brutal Security Tests", () => {
       const responses = await Promise.all(promises);
       const rateLimited = responses.filter((r) => r.status === 429);
 
-      // At least some should be rate limited
-      expect(rateLimited.length).toBeGreaterThan(0);
+      // Exactly the 5 attempts over the limit are refused
+      expect(rateLimited.length).toBe(5);
     });
 
     it("should reject malformed JSON gracefully", async () => {
@@ -177,7 +172,7 @@ describe("🔐 AUTH - Brutal Security Tests", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: "test@test.com",
+          email: TEST_USER_EMAIL,
           password: "test",
           __proto__: { isAdmin: true },
           constructor: { prototype: { isAdmin: true } },
@@ -216,7 +211,7 @@ describe("🔐 AUTH - Brutal Security Tests", () => {
       const loginRes = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "test@test.com", password: "Test123!" }),
+        body: JSON.stringify({ email: TEST_USER_EMAIL, password: "Test123!" }),
       });
 
       if (loginRes.ok) {
@@ -541,9 +536,10 @@ describe("🧮 SOLVE API - Brutal Stress Tests", () => {
       expect(validStatuses.length).toBe(20);
     });
 
-    // Known failure, see #12: the shared test User hits the solve Rate Limit
-    it.skip("should return consistent results for same problem", async () => {
+    it("should return consistent results for same problem", async () => {
       const problem = "2 + 2 = ?";
+      // Its own User: earlier tests have used up the shared User's solve limit
+      const { accessToken: freshToken } = await registerVerifiedUser();
 
       const promises = Array(5)
         .fill(null)
@@ -552,7 +548,7 @@ describe("🧮 SOLVE API - Brutal Stress Tests", () => {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${authToken}`,
+              Authorization: `Bearer ${freshToken}`,
             },
             body: JSON.stringify({ problem }),
           }).then((r) => r.json())
@@ -636,7 +632,7 @@ describe("📜 HISTORY - IDOR & Data Isolation", () => {
     const user1Res = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "test@test.com", password: "Test123!" }),
+      body: JSON.stringify({ email: TEST_USER_EMAIL, password: "Test123!" }),
     });
     if (user1Res.ok) {
       const data = await user1Res.json();
@@ -694,13 +690,9 @@ describe("📜 HISTORY - IDOR & Data Isolation", () => {
     });
 
     it("should NOT allow User2 to delete User1 solutions", async () => {
-      const deleteRes = await fetch(`${API_URL}/api/delete-solution`, {
+      const deleteRes = await fetch(`${API_URL}/api/solution/${user1SolutionId}`, {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user2Token}`,
-        },
-        body: JSON.stringify({ solutionId: user1SolutionId }),
+        headers: { Authorization: `Bearer ${user2Token}` },
       });
 
       // Should be 403 Forbidden or 404 Not Found
@@ -723,39 +715,27 @@ describe("📜 HISTORY - IDOR & Data Isolation", () => {
   });
 
   describe("Edge Cases", () => {
-    // Known failure, see #12: the shared test User hits the solve Rate Limit
-    it.skip("should handle deleting already-deleted solution", async () => {
-      // Create and delete a solution
+    it("should handle deleting already-deleted solution", async () => {
+      // Its own User: earlier tests have used up the shared User's solve limit
+      const { accessToken: ownerToken } = await registerVerifiedUser();
       const createRes = await fetch(`${API_URL}/api/solve`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${user1Token}`,
+          Authorization: `Bearer ${ownerToken}`,
         },
         body: JSON.stringify({ problem: "To be deleted" }),
       });
 
       const { solution } = await createRes.json();
+      const deleteIt = () =>
+        fetch(`${API_URL}/api/solution/${solution.id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${ownerToken}` },
+        });
 
-      // Delete it
-      await fetch(`${API_URL}/api/delete-solution`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user1Token}`,
-        },
-        body: JSON.stringify({ solutionId: solution.id }),
-      });
-
-      // Try to delete again
-      const secondDelete = await fetch(`${API_URL}/api/delete-solution`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user1Token}`,
-        },
-        body: JSON.stringify({ solutionId: solution.id }),
-      });
+      expect((await deleteIt()).status).toBe(200);
+      const secondDelete = await deleteIt();
 
       expect(secondDelete.status).toBe(404);
     });
@@ -775,7 +755,7 @@ describe("📜 HISTORY - IDOR & Data Isolation", () => {
       expect(data.deletedCount).toBeGreaterThanOrEqual(0);
     });
 
-    it("should handle invalid MongoDB ObjectId format", async () => {
+    it("should handle invalid solution id format", async () => {
       const invalidIds = [
         "invalid",
         "12345",
@@ -808,7 +788,7 @@ describe("👤 PROFILE - Privilege Escalation Prevention", () => {
     const res = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "test@test.com", password: "Test123!" }),
+      body: JSON.stringify({ email: TEST_USER_EMAIL, password: "Test123!" }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -889,7 +869,7 @@ describe("🚨 ERROR HANDLING - No Info Leakage", () => {
     });
 
     const text = await res.text();
-    expect(text).not.toMatch(/mongodb/i);
+    expect(text).not.toMatch(/postgres/i);
     expect(text).not.toMatch(/password/i);
     expect(text).not.toMatch(/secret/i);
   });

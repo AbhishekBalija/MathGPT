@@ -1,6 +1,7 @@
 /**
  * Stands in for the AI during tests. Every Problem gets the same Solution
  * (with a fresh id), so tests can rely on the content and never call Gemini.
+ * A Problem containing FAKE_SOLVER_FAILURE fails instead, for error tests.
  */
 
 import { randomUUID } from "node:crypto";
@@ -9,9 +10,16 @@ import type { Solution } from "../../src/types/solve.types";
 
 export const FAKE_FINAL_ANSWER = "x = 2";
 
+// A Problem containing this text makes the fake solver fail, like the AI timing out
+export const FAKE_SOLVER_FAILURE = "FAKE_SOLVER_FAILURE";
+export const FAKE_SOLVER_ERROR_MESSAGE = "The AI did not answer in time";
+
 export function createFakeMathSolver(): MathSolver {
   return {
     async solve(problem): Promise<Solution> {
+      if (problem.includes(FAKE_SOLVER_FAILURE)) {
+        throw new Error(FAKE_SOLVER_ERROR_MESSAGE);
+      }
       return {
         id: randomUUID(),
         problem,

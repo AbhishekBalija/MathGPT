@@ -63,6 +63,9 @@ Emails are stored lowercase, so `User@Example.com` and `user@example.com`
 are the same account. Signing up with an email that is already registered
 returns **409**. Any `isAdmin` field in the body is ignored.
 
+Limited to **5 sign-ups per hour per IP**. Over the limit: **429**
+`{ "error": "...", "code": "RATE_LIMITED", "retryAfter": <seconds> }`.
+
 ---
 
 ### POST /auth/login
@@ -95,7 +98,11 @@ Login with email and password.
 }
 ```
 
-The email is matched in any letter case.
+The email is matched in any letter case. Every failed login (unknown email,
+wrong password, or an account that only uses Google) returns the same
+**401** `{ "error": "Invalid email or password." }`, so the response never
+reveals whether an email is registered. Limited to **10 attempts per 15
+minutes per IP** (429 `RATE_LIMITED` with `retryAfter`).
 
 ---
 
@@ -158,6 +165,41 @@ missing, invalid, expired, or belongs to a User that no longer exists.
 
 ---
 
+### POST /auth/verify-email
+
+Confirm the email with the 6-digit Verification Code sent at sign-up.
+**Requires auth.** Only Verified Users can solve.
+
+**Request Body:**
+
+```json
+{ "code": "123456" }
+```
+
+**Response (200):** `{ "emailVerified": true }`. Also returned if the User
+is already verified. The welcome email is sent after the first success.
+
+**Errors (400):** a code that is not 6 digits, a wrong code, an expired code
+(codes last 15 minutes), no active code, or 5 wrong attempts already used
+(a new code is then required).
+
+---
+
+### POST /auth/resend-verification
+
+Email a new Verification Code, replacing the old one. **Requires auth.**
+
+**Response (200):** `{ "message": "A new code is on its way." }`
+
+**Errors:**
+
+| Status | When                                                              |
+| ------ | ----------------------------------------------------------------- |
+| 400    | The email is already verified                                     |
+| 429    | More than 1 request per minute or 5 per hour. Body includes `code: "RATE_LIMITED"` and `retryAfter` (seconds) |
+
+---
+
 ### POST /auth/refresh
 
 Refresh access token.
@@ -199,7 +241,10 @@ Logout user. **Requires auth.**
 
 ### POST /api/solve
 
-Solve a math problem. **Requires auth.**
+Solve a math problem. **Requires auth and a verified email.** Limited to 5
+per minute per User (429 `RATE_LIMITED` with `retryAfter`), separate from the
+Daily Limit of 5 per day. An unverified
+User gets **403** `{ "error": "...", "code": "EMAIL_NOT_VERIFIED" }`.
 
 **Request Body:**
 
@@ -267,7 +312,8 @@ Get user's solution history. **Requires auth.**
 
 ### GET /api/solution/:id
 
-Get a specific solution. **Requires auth.**
+Get one of your Solutions in full. **Requires auth.** The `id` is the one
+`POST /api/solve` returned.
 
 **Response (200):**
 
@@ -275,24 +321,26 @@ Get a specific solution. **Requires auth.**
 {
   "success": true,
   "solution": {
-    /* full solution object */
+    "id": "8f14e45f-ceea-4e7a-9b1c-2f6c1d0e5a11",
+    "problem": "2x = 4",
+    "problemType": "algebra",
+    "steps": [ /* Steps */ ],
+    "finalAnswer": "x = 2",
+    "summary": "...",
+    "processingTimeMs": 1200,
+    "createdAt": "2026-10-07T10:00:00.000Z"
   }
 }
 ```
 
+**404** for an id that is not a UUID, does not exist, or belongs to another
+User (the response never confirms someone else's id exists).
+
 ---
 
-### DELETE /api/delete-solution
+### DELETE /api/solution/:id
 
-Delete a solution. **Requires auth.**
-
-**Request Body:**
-
-```json
-{
-  "solutionId": "solution_id"
-}
-```
+Delete one of your Solutions. **Requires auth.**
 
 **Response (200):**
 
@@ -303,18 +351,21 @@ Delete a solution. **Requires auth.**
 }
 ```
 
+**404** in the same cases as `GET /api/solution/:id`.
+
 ---
 
-### DELETE /api/clear-history
+### DELETE /api/history
 
-Clear all user's solutions. **Requires auth.**
+Clear all your Solutions. **Requires auth.** `DELETE /api/clear-history` is
+an older path for the same thing.
 
 **Response (200):**
 
 ```json
 {
   "success": true,
-  "message": "History cleared",
+  "message": "Deleted 5 solution(s)",
   "deletedCount": 5
 }
 ```
@@ -355,34 +406,7 @@ Get user profile and usage statistics. **Requires auth.**
 
 ## Admin Endpoints
 
-> **Note**: All admin endpoints require authentication with an admin account (`isAdmin: true`).
-
-### POST /admin/verify-passcode
-
-Verify admin passcode for secondary authentication.
-
-**Request Body:**
-
-```json
-{
-  "passcode": "admin_passcode"
-}
-```
-
-**Response (200):**
-
-```json
-{
-  "success": true
-}
-```
-
-| Status | Error                                    |
-| ------ | ---------------------------------------- |
-| 401    | Authentication required                  |
-| 403    | Admin access required / Invalid passcode |
-
----
+> **Note**: All admin endpoints require a normal login with an Admin account (`isAdmin: true`): 401 without a login, 403 for non-Admins. There is no separate admin passcode.
 
 ### GET /admin/stats
 
@@ -528,6 +552,10 @@ Delete a user and their solutions. **Requires admin.**
 
 ### GET /admin/errors
 
+Query: `errorCode`, `userId`, `includeResolved=true`, `limit` (1 to 200,
+default 50). Filters combine. Resolved Error Logs are left out unless
+`includeResolved=true`, also when filtering by code or User.
+
 Get error logs for admin dashboard. **Requires admin.**
 
 **Query Parameters:**
@@ -569,6 +597,9 @@ Get error logs for admin dashboard. **Requires admin.**
 ---
 
 ### PATCH /admin/errors/:id/resolve
+
+Resolving an already resolved Error Log changes nothing and returns it as it
+is, so the record keeps who resolved it first and when.
 
 Mark an error as resolved. **Requires admin.**
 

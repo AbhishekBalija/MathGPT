@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - **Node.js** 18+ or **Bun** 1.0+
-- **MongoDB** (local or Atlas)
+- **Postgres** (local for development, Neon for preview and production)
 - **Google Cloud Console** account (for OAuth)
 - **Gemini AI API key**
 - **VS Code** (recommended editor)
@@ -113,13 +113,11 @@ bun run dev
 | Variable               | Description                             | Required |
 | ---------------------- | --------------------------------------- | -------- |
 | `DATABASE_URL`         | Postgres connection string              | Yes      |
-| `MONGODB_URI`          | MongoDB connection string (until moved) | Yes      |
 | `JWT_SECRET`           | Secret for signing access tokens        | Yes      |
 | `JWT_REFRESH_SECRET`   | Secret for signing refresh tokens       | Yes      |
 | `GEMINI_MATH_AI_API`   | Gemini AI API key                       | Yes      |
 | `GOOGLE_CLIENT_ID`     | Google OAuth Client ID                  | Yes      |
 | `RESEND_API_KEY`       | Resend email API key                    | No       |
-| `ADMIN_PASSCODE`       | Admin secondary authentication passcode | No       |
 | `ACCESS_TOKEN_EXPIRY`  | JWT access token expiry (default: 15m)  | No       |
 | `REFRESH_TOKEN_EXPIRY` | JWT refresh token expiry (default: 7d)  | No       |
 
@@ -162,28 +160,6 @@ itself.
 
 ---
 
-## MongoDB Setup
-
-### Option A: Local MongoDB
-
-```bash
-# macOS
-brew install mongodb-community
-brew services start mongodb-community
-
-# Connection string
-MONGODB_URI=mongodb://localhost:27017/mathgpt
-```
-
-### Option B: MongoDB Atlas (Recommended)
-
-1. Create account at [MongoDB Atlas](https://www.mongodb.com/atlas)
-2. Create a free cluster
-3. Get connection string from **Connect > Drivers**
-4. Add to backend `.env`
-
----
-
 ## Gemini AI Setup
 
 1. Go to [Google AI Studio](https://aistudio.google.com/)
@@ -201,7 +177,6 @@ To enable admin features:
 
 1. Run `bun run scripts/create-admin.ts` in `backend/`. It creates an Admin,
    or makes an existing User one, in the database `DATABASE_URL` points to
-2. Optionally set `ADMIN_PASSCODE` env variable for secondary authentication
 3. Admin users can access `/admin` dashboard after login
 
 ---
@@ -215,7 +190,7 @@ bun run test
 ```
 
 ```bash
-# Backend tests: needs local Postgres running and MongoDB installed
+# Backend tests: needs local Postgres running
 cd backend
 bun run test
 ```
@@ -232,10 +207,6 @@ if a database URL points anywhere but localhost. See
 ### CORS Errors
 
 Ensure `VITE_API_URL` matches exactly what backend serves.
-
-### MongoDB Connection Failed
-
-Check MongoDB is running and URI is correct.
 
 ### Google OAuth Issues
 

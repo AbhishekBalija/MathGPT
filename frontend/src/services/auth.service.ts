@@ -8,6 +8,8 @@ export interface User {
   avatar?: string;
   isAdmin?: boolean;
   role?: "admin" | "user";
+  // Only Verified Users can solve. Missing on sessions saved before this field existed.
+  emailVerified?: boolean;
 }
 
 export interface AuthResponse {
@@ -41,22 +43,39 @@ export const authService = {
   },
 
   /**
-   * Register a new user with invite token
+   * Register a new user (open sign-up, no invite needed)
    */
   register: async (
     email: string,
     password: string,
-    name: string,
-    inviteToken?: string
+    name: string
   ): Promise<AuthResponse> => {
-    // Use invite endpoint if token provided, otherwise fall back to regular
-    const endpoint = inviteToken ? "/auth/register-invite" : "/auth/register";
-    const response = await api.post<AuthResponse>(endpoint, {
+    const response = await api.post<AuthResponse>("/auth/register", {
       email,
       password,
       name,
-      ...(inviteToken && { inviteToken }),
     });
+    return response.data;
+  },
+
+  /**
+   * Confirm the email with the 6-digit code that was emailed
+   */
+  verifyEmail: async (code: string): Promise<{ emailVerified: true }> => {
+    const response = await api.post<{ emailVerified: true }>(
+      "/auth/verify-email",
+      { code }
+    );
+    return response.data;
+  },
+
+  /**
+   * Email a new code. Limited to 1 per minute and 5 per hour (429 otherwise).
+   */
+  resendVerification: async (): Promise<{ message: string }> => {
+    const response = await api.post<{ message: string }>(
+      "/auth/resend-verification"
+    );
     return response.data;
   },
 

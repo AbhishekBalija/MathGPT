@@ -2,16 +2,16 @@
  * Safety guard for the test run.
  *
  * Tests create users, wipe tables and drop data, so they must only ever
- * touch databases on this machine. This runs before anything connects and
- * stops the whole run if either URL points somewhere else, or if the Postgres
- * database is not a dedicated test database (so a local dev database is safe).
+ * touch the database on this machine. This runs before anything connects and
+ * stops the whole run if the Postgres URL points somewhere else, or if the
+ * Postgres database is not a dedicated test database (so a local dev
+ * database is safe).
  */
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
 
 export interface TestDatabaseUrls {
   DATABASE_URL: string;
-  MONGODB_URI: string;
 }
 
 function parseUrl(name: string, url: string): URL {
@@ -49,5 +49,4 @@ function assertTestDatabaseName(url: string): void {
 export function assertLocalDatabaseUrls(urls: TestDatabaseUrls): void {
   assertLocal("DATABASE_URL", urls.DATABASE_URL);
   assertTestDatabaseName(urls.DATABASE_URL);
-  assertLocal("MONGODB_URI", urls.MONGODB_URI);
 }

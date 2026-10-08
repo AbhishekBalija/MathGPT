@@ -6,7 +6,6 @@
  * - Redis/State verification (rate limiting actually works)
  * - Admin endpoint security
  * - Daily credit limit abuse prevention
- * - Waitlist security
  * - Token rotation security
  * - Google OAuth edge cases
  *
@@ -14,11 +13,12 @@
  */
 
 import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { registerVerifiedUser, uniqueEmail } from "./support/users";
 
 const API_URL = process.env.TEST_API_URL || "http://localhost:3000";
-const TEST_USER_EMAIL = "test@test.com";
+// Each test file gets its own User, so files running in parallel never share one
+const TEST_USER_EMAIL = uniqueEmail();
 const TEST_USER_PASSWORD = "Test123!";
-const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || "test-admin-passcode";
 
 // Helper to get auth token
 async function getAuthToken(
@@ -37,25 +37,11 @@ async function getAuthToken(
   return null;
 }
 
-// Helper to create and login test user
+// Helper to create a verified test user once per file (only Verified Users can solve)
+let testUserReady: Promise<unknown> | undefined;
 async function ensureTestUser(): Promise<void> {
-  try {
-    const res = await fetch(`${API_URL}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: TEST_USER_EMAIL,
-        password: TEST_USER_PASSWORD,
-        name: "Test User",
-      }),
-    });
-    // 409 (user exists) is expected and OK, but log other errors
-    if (!res.ok && res.status !== 409) {
-      console.warn(`Test setup warning: Registration returned ${res.status}`);
-    }
-  } catch (err) {
-    console.warn("Test setup warning:", err);
-  }
+  testUserReady ??= registerVerifiedUser(TEST_USER_EMAIL);
+  await testUserReady;
 }
 
 // ============================================================================
@@ -92,20 +78,8 @@ describe("🔴 REDIS STATE - Rate Limiting Verification", () => {
     });
 
     it("should return 429 after exceeding rate limit (5 requests/minute)", async () => {
-      const freshEmail = `ratelimit-${Date.now()}@test.com`;
-      await fetch(`${API_URL}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: freshEmail,
-          password: "Test123!",
-          name: "Rate Limit Test",
-        }),
-      });
-
-      const freshToken = await getAuthToken(freshEmail, "Test123!");
-      expect(freshToken).toBeTruthy();
-      if (!freshToken) return; // TypeScript narrowing
+      // A fresh verified User, so earlier tests' solves don't count against this one
+      const { accessToken: freshToken } = await registerVerifiedUser();
 
       const responses = [];
       for (let i = 0; i < 6; i++) {
@@ -127,20 +101,8 @@ describe("🔴 REDIS STATE - Rate Limiting Verification", () => {
     });
 
     it("should include retryAfter in rate limit response", async () => {
-      const freshEmail = `retry-after-${Date.now()}@test.com`;
-      await fetch(`${API_URL}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: freshEmail,
-          password: "Test123!",
-          name: "Retry Test",
-        }),
-      });
-
-      const freshToken = await getAuthToken(freshEmail, "Test123!");
-      expect(freshToken).toBeTruthy();
-      if (!freshToken) return; // TypeScript narrowing
+      // A fresh verified User, so earlier tests' solves don't count against this one
+      const { accessToken: freshToken } = await registerVerifiedUser();
 
       let rateLimitHit = false;
       for (let i = 0; i < 6; i++) {
@@ -168,20 +130,8 @@ describe("🔴 REDIS STATE - Rate Limiting Verification", () => {
     });
 
     it("should handle concurrent requests without state corruption", async () => {
-      const freshEmail = `concurrent-${Date.now()}@test.com`;
-      await fetch(`${API_URL}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: freshEmail,
-          password: "Test123!",
-          name: "Concurrent Test",
-        }),
-      });
-
-      const freshToken = await getAuthToken(freshEmail, "Test123!");
-      expect(freshToken).toBeTruthy();
-      if (!freshToken) return; // TypeScript narrowing
+      // A fresh verified User, so earlier tests' solves don't count against this one
+      const { accessToken: freshToken } = await registerVerifiedUser();
 
       // Send 5 requests concurrently
       const promises = Array(5)
@@ -316,62 +266,13 @@ describe("💳 DAILY CREDIT LIMITS - Abuse Prevention", () => {
 
 describe("🛡️ ADMIN ENDPOINTS - Security Tests", () => {
   let regularUserToken: string;
-  let adminToken: string;
 
   beforeAll(async () => {
     await ensureTestUser();
     regularUserToken = (await getAuthToken()) || "";
-
-    const adminRes = await fetch(`${API_URL}/admin/verify-passcode`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ passcode: ADMIN_PASSCODE }),
-    });
-
-    if (adminRes.ok) {
-      const data = await adminRes.json();
-      adminToken = data.accessToken;
-    }
   });
 
-  describe("Passcode Security", () => {
-    it("should reject invalid admin passcode", async () => {
-      const res = await fetch(`${API_URL}/admin/verify-passcode`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ passcode: "wrong-passcode-123" }),
-      });
-
-      expect(res.status).toBe(401);
-    });
-
-    // Known failure, see #12: the API returns 401 for an empty passcode
-    it.skip("should reject empty passcode with 400 Bad Request", async () => {
-      const res = await fetch(`${API_URL}/admin/verify-passcode`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ passcode: "" }),
-      });
-
-      // Empty input is a validation error - should be 400, not 401
-      expect(res.status).toBe(400);
-    });
-
-    it("should reject SQL injection in passcode", async () => {
-      const injections = ["' OR '1'='1", "admin'--", "'; DROP TABLE users; --"];
-
-      for (const injection of injections) {
-        const res = await fetch(`${API_URL}/admin/verify-passcode`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ passcode: injection }),
-        });
-
-        expect(res.status).toBe(401);
-      }
-    });
-  });
-
+  // The Admin Passcode was removed (#20): Admins sign in normally
   describe("Admin Route Authorization", () => {
     it("should reject non-admin user from /admin/stats", async () => {
       const res = await fetch(`${API_URL}/admin/stats`, {
@@ -401,20 +302,12 @@ describe("🛡️ ADMIN ENDPOINTS - Security Tests", () => {
       expect([401, 403]).toContain(res.status);
     });
 
-    it("should reject non-admin user from /admin/waitlist", async () => {
-      const res = await fetch(`${API_URL}/admin/waitlist`, {
-        headers: { Authorization: `Bearer ${regularUserToken}` },
-      });
-      expect([401, 403]).toContain(res.status);
-    });
-
     it("should reject unauthenticated requests to admin routes", async () => {
       const adminRoutes = [
         "/admin/stats",
         "/admin/users",
         "/admin/analytics",
         "/admin/errors",
-        "/admin/waitlist",
       ];
 
       for (const route of adminRoutes) {
@@ -450,105 +343,6 @@ describe("🛡️ ADMIN ENDPOINTS - Security Tests", () => {
 
       // Must reject: 401 (not authenticated), 403 (not authorized), or 404 (not implemented)
       expect([401, 403, 404]).toContain(res.status);
-    });
-  });
-});
-
-// ============================================================================
-// WAITLIST SECURITY
-// ============================================================================
-
-describe("📧 WAITLIST - Security Tests", () => {
-  describe("Email Validation", () => {
-    it("should reject invalid email formats", async () => {
-      const invalidEmails = [
-        "notanemail",
-        "@nodomain.com",
-        "spaces in@email.com",
-        "missing@",
-        "double@@email.com",
-      ];
-
-      for (const email of invalidEmails) {
-        const res = await fetch(`${API_URL}/api/waitlist`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        });
-
-        expect(res.status).toBe(400);
-      }
-    });
-
-    it("should normalize email case", async () => {
-      const email = `UPPERCASE-${Date.now()}@TEST.COM`;
-
-      const res = await fetch(`${API_URL}/api/waitlist`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      expect(res.status).toBe(200);
-    });
-
-    it("should handle duplicate email gracefully", async () => {
-      const email = `duplicate-${Date.now()}@test.com`;
-
-      await fetch(`${API_URL}/api/waitlist`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      const res = await fetch(`${API_URL}/api/waitlist`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.isNew).toBe(false);
-    });
-  });
-
-  describe("Abuse Prevention", () => {
-    it("should reject XSS in email field", async () => {
-      const xssEmails = [
-        '<script>alert("xss")</script>@test.com',
-        'test@test.com"><script>alert(1)</script>',
-      ];
-
-      for (const email of xssEmails) {
-        const res = await fetch(`${API_URL}/api/waitlist`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        });
-
-        expect(res.status).toBe(400);
-      }
-    });
-
-    it("should reject SQL injection in source field", async () => {
-      const res = await fetch(`${API_URL}/api/waitlist`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: `sql-${Date.now()}@test.com`,
-          source: "'; DROP TABLE waitlist; --",
-        }),
-      });
-
-      // Should reject malicious input or sanitize it - must NOT return 500 (server error)
-      expect([200, 400]).toContain(res.status);
-
-      // If accepted (200), verify data was handled safely
-      if (res.status === 200) {
-        const data = await res.json();
-        expect(data.message).toBeDefined();
-      }
     });
   });
 });
@@ -719,8 +513,7 @@ describe("💾 SOLUTION CACHING - State Verification", () => {
   });
 
   describe("Solution Retrieval", () => {
-    // Known failure, see #12: shared-User Rate Limit, and the saved Solution ID differs (#7)
-    it.skip("should retrieve solution by ID after creation", async () => {
+    it("should retrieve solution by ID after creation", async () => {
       const solveRes = await fetch(`${API_URL}/api/solve`, {
         method: "POST",
         headers: {

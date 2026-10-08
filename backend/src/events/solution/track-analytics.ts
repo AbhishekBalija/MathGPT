@@ -1,73 +1,32 @@
 /**
- * Analytics Tracking Event Handler
- *
- * Centralized analytics handler that:
- * - Persists events to MongoDB via AnalyticsService
- * - Logs errors to admin error dashboard
- * - Logs events for observability
+ * Records an Analytics Event (e.g. "solution_saved") for admin statistics.
+ * Runs in the background; a failure is logged and never breaks a request.
  */
 
-import { z } from "zod";
 import { logger } from "../../lib/logger";
-import { AnalyticsService } from "../../services/analytics/analytics.service";
+import { analyticsRepository } from "../../modules/analytics/analytics.repository";
 
-const AnalyticsEventSchema = z.object({
-  event: z.string(),
-  properties: z
-    .object({
-      problemType: z.string().optional(),
-      stepsCount: z.number().optional(),
-      processingTimeMs: z.number().optional(),
-      userId: z.string().optional(),
-      errorCode: z.string().optional(),
-      errorMessage: z.string().optional(),
-      problem: z.string().optional(), // For error tracking
-    })
-    .optional(),
-  timestamp: z.string().optional(),
-});
+export interface AnalyticsEventData {
+  event: string;
+  properties?: {
+    problemType?: string;
+    stepsCount?: number;
+    processingTimeMs?: number;
+    userId?: string;
+  };
+  timestamp?: string;
+}
 
-export type AnalyticsEvent = z.infer<typeof AnalyticsEventSchema>;
-
-export async function trackAnalytics(data: AnalyticsEvent): Promise<void> {
-  const { event, properties, timestamp } = data;
-  const eventTimestamp = timestamp || new Date().toISOString();
-
-  logger.info(`[ANALYTICS] ${event}`, {
-    event,
-    properties,
-    timestamp: eventTimestamp,
-  });
+export async function trackAnalytics(data: AnalyticsEventData): Promise<void> {
+  const { event, properties = {} } = data;
+  // The User goes in the user_id column only, so deleting the User clears it
+  const { userId, ...details } = properties;
 
   try {
-    // Special handling for error events - store in error_logs for admin
-    if (
-      event === "solve_error" &&
-      properties?.errorCode &&
-      properties?.errorMessage
-    ) {
-      await AnalyticsService.trackError(
-        properties.errorCode,
-        properties.errorMessage,
-        properties.problem || "Unknown problem",
-        properties.userId,
-        properties.processingTimeMs
-      );
-      logger.info("Error logged to admin dashboard", {
-        errorCode: properties.errorCode,
-        userId: properties.userId,
-      });
-    } else {
-      // Regular analytics event
-      await AnalyticsService.track(event, properties || {}, properties?.userId);
-    }
-
-    logger.info(`[ANALYTICS] Event persisted: ${event}`);
+    await analyticsRepository.recordEvent(event, details, userId);
   } catch (error) {
-    // Don't let analytics failures break the flow
-    const errorMsg = error instanceof Error ? error.message : "Unknown error";
-    logger.error(`[ANALYTICS] Failed to persist event: ${event}`, {
-      error: errorMsg,
+    logger.error(`[ANALYTICS] Failed to record event: ${event}`, {
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 }

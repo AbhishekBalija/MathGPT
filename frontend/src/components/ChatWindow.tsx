@@ -1,16 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useChatStore } from "../stores/chatStore";
 import { solveProblem } from "../services/solve.service";
+import { useAuthStore } from "../stores/authStore";
 import katex from "katex";
 import { sanitizeHtml, escapeHtml } from "../utils/sanitize";
 import { getUserFriendlyError } from "../utils/errorMessages";
 import api from "../services/api";
 import MathSymbolToolbar from "./MathSymbolToolbar";
 import MathInputPreview from "./MathInputPreview";
-import {
-  useAutocomplete,
-  AutocompleteDropdown,
-} from "../hooks/useAutocomplete";
+import { useAutocomplete } from "../hooks/useAutocomplete";
+import { AutocompleteDropdown } from "./AutocompleteDropdown";
 
 // Helper to render LaTeX with XSS protection
 const renderLatex = (text: string) => {
@@ -28,11 +28,13 @@ const renderLatex = (text: string) => {
 };
 
 const ChatWindow = () => {
+  const navigate = useNavigate();
+  const setEmailVerified = useAuthStore((state) => state.setEmailVerified);
+  const emailVerified = useAuthStore((state) => state.user?.emailVerified);
   const [input, setInput] = useState("");
   const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
   const [toolbarCollapsed, setToolbarCollapsed] = useState(true);
   const [mobileSymbolsOpen, setMobileSymbolsOpen] = useState(false);
-  const [_cursorPosition, setCursorPosition] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const {
@@ -68,7 +70,6 @@ const ChatWindow = () => {
         const newCursorPos = start + text.length;
         textarea.setSelectionRange(newCursorPos, newCursorPos);
         textarea.focus();
-        setCursorPosition(newCursorPos);
       }, 0);
     },
     [input]
@@ -92,7 +93,6 @@ const ChatWindow = () => {
         const newCursorPos = beforeTrigger.length + text.length;
         textarea.setSelectionRange(newCursorPos, newCursorPos);
         textarea.focus();
-        setCursorPosition(newCursorPos);
       }, 0);
     },
     [input]
@@ -113,7 +113,6 @@ const ChatWindow = () => {
     const newValue = e.target.value;
     const newCursorPos = e.target.selectionStart;
     setInput(newValue);
-    setCursorPosition(newCursorPos);
     updateQuery(newValue, newCursorPos);
   };
 
@@ -147,6 +146,12 @@ const ChatWindow = () => {
     const textToSend = textOverride || input;
     if (!textToSend.trim()) return;
 
+    // Known to be unverified: go verify first, keeping the typed problem in the box
+    if (emailVerified === false) {
+      navigate("/verify-email", { state: { sendCode: true } });
+      return;
+    }
+
     let chatId = activeChatId;
     if (!chatId) {
       chatId = createNewChat();
@@ -163,6 +168,13 @@ const ChatWindow = () => {
         problem: textToSend,
         chatId: chatId,
       });
+
+      if (result.code === "EMAIL_NOT_VERIFIED") {
+        // The server is the source of truth; send the User to verify first
+        setEmailVerified(false);
+        navigate("/verify-email", { state: { sendCode: true } });
+        return;
+      }
 
       if (result.success && result.solution) {
         addMessage(chatId!, {
@@ -630,9 +642,6 @@ const ChatWindow = () => {
                     value={input}
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
-                    onClick={(e) =>
-                      setCursorPosition(e.currentTarget.selectionStart)
-                    }
                     placeholder="Type a math problem..."
                     disabled={inputDisabled}
                     maxLength={2000}

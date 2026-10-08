@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import { z } from "zod";
+import { inTransaction } from "../../db/transaction";
 import { requireEnv } from "../../lib/env";
 import {
   EmailTakenError,
@@ -9,6 +10,7 @@ import {
   userRepository,
   type User,
 } from "../users/user.repository";
+import { EmailVerificationService } from "./email-verification.service";
 
 // No fallbacks: a default secret in the source code would let anyone forge tokens
 const JWT_SECRET = requireEnv("JWT_SECRET");
@@ -65,25 +67,24 @@ function readUserId(token: string, secret: string): string | null {
   }
 }
 
+// One answer for every failed login, so it never reveals whether an email
+// is registered or signs in with Google (#17)
+const LOGIN_FAILED = "Invalid email or password.";
+
+// Compared against when there is no real hash, so a missing account takes
+// about as long to reject as a wrong password does
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync("not-a-real-password", 10);
+
 export const AuthService = {
   async login(email: string, password: string) {
     const user = await userRepository.findByEmail(email);
 
-    if (!user) {
-      return { success: false as const, error: "User not found" };
-    }
+    // Users who only signed up with Google have no password hash
+    const passwordHash = user?.passwordHash ?? DUMMY_PASSWORD_HASH;
+    const isPasswordValid = await bcrypt.compare(password, passwordHash);
 
-    // Users who only signed up with Google have no password
-    if (!user.passwordHash) {
-      return {
-        success: false as const,
-        error: "This account uses Google Sign-In. Please use Google to login.",
-      };
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isPasswordValid) {
-      return { success: false as const, error: "Invalid password" };
+    if (!user || !user.passwordHash || !isPasswordValid) {
+      return { success: false as const, error: LOGIN_FAILED };
     }
 
     return {
@@ -104,13 +105,16 @@ export const AuthService = {
 
     const passwordHash = await bcrypt.hash(data.password, 10);
 
-    let user: User;
+    // The User and their first Verification Code are created together
+    let created: { user: User; verificationCode: string };
     try {
-      user = await userRepository.create({
-        email: data.email,
-        passwordHash,
-        name: data.name,
-        provider: "email",
+      created = await inTransaction(async (tx) => {
+        const user = await userRepository.create(
+          { email: data.email, passwordHash, name: data.name, provider: "email" },
+          tx
+        );
+        const verificationCode = await EmailVerificationService.issueCode(user.id, tx);
+        return { user, verificationCode };
       });
     } catch (error) {
       if (error instanceof EmailTakenError) {
@@ -121,8 +125,9 @@ export const AuthService = {
 
     return {
       success: true as const,
-      user: toPublicUser(user),
-      ...createTokens(user.id),
+      user: toPublicUser(created.user),
+      verificationCode: created.verificationCode,
+      ...createTokens(created.user.id),
     };
   },
 

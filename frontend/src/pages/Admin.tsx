@@ -1,23 +1,7 @@
 import { Outlet } from "react-router-dom";
-import { useAdminStore } from "../stores/adminStore";
-import AdminPasscodeVerify from "./Admin/AdminPasscodeVerify";
 
-const Admin = () => {
-  const { isAdminVerified } = useAdminStore();
-
-  // Show passcode verification if not verified
-  if (!isAdminVerified) {
-    return (
-      <AdminPasscodeVerify
-        onVerified={() => {
-          // The store already updates isAdminVerified, component will re-render
-        }}
-      />
-    );
-  }
-
-  // Show admin dashboard via nested routes
-  return <Outlet />;
-};
+// The admin dashboard. ProtectedRoute (adminOnly) has already checked that the
+// signed-in User is an Admin; there is no second passcode (#20).
+const Admin = () => <Outlet />;
 
 export default Admin;

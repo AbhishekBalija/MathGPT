@@ -1,11 +1,8 @@
-import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { useAuthStore } from "../stores/authStore";
 import { useState, type FormEvent } from "react";
 import axios from "axios";
-
-// Set to true to enable waitlist-only mode (redirects to landing)
-const WAITLIST_MODE_ENABLED = true;
 
 const Login = () => {
   const navigate = useNavigate();
@@ -14,12 +11,6 @@ const Login = () => {
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  // In waitlist mode, redirect to landing page
-  // (Existing registered users can be allowed by disabling this flag)
-  if (WAITLIST_MODE_ENABLED) {
-    return <Navigate to="/" replace />;
-  }
 
   const getRedirectPath = (isAdmin: boolean | undefined) => {
     // If there's a saved location, go there (unless it's an admin trying to access /app which is fine)
@@ -70,6 +61,12 @@ const Login = () => {
       await loginWithEmail(email, password);
       // Get user from store after login
       const currentUser = useAuthStore.getState().user;
+      // Email sign-ups must confirm their address before solving; their old
+      // code has likely expired, so the verify page sends a fresh one
+      if (currentUser?.emailVerified === false) {
+        navigate("/verify-email", { replace: true, state: { sendCode: true } });
+        return;
+      }
       const redirectPath = getRedirectPath(currentUser?.isAdmin);
       navigate(redirectPath, { replace: true });
     } catch (err) {

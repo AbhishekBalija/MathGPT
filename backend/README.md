@@ -32,13 +32,16 @@ curl http://localhost:3000/health
 
 ```
 src/
-  app.ts            builds the Express app (CORS, JSON, routes, error handling)
-  server.ts         local entry point, calls listen()
+  create-app.ts     builds the Express app (CORS, JSON, routes, error handling)
+  app.ts            the deployed app with real services; Vercel serves this
+  server.ts         local entry point: imports app.ts and calls listen()
   routes/           one file per endpoint, all registered in routes/index.ts
   events/           work that runs after a request (emails, analytics, saving)
   db/               Postgres: Drizzle schema and the one shared connection pool
   modules/          feature modules (ADR-0004): auth/ (service, requireUser and
-                    requireAdmin middleware), users/ (repository), ai/ and
+                    requireAdmin / requireVerifiedEmail middleware, email
+                    verification), users/ (repository), rate-limits/ (Postgres
+                    fixed-window counters), ai/ and
                     email/ (solver and email sender interfaces); the rest fill in later
   lib/              small shared helpers (http adapter, logger, env, rate limit)
   middlewares/      JWT auth checks
@@ -88,5 +91,5 @@ on each run, so a broken migration fails the test run.
 ## Migration status
 
 1. Motia to Express: done
-2. MongoDB to Postgres (Drizzle + Neon): in progress. Users and auth are on Postgres; Solutions, analytics and the waitlist are still on MongoDB
+2. Postgres (Drizzle + Neon): done. All data lives in Postgres; the waitlist is removed (open sign-up)
 3. Deploy to Vercel: after Phase 2

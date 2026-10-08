@@ -43,19 +43,6 @@ jobs:
         with:
           bun-version: 1.3.14
 
-      # The test run starts its own throwaway mongod, so only the binary is needed.
-      # Remove this step once MongoDB is gone (#10).
-      - name: Install MongoDB server
-        working-directory: .
-        run: |
-          curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc \
-            | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-8.0.gpg
-          echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse" \
-            | sudo tee /etc/apt/sources.list.d/mongodb-org-8.0.list
-          sudo apt-get update
-          sudo apt-get install -y mongodb-org-server
-          mongod --version
-
       - run: bun install --frozen-lockfile
 
       # Not blocking yet: existing errors are tracked in #14
@@ -87,10 +74,8 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      # Not blocking yet: existing errors are tracked in #13
       - name: Lint
         run: bun run lint
-        continue-on-error: true
 
       - name: Typecheck
         run: bun run typecheck

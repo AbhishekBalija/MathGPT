@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { vi } from "vitest";
 import { apiUrl } from "./test-app";
 
 export const TEST_PASSWORD = "Test123!";
@@ -59,4 +60,38 @@ export function authedFetch(
     },
     body: init.body === undefined ? undefined : JSON.stringify(init.body),
   });
+}
+
+/** The newest 6-digit Verification Code emailed to an address, like a User reading their inbox. */
+export async function latestVerificationCode(email: string): Promise<string> {
+  const { fakeEmailSender } = await import("./test-app");
+  let code: string | undefined;
+  await vi.waitFor(() => {
+    const emails = fakeEmailSender.emailsTo(email);
+    const matches = emails
+      .map((sent) => sent.html.match(/data-verification-code="(\d{6})"/)?.[1])
+      .filter((found): found is string => found !== undefined);
+    code = matches.at(-1);
+    if (!code) {
+      throw new Error(`No Verification Code emailed to ${email} yet`);
+    }
+  });
+  return code ?? "";
+}
+
+/** Signs up and verifies the email through the API, ready to solve. */
+export async function registerVerifiedUser(email = uniqueEmail()): Promise<{
+  email: string;
+  accessToken: string;
+}> {
+  const user = await registerUser(email);
+  const code = await latestVerificationCode(user.email);
+  const res = await authedFetch(user.accessToken, "/auth/verify-email", {
+    method: "POST",
+    body: { code },
+  });
+  if (res.status !== 200) {
+    throw new Error(`Verify failed with ${res.status}: ${await res.text()}`);
+  }
+  return user;
 }

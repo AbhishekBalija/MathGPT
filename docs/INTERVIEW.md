@@ -63,19 +63,32 @@ fast at startup (`lib/env.ts`) makes a missing secret impossible to miss.
 
 ### Intermediate: How is rate limiting implemented?
 
-A sliding window: we keep timestamps of each user's recent solve requests and
-reject the request if there are already 5 in the last 60 seconds, returning 429
-with `retryAfter`. It lives in memory today; on serverless each instance has
-its own memory, so it moves to Postgres in the database phase.
+A fixed window per key (`solve:user:<id>`, `login:ip:<ip>`,
+`register:ip:<ip>`) stored in a Postgres `rate_limits` table, checked and
+incremented in one atomic upsert. It started as an in-memory sliding window,
+but on serverless every instance has its own memory, so a client could get
+around it by hitting different instances. A shared table holds across all of
+them. Over the limit: 429 with `code: "RATE_LIMITED"` and `retryAfter`.
+
+### Intermediate: How do you get the real client IP behind a proxy, and why not just read X-Forwarded-For?
+
+Clients can send any `X-Forwarded-For` they like. Vercel's proxy overwrites
+that header with the address it actually saw, so behind Vercel the header is
+trustworthy. Express's `trust proxy` set to 1 means "trust exactly one proxy
+hop", and `req.ip` then returns the address from that hop. The catch: this is
+only safe when a proxy really sits in front. If the server were reachable
+directly, a client could send a new fake address with every request and never
+hit a per-IP limit. So "always deploy behind the proxy" is part of the design,
+and is written down next to the middleware.
 
 ### Intermediate: How do you test a backend safely?
 
 The tests are black-box HTTP tests against the real Express app, started
 in-process on a random port. They use a throwaway local Postgres database
-(dropped and re-migrated on every run) and a throwaway `mongod` in a temp
-folder. Before anything connects, a guard checks that both database URLs
-point to localhost and stops the run otherwise. Every secret is a dummy, and
-the real `.env` is never loaded.
+(dropped and re-migrated on every run). Before anything connects, a guard
+checks that the database URL points to localhost and the database name ends
+in `_test`, and stops the run otherwise. Every secret is a dummy, and the
+real `.env` is never loaded.
 
 ### Intermediate: What do you fake in tests, and why only that?
 
@@ -152,6 +165,33 @@ would surface as a 500. Old tokens also carry 24-character MongoDB ids. The
 repository checks the id with `z.uuid()` first and treats anything else as
 "not found", so bad ids become a clean 401 or 404 and never reach the
 database.
+
+### Intermediate: Why store a 6-digit code as an HMAC instead of a plain hash or bcrypt?
+
+There are only a million possible codes. With a plain SHA-256, anyone holding
+a leaked table can try all of them in under a second and find each code.
+bcrypt slows that down but does not stop it. An HMAC keyed with a server
+secret (which is not in the database) makes the stored value useless on its
+own, and binding it to the User id stops one User's hash from matching
+another's. The comparison uses `timingSafeEqual`, so response time leaks
+nothing.
+
+### Advanced: How do you stop parallel guesses from going past "5 attempts"?
+
+If the code is read, checked, and only then counted, 10 parallel requests can
+all read `attempts = 0` and all get a guess. Instead each attempt is claimed
+first with one statement, `UPDATE ... SET attempts = attempts + 1 WHERE
+attempts < 5 RETURNING ...`. Postgres runs these one at a time on the row, so
+only 5 ever succeed; the rest get no row back. A test fires 10 guesses at once
+and then checks that even the right code is refused.
+
+### Intermediate: How does a fixed-window rate limit work in one SQL statement?
+
+`INSERT ... ON CONFLICT (key) DO UPDATE` either creates the counter or, in
+the same statement, starts a new window if the old one has passed or adds 1.
+`RETURNING count` tells you whether this request is over the limit. Because it
+is one atomic statement in a shared database, it holds across every serverless
+instance, which an in-memory counter cannot.
 
 ## Dependencies
 

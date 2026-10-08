@@ -31,7 +31,7 @@ graph TB
     end
 
     subgraph "External Services"
-        MONGODB[("🍃 MongoDB Atlas")]
+        POSTGRES[("🐘 Postgres")]
         GEMINI["✨ Gemini AI"]
         RESEND["📬 Resend"]
         GOOGLE["🔑 Google OAuth"]
@@ -51,15 +51,15 @@ graph TB
     API --> EMAIL
     API --> ANALYTICS
 
-    AUTH --> MONGODB
+    AUTH --> POSTGRES
     AUTH --> GOOGLE
-    SOLUTION --> MONGODB
+    SOLUTION --> POSTGRES
     AI --> GEMINI
     EMAIL --> RESEND
-    ANALYTICS --> MONGODB
+    ANALYTICS --> POSTGRES
 
     style REACT fill:#61dafb,color:#000
-    style MONGODB fill:#00684a,color:#fff
+    style POSTGRES fill:#336791,color:#fff
     style GEMINI fill:#8e44ad,color:#fff
     style API fill:#ff6b6b,color:#fff
     style ANALYTICS fill:#f39c12,color:#fff
@@ -76,7 +76,7 @@ sequenceDiagram
     participant A as 🔌 API
     participant M as 🔐 Auth
     participant AI as 🤖 Gemini AI
-    participant DB as 🍃 MongoDB
+    participant DB as 🐘 Postgres
 
     U->>F: Enter math problem
     F->>A: POST /api/solve
@@ -100,7 +100,7 @@ sequenceDiagram
     participant F as ⚛️ Frontend
     participant A as 🔌 API
     participant G as 🔑 Google
-    participant DB as 🍃 MongoDB
+    participant DB as 🐘 Postgres
 
     rect rgb(240, 248, 255)
         Note over U,DB: Email/Password Login
@@ -286,7 +286,8 @@ graph TB
 | --------------------------------------------------------------------------------------- | -------------- |
 | ![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)  | HTTP API       |
 | ![Bun](https://img.shields.io/badge/Bun-1.3-000000?logo=bun&logoColor=white)            | Runtime (dev)  |
-| ![MongoDB](https://img.shields.io/badge/MongoDB-7-47A248?logo=mongodb&logoColor=white)  | Database       |
+| ![Postgres](https://img.shields.io/badge/Postgres-17-336791?logo=postgresql&logoColor=white) | Database       |
+| ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black) | ORM            |
 | ![JWT](https://img.shields.io/badge/JWT-Auth-000000?logo=jsonwebtokens&logoColor=white) | Authentication |
 
 ### External
@@ -301,9 +302,7 @@ graph TB
 
 ## Data Models
 
-Users live in Postgres. Solutions, Analytics Events and Error Logs are still
-in MongoDB and move in #7 and #9; until then they point at Users by id only,
-without a database-enforced foreign key.
+All data lives in Postgres.
 
 ```mermaid
 erDiagram
@@ -325,35 +324,40 @@ erDiagram
     }
 
     SOLUTION {
-        ObjectId _id PK
-        string userId FK "a Postgres User id"
-        string problem
-        string problemType
-        array steps
-        string finalAnswer
-        string summary
-        number processingTimeMs
-        Date createdAt
+        uuid id PK "the solver's id"
+        uuid user_id FK "cascade delete"
+        text chat_id
+        text problem
+        text problem_type "text, not an enum"
+        jsonb steps
+        text final_answer
+        text summary
+        int processing_time_ms
+        int input_tokens
+        int output_tokens
+        int total_tokens
+        timestamptz created_at
     }
 
     ANALYTICS_EVENT {
-        ObjectId _id PK
-        string eventName
-        object properties
-        string userId FK
-        Date createdAt
+        uuid id PK
+        text event_name
+        uuid user_id FK "set null on delete"
+        jsonb properties
+        timestamptz created_at
     }
 
     ERROR_LOG {
-        ObjectId _id PK
-        string errorCode
-        string errorMessage
-        string problemText
-        string userId FK
+        uuid id PK
+        text error_code
+        text error_message
+        text problem_text
+        uuid user_id FK "set null on delete"
+        int processing_time_ms "nullable"
         boolean resolved
-        string resolvedBy FK
-        Date resolvedAt
-        Date createdAt
+        uuid resolved_by FK "set null on delete"
+        timestamptz resolved_at "nullable"
+        timestamptz created_at
     }
 
     USER ||--o{ SOLUTION : "has many"
@@ -382,7 +386,6 @@ graph LR
         ACCESS["15m Access Token"]
         REFRESH["7d Refresh Token"]
         BCRYPT["🔒 bcrypt Hash"]
-        PASSCODE["🔐 Admin Passcode"]
     end
 
     TOKEN --> VERIFY
@@ -393,7 +396,6 @@ graph LR
     ACCESS -.->|Short-lived| TOKEN
     REFRESH -.->|Long-lived| TOKEN
     BCRYPT -.->|Passwords| CHECK
-    PASSCODE -.->|Admin Verify| ADMIN_CHECK
 
     style TOKEN fill:#f39c12,color:#000
     style BCRYPT fill:#27ae60,color:#fff
@@ -422,7 +424,7 @@ graph TB
     end
 
     subgraph "Data Layer"
-        ATLAS["🍃 MongoDB Atlas"]
+        POSTGRES_DB["🐘 Postgres (Neon in preview and production)"]
     end
 
     DOMAIN --> CDN
@@ -430,11 +432,11 @@ graph TB
     SSR -->|API Calls| LB
     LB --> APP1
     LB --> APP2
-    APP1 --> ATLAS
-    APP2 --> ATLAS
+    APP1 --> POSTGRES_DB
+    APP2 --> POSTGRES_DB
 
     style CDN fill:#000,color:#fff
-    style ATLAS fill:#00684a,color:#fff
+    style POSTGRES_DB fill:#336791,color:#fff
 ```
 
 ---

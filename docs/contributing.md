@@ -115,7 +115,7 @@ cd backend
 bun run test
 ```
 
-Needs a local Postgres running and MongoDB installed. See
+Needs a local Postgres running. See
 `backend/tests/README.md`.
 
 ---

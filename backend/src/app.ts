@@ -1,95 +1,49 @@
 /**
- * Builds the Express app without starting a server.
+ * The deployed app: our API with its real services (Gemini, Resend).
  *
- * `server.ts` calls `listen()` for local development. On Vercel (Phase 3)
- * the platform imports this app directly, so it must not listen itself.
+ * Vercel looks for a file named app, index or server that imports express
+ * and default-exports the app; this is that file. It never listens itself.
+ * Local development listens in `server.ts`.
  */
 
-import cors from "cors";
-import express, {
-  type ErrorRequestHandler,
-  type RequestHandler,
-} from "express";
+import express from "express";
+import { createApp } from "./create-app";
 import { logger } from "./lib/logger";
-import type { MathSolver } from "./modules/ai/math-solver";
-import type { EmailSender } from "./modules/email/email-sender";
-import { createRouter } from "./routes";
+import { requireEnv } from "./lib/env";
+import { geminiMathSolver } from "./modules/ai/math-solver";
+import {
+  createConsoleEmailSender,
+  createResendEmailSender,
+  type EmailSender,
+} from "./modules/email/email-sender";
 
-const DEFAULT_ALLOWED_ORIGINS = [
-  "http://localhost:5173",
-  "https://math-gpt-beta.vercel.app",
-  "https://neomath.vercel.app",
-];
-
-// Comma-separated list in CORS_ORIGINS overrides the defaults, e.g. for preview URLs
-function getAllowedOrigins(): string[] {
-  const fromEnv = process.env.CORS_ORIGINS;
-  if (!fromEnv) {
-    return DEFAULT_ALLOWED_ORIGINS;
-  }
-  return fromEnv
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean);
-}
-
-// Unknown paths get the same JSON error shape as every other response
-const notFound: RequestHandler = (_req, res) => {
-  res.status(404).json({ error: "Not found" });
-};
-
-// Last stop for anything a route did not handle. Never leaks stack traces.
-const handleError: ErrorRequestHandler = (error, _req, res, _next) => {
-  const isBadJson =
-    error instanceof SyntaxError &&
-    "type" in error &&
-    error.type === "entity.parse.failed";
-
-  if (isBadJson) {
-    res.status(400).json({ error: "Invalid JSON body" });
-    return;
+// EMAIL_TRANSPORT=console prints emails to this log instead of sending them
+function chooseEmailSender(): EmailSender {
+  if (process.env.EMAIL_TRANSPORT === "console") {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("EMAIL_TRANSPORT=console is not allowed in production");
+    }
+    logger.warn("Emails are printed to the console, not sent");
+    return createConsoleEmailSender();
   }
 
-  logger.error("Unhandled error", {
-    error: error instanceof Error ? error.message : "Unknown error",
-  });
-  res.status(500).json({ error: "Internal server error" });
-};
-
-/**
- * The outside services the app talks to. Passed in rather than imported so
- * tests can run the real app with a fake AI solver and a fake email outbox.
- */
-export interface AppServices {
-  solver: MathSolver;
-  emailSender: EmailSender;
-}
-
-export function createApp(services: AppServices) {
-  const app = express();
-
-  // Vercel sits in front of the app as a proxy
-  app.set("trust proxy", 1);
-  app.disable("x-powered-by");
-
-  app.use(
-    cors({
-      origin: getAllowedOrigins(),
-      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-      allowedHeaders: [
-        "Content-Type",
-        "Authorization",
-        "X-Requested-With",
-        "Accept",
-      ],
-    })
+  return createResendEmailSender(
+    requireEnv("RESEND_API"),
+    process.env.FROM_EMAIL || "NeoMath <onboarding@resend.dev>"
   );
-  app.use(express.json({ limit: "100kb" }));
-
-  app.use(createRouter(services));
-
-  app.use(notFound);
-  app.use(handleError);
-
-  return app;
 }
+
+const api = createApp({
+  solver: geminiMathSolver,
+  emailSender: chooseEmailSender(),
+});
+
+// A thin outer app so this file is a real Express entry. Vercel sits in front
+// as a proxy, so client IPs come from X-Forwarded-For (see create-app.ts).
+const app = express();
+app.set("trust proxy", 1);
+app.disable("x-powered-by");
+app.use(api);
+
+export default app;
+

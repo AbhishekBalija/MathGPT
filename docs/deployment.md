@@ -1,234 +1,147 @@
-# NeoMath Deployment Guide
+# Deployment Guide
 
-> **Outdated backend section.** The backend no longer uses Motia (replaced by
-> Express in October 2026). The Motia Cloud steps below no longer apply.
-> This guide will be rewritten for Vercel + Neon in Phase 3 of the migration.
+How NeoMath is deployed: two Vercel projects from this repo plus a Neon
+Postgres database.
 
 ## Overview
 
-| Component | Platform      | URL                        |
-| --------- | ------------- | -------------------------- |
-| Frontend  | Vercel        | `math-gpt-beta.vercel.app` |
-| Backend   | Motia Cloud   | `your-app.motia.cloud`     |
-| Database  | MongoDB Atlas | Managed                    |
+```mermaid
+flowchart LR
+    U[Browser] --> F["Frontend<br/>Vercel project math-gpt<br/>root: frontend/"]
+    F -->|"VITE_API_URL_PROD"| B["Backend<br/>Vercel project neomath-api<br/>root: backend/, Bun runtime, sin1"]
+    B -->|"DATABASE_URL (pooled)"| N[("Neon Postgres<br/>Singapore")]
+    B --> G[Gemini / OpenRouter]
+    B --> R[Resend email]
+```
+
+| Component | Platform            | Notes                                         |
+| --------- | ------------------- | --------------------------------------------- |
+| Frontend  | Vercel (`math-gpt`) | Vite, root directory `frontend`               |
+| Backend   | Vercel (`neomath-api`) | Express on the Bun runtime, region `sin1`  |
+| Database  | Neon                | Postgres in Singapore, next to the functions  |
+
+Both Vercel projects deploy `main` to production and every PR to a preview.
 
 ---
 
-## Frontend Deployment (Vercel)
+## Backend on Vercel
 
-### 1. Connect Repository
+The backend is an Express app. Vercel serves `backend/src/app.ts`: it imports
+`express` and default-exports the app, which is what Vercel's Express
+detection needs. `src/server.ts` only listens, for local development.
+`backend/vercel.json` selects the Bun runtime and the Singapore region.
 
-1. Go to [vercel.com](https://vercel.com)
-2. Click **Add New > Project**
-3. Import your GitHub repository
-4. Select `frontend` as root directory
+### Project settings
 
-### 2. Configure Build Settings
+- **Root Directory:** `backend`
+- **Framework Preset:** Express (detected)
+- Install and build commands: defaults (Bun is detected from `bun.lock`)
 
-- **Framework Preset**: Vite
-- **Build Command**: `bun run build` or `npm run build`
-- **Output Directory**: `dist`
-- **Install Command**: `bun install` or `npm install`
+### Environment variables
 
-### 3. Environment Variables
+| Variable               | Value                                                                 |
+| ---------------------- | --------------------------------------------------------------------- |
+| `DATABASE_URL`         | Neon **pooled** connection string (set by the Neon integration)       |
+| `JWT_SECRET`           | Random, `openssl rand -base64 48`                                     |
+| `JWT_REFRESH_SECRET`   | Random, different from `JWT_SECRET`                                   |
+| `ACCESS_TOKEN_EXPIRY`  | `15m`                                                                 |
+| `REFRESH_TOKEN_EXPIRY` | `7d`                                                                  |
+| `GOOGLE_CLIENT_ID`     | Google OAuth client id (same as the frontend's)                       |
+| `GEMINI_MATH_AI_API`   | Gemini API key                                                        |
+| `OPEN_ROUTER_API_KEY`  | OpenRouter key (backup models)                                        |
+| `USE_MULTI_MODEL`      | `false` or `true`                                                     |
+| `RESEND_API`           | Resend API key                                                        |
+| `FROM_EMAIL`           | Verified sender, e.g. `NeoMath <hello@your-domain>`                   |
+| `APP_URL`              | Frontend URL used in email links                                      |
+| `CORS_ORIGINS`         | Comma-separated frontend URLs allowed to call the API                 |
+| `NODE_ENV`             | `production`                                                          |
 
-Add in Vercel dashboard under **Settings > Environment Variables**:
+Never set `EMAIL_TRANSPORT=console` here; the server refuses to start with it
+in production.
 
-| Variable                | Value                              |
-| ----------------------- | ---------------------------------- |
-| `VITE_API_URL`          | `https://your-backend.motia.cloud` |
-| `VITE_GOOGLE_CLIENT_ID` | Your Google Client ID              |
+### Must sit behind a proxy
 
-### 4. Deploy
-
-Click **Deploy**. Vercel auto-deploys on each push to main.
+Per-IP Rate Limits (sign-up, login, Google sign-in) read the client address
+from `X-Forwarded-For`, because the app trusts one proxy hop
+(`app.set("trust proxy", 1)`). Vercel overwrites that header with the real
+client address, so this is safe there. Never expose the API directly (a bare
+VPS port, a container without a proxy): clients could then send a fake
+address with each request and never hit a limit.
 
 ---
 
-## Backend Deployment (Motia Cloud)
+## Database on Neon
 
-### 1. Install Motia CLI
+- One Neon project, region **AWS Asia Pacific (Singapore)**, to match the
+  `sin1` functions.
+- Connect it with Neon's **Vercel integration**. It sets `DATABASE_URL` on
+  the backend project and gives each preview deployment its own database
+  branch.
+- Use the **pooled** connection string (host contains `-pooler`).
 
-```bash
-npm install -g motia
-```
+### Migrations
 
-### 2. Login
+Schema changes are committed SQL files in `backend/drizzle/` (ADR-0002).
+They are never applied automatically on deploy:
 
-```bash
-motia login
-```
+1. Read the new SQL files in the PR.
+2. Run them against the target database on purpose:
 
-### 3. Set Environment Variables
+   ```bash
+   cd backend
+   DATABASE_URL="<neon connection string>" bun run db:migrate
+   ```
 
-```bash
-motia env set MONGODB_URI="your_mongodb_atlas_uri"
-motia env set JWT_SECRET="your_production_secret"
-motia env set JWT_REFRESH_SECRET="your_refresh_secret"
-motia env set GEMINI_MATH_AI_API="your_gemini_key"
-motia env set GOOGLE_CLIENT_ID="your_google_client_id"
-motia env set VITE_GOOGLE_CLIENT_ID="your_google_client_id"
-motia env set RESEND_API_KEY="your_resend_key"
-motia env set ADMIN_PASSCODE="your_admin_passcode"
-```
+3. Deploy the code that needs them.
 
-### 4. Deploy
+---
+
+## Frontend on Vercel
+
+- **Root Directory:** `frontend`, **Framework Preset:** Vite
+- `VITE_API_URL_PROD`: the backend's production URL
+- `VITE_GOOGLE_CLIENT_ID`: the Google OAuth client id
+
+## Google OAuth
+
+In Google Cloud Console, add every frontend URL (production and any custom
+domain) to **Authorized JavaScript origins** for the OAuth client.
+
+## Admins
+
+Admins sign in normally. Create the first one with:
 
 ```bash
 cd backend
-motia deploy
+DATABASE_URL="<neon connection string>" bun run scripts/create-admin.ts
 ```
 
-### 5. Get Deployment URL
-
-After deployment, Motia provides a URL like:
-
-```
-https://your-app-name.motia.cloud
-```
-
-Update frontend's `VITE_API_URL` with this URL.
-
----
-
-## CORS Configuration
-
-Update `motia.config.ts` with your production frontend URL:
-
-```typescript
-const allowedOrigins = [
-  "http://localhost:5173", // Local dev
-  "https://math-gpt-beta.vercel.app", // Production
-];
-```
-
----
-
-## MongoDB Atlas Setup
-
-### 1. Create Cluster
-
-1. Go to [MongoDB Atlas](https://www.mongodb.com/atlas)
-2. Create free M0 cluster
-
-### 2. Configure Network Access
-
-Add IP addresses:
-
-- `0.0.0.0/0` (allow all - for Motia Cloud)
-- Or specific Motia Cloud IPs if available
-
-### 3. Create Database User
-
-1. Go to **Database Access**
-2. Add new user with read/write permissions
-
-### 4. Get Connection String
-
-1. Click **Connect > Drivers**
-2. Copy connection string
-3. Replace `<password>` with your password
-
----
-
-## Google OAuth for Production
-
-### 1. Add Production URLs
-
-In Google Cloud Console > OAuth 2.0 Client:
-
-**Authorized JavaScript origins:**
-
-```
-https://math-gpt-beta.vercel.app
-```
-
-**Authorized redirect URIs:**
-
-```
-https://math-gpt-beta.vercel.app
-```
-
----
-
-## Admin Configuration
-
-### 1. Setting Up Admin Users
-
-After users register, set `isAdmin: true` in MongoDB:
-
-```javascript
-db.users.updateOne({ email: "admin@example.com" }, { $set: { isAdmin: true } });
-```
-
-### 2. Admin Passcode (Optional)
-
-Set `ADMIN_PASSCODE` environment variable for additional security:
-
-```bash
-motia env set ADMIN_PASSCODE="secure_passcode_here"
-```
-
-Admins must verify this passcode when accessing certain admin features.
+Existing Admins grant admin rights to others from the dashboard.
 
 ---
 
 ## Deployment Checklist
 
-- [ ] MongoDB Atlas cluster created
-- [ ] Backend env variables set in Motia Cloud
-- [ ] Backend deployed to Motia Cloud
-- [ ] Frontend env variables set in Vercel
-- [ ] Frontend deployed to Vercel
-- [ ] CORS origins updated for production
-- [ ] Google OAuth URIs updated
-- [ ] Admin user configured (if needed)
-- [ ] Admin passcode set (optional)
-- [ ] Test login/register flow
-- [ ] Test solve functionality
-- [ ] Verify history loads correctly
-- [ ] Test admin dashboard (if configured)
+- [ ] Neon project created and connected to the backend project
+- [ ] Migrations reviewed and applied to Neon
+- [ ] Backend environment variables set
+- [ ] Backend preview deployment passes the health check and a sign-up
+- [ ] Frontend `VITE_API_URL_PROD` points at the backend
+- [ ] Backend `CORS_ORIGINS` includes the frontend URL
+- [ ] Google OAuth origins include the frontend URL
+- [ ] First Admin created
+- [ ] Sign up, verify email, solve, History, admin dashboard all work
 
----
-
-## Monitoring
-
-### Logs
+## Health Check
 
 ```bash
-# View Motia logs
-motia logs
+curl https://<backend-url>/health
 ```
 
-### Health Check
-
-```bash
-curl https://your-app.motia.cloud/health
-```
-
-**Expected response:**
-
-```json
-{
-  "status": "healthy",
-  "timestamp": "2025-12-22T00:00:00.000Z"
-}
-```
-
----
+Expected: `{"status":"healthy","timestamp":"..."}`
 
 ## Rollback
 
-### Vercel
-
-Use Vercel dashboard to redeploy previous version.
-
-### Motia
-
-```bash
-motia rollback
-```
-
----
-
-_Last updated: December 22, 2025_
+Both projects: Vercel dashboard, **Deployments**, pick the last good
+deployment, **Instant Rollback**. Database migrations are not rolled back
+automatically; write a new migration to undo a schema change.

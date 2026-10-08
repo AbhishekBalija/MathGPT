@@ -3,7 +3,7 @@ import { fakeEmailSender } from "./support/test-app";
 import { registerUser } from "./support/users";
 
 describe("emails", () => {
-  it("sends a welcome email to a new User", async () => {
+  it("emails a Verification Code to a new User", async () => {
     const { email } = await registerUser();
 
     // The email is sent in the background, after the response
@@ -11,7 +11,7 @@ describe("emails", () => {
       expect(fakeEmailSender.emailsTo(email)).toHaveLength(1);
     });
 
-    const [welcome] = fakeEmailSender.emailsTo(email);
-    expect(welcome?.subject).toContain("Welcome to NeoMath");
+    const [sent] = fakeEmailSender.emailsTo(email);
+    expect(sent?.subject).toMatch(/^\d{6} is your NeoMath verification code$/);
   });
 });

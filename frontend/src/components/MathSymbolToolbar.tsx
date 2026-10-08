@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 
 // Symbol categories with their items
 const SYMBOL_CATEGORIES = {
@@ -112,20 +112,20 @@ const MathSymbolToolbar = ({
   onToggleCollapse,
 }: MathSymbolToolbarProps) => {
   const [activeCategory, setActiveCategory] = useState<CategoryKey>("basic");
-  const [recentSymbols, setRecentSymbols] = useState<string[]>([]);
-  const toolbarRef = useRef<HTMLDivElement>(null);
-
-  // Load recent symbols from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem("mathSymbols_recent");
-    if (stored) {
-      try {
-        setRecentSymbols(JSON.parse(stored));
-      } catch {
-        // Ignore parse errors
-      }
+  // Load recent symbols once on mount
+  const [recentSymbols, setRecentSymbols] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("mathSymbols_recent");
+      if (!stored) return [];
+      const parsed: unknown = JSON.parse(stored);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((item): item is string => typeof item === "string");
+    } catch {
+      // Ignore corrupt storage
+      return [];
     }
-  }, []);
+  });
+  const toolbarRef = useRef<HTMLDivElement>(null);
 
   // Save recent symbols to localStorage
   const addToRecent = useCallback((symbol: string) => {

@@ -1,8 +1,8 @@
 import Navbar from "../components/Navbar";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
-import WaitlistForm from "../components/WaitlistForm";
+import { ArrowRight, Sparkles } from "lucide-react";
+import UserStats from "../components/UserStats";
 import MathBackground from "../components/MathBackground";
 
 const Landing = () => {
@@ -77,7 +77,16 @@ const Landing = () => {
                 transition={{ duration: 0.8, delay: 0.6 }}
                 className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-4 sm:px-0 sm:w-auto"
               >
-                <WaitlistForm source="landing_hero" />
+                <div className="flex flex-col items-center w-full">
+                  <UserStats threshold={5} />
+                  <Link
+                    to="/register"
+                    className="group px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-full font-medium text-base flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                  >
+                    Get started
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </Link>
+                </div>
               </motion.div>
             </motion.div>
 

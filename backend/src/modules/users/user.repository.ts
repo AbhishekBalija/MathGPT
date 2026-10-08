@@ -6,8 +6,9 @@
  */
 
 import { count, desc, eq, ilike, or, sql } from "drizzle-orm";
-import { z } from "zod";
 import { db } from "../../db/client";
+import { isUuid as isUserId } from "../../lib/ids";
+import type { DbExecutor } from "../../db/transaction";
 import { users, type AuthProvider, type UserRow } from "../../db/schema";
 
 export type User = UserRow;
@@ -30,12 +31,6 @@ export class EmailTakenError extends Error {
     super("Email is already registered");
     this.name = "EmailTakenError";
   }
-}
-
-const userIdSchema = z.uuid();
-
-function isUserId(id: string): boolean {
-  return userIdSchema.safeParse(id).success;
 }
 
 /** Emails are stored lowercase, so lookups must use the same form. */
@@ -89,9 +84,9 @@ export const userRepository = {
   },
 
   /** Throws `EmailTakenError` if the email is already used. */
-  async create(data: NewUser): Promise<User> {
+  async create(data: NewUser, executor: DbExecutor = db): Promise<User> {
     try {
-      const [user] = await db
+      const [user] = await executor
         .insert(users)
         .values({ ...data, email: normalizeEmail(data.email) })
         .returning();
@@ -170,11 +165,11 @@ export const userRepository = {
       .where(eq(users.id, id));
   },
 
-  async delete(id: string): Promise<boolean> {
+  async delete(id: string, executor: DbExecutor = db): Promise<boolean> {
     if (!isUserId(id)) {
       return false;
     }
-    const deleted = await db
+    const deleted = await executor
       .delete(users)
       .where(eq(users.id, id))
       .returning({ id: users.id });

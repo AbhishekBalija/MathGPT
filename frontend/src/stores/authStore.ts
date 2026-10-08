@@ -14,12 +14,12 @@ interface AuthState {
   registerWithEmail: (
     email: string,
     password: string,
-    name: string,
-    inviteToken?: string
+    name: string
   ) => Promise<void>;
   loginWithGoogle: (credential: string) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: User) => void;
+  setEmailVerified: (emailVerified: boolean) => void;
   setLoading: (loading: boolean) => void;
   clearAuth: () => void;
 }
@@ -49,6 +49,7 @@ export const useAuthStore = create<AuthState>()(
               avatar: response.user.avatar,
               isAdmin: response.user.isAdmin,
               role: response.user.isAdmin ? "admin" : "user",
+              emailVerified: response.user.emailVerified,
             },
             token: response.accessToken,
             refreshToken: response.refreshToken,
@@ -62,18 +63,12 @@ export const useAuthStore = create<AuthState>()(
       registerWithEmail: async (
         email: string,
         password: string,
-        name: string,
-        inviteToken?: string
+        name: string
       ) => {
         set({ isLoading: true });
 
         try {
-          const response = await authService.register(
-            email,
-            password,
-            name,
-            inviteToken
-          );
+          const response = await authService.register(email, password, name);
 
           set({
             isAuthenticated: true,
@@ -85,6 +80,7 @@ export const useAuthStore = create<AuthState>()(
               avatar: response.user.avatar,
               isAdmin: response.user.isAdmin,
               role: response.user.isAdmin ? "admin" : "user",
+              emailVerified: response.user.emailVerified,
             },
             token: response.accessToken,
             refreshToken: response.refreshToken,
@@ -112,6 +108,7 @@ export const useAuthStore = create<AuthState>()(
               avatar: response.user.avatar,
               isAdmin: response.user.isAdmin,
               role: response.user.isAdmin ? "admin" : "user",
+              emailVerified: response.user.emailVerified,
             },
             token: response.accessToken,
             refreshToken: response.refreshToken,
@@ -121,6 +118,12 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false });
           throw error;
         }
+      },
+
+      setEmailVerified: (emailVerified: boolean) => {
+        set((state) =>
+          state.user ? { user: { ...state.user, emailVerified } } : {}
+        );
       },
 
       logout: async () => {
@@ -135,7 +138,7 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("token");
-        // Also clear admin verification storage
+        // Also clear stored data from the old admin passcode (removed in #20)
         localStorage.removeItem("admin-storage");
 
         set({

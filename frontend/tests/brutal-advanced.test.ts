@@ -13,7 +13,7 @@
  * Run: npm test -- --run tests/brutal-advanced.test.ts
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useChatStore } from "../src/stores/chatStore";
 import { useAuthStore } from "../src/stores/authStore";
 import DOMPurify from "dompurify";
@@ -22,117 +22,24 @@ import DOMPurify from "dompurify";
 // ADMIN STORE SECURITY
 // ============================================================================
 
-describe("🛡️ ADMIN STORE - Security Tests", () => {
-  beforeEach(() => {
-    localStorage.clear();
-    sessionStorage.clear();
-  });
+describe("🛡️ ADMIN STORE", () => {
+  // The admin passcode and its lockout were removed (#20); Admins sign in normally
+  it("clears loaded dashboard data on logout", async () => {
+    const { useAdminStore } = await import("../src/stores/adminStore");
 
-  describe("State Initialization Security", () => {
-    it("should initialize with isAdminVerified = false", async () => {
-      const { useAdminStore } = await import("../src/stores/adminStore");
-
-      // Reset to initial state
-      useAdminStore.setState({
-        isAdminVerified: false,
-        verificationAttempts: 0,
-        lockoutUntil: null,
-        stats: null,
-        users: [],
-        error: null,
-      });
-
-      const state = useAdminStore.getState();
-      expect(state.isAdminVerified).toBe(false);
+    useAdminStore.setState({
+      stats: { totalUsers: 100 } as never,
+      users: [{ id: "1", email: "test@test.com" }] as never,
     });
 
-    it("should clear admin state on clearAdminVerification", async () => {
-      const { useAdminStore } = await import("../src/stores/adminStore");
+    useAdminStore.getState().clearAdminData();
 
-      useAdminStore.setState({
-        isAdminVerified: true,
-        stats: { totalUsers: 100 } as any,
-        users: [{ id: "1", email: "test@test.com" }] as any,
-      });
-
-      useAdminStore.getState().clearAdminVerification();
-
-      const state = useAdminStore.getState();
-      expect(state.isAdminVerified).toBe(false);
-      expect(state.stats).toBeNull();
-      expect(state.users).toEqual([]);
-    });
-
-    it("should enforce lockout after max attempts", async () => {
-      const { useAdminStore } = await import("../src/stores/adminStore");
-
-      useAdminStore.setState({
-        isAdminVerified: false,
-        verificationAttempts: 2,
-        lockoutUntil: null,
-        error: null,
-      });
-
-      useAdminStore.setState((state) => ({
-        verificationAttempts: state.verificationAttempts + 1,
-        lockoutUntil: Date.now() + 5 * 60 * 1000,
-        error: "Too many failed attempts",
-      }));
-
-      const state = useAdminStore.getState();
-      expect(state.verificationAttempts).toBe(3);
-      expect(state.lockoutUntil).toBeGreaterThan(Date.now());
-    });
-  });
-
-  describe("Persist Storage Tampering", () => {
-    it("should handle corrupted admin-storage gracefully", async () => {
-      localStorage.setItem("admin-storage", "{ invalid json }{{{");
-
-      // Force Vitest to reload the module
-      vi.resetModules();
-
-      let caught = false;
-      try {
-        const { useAdminStore } = await import("../src/stores/adminStore");
-        const state = useAdminStore.getState();
-        expect(state.isAdminVerified).toBe(false);
-      } catch (e) {
-        caught = true;
-      }
-
-      expect(caught).toBe(false);
-    });
-
-    it("should NOT persist sensitive data beyond passcode state", async () => {
-      vi.resetModules();
-      const { useAdminStore } = await import("../src/stores/adminStore");
-
-      useAdminStore.setState({
-        isAdminVerified: true,
-        stats: { totalUsers: 100 } as any,
-        users: [{ id: "1", email: "test@test.com" }] as any,
-      });
-
-      // Wait for persist middleware to flush
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      const stored = localStorage.getItem("admin-storage");
-      // The store may or may not persist depending on configuration
-      // If it does persist, verify sensitive data is not included
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        // Sensitive admin data should NOT be persisted
-        expect(parsed.state?.stats).toBeUndefined();
-        expect(parsed.state?.users).toBeUndefined();
-      }
-      // Test passes either way - the goal is to verify sensitive data isn't persisted
-    });
+    const state = useAdminStore.getState();
+    expect(state.stats).toBeNull();
+    expect(state.users).toEqual([]);
   });
 });
 
-// ============================================================================
-// AUTH STORE TOKEN SECURITY
 // ============================================================================
 
 describe("🔐 AUTH STORE - Token Security", () => {
@@ -233,8 +140,12 @@ describe("🔐 AUTH STORE - Token Security", () => {
         "../src/stores/authStore"
       );
       const state = reloadedStore.getState();
-      expect((state as any).isAdmin).toBeUndefined();
-      expect((Object.prototype as any).isAdmin).toBeUndefined();
+      expect(
+        (state as unknown as Record<string, unknown>).isAdmin
+      ).toBeUndefined();
+      expect(
+        (Object.prototype as unknown as Record<string, unknown>).isAdmin
+      ).toBeUndefined();
     });
   });
 });
@@ -478,7 +389,7 @@ describe("🚨 ERROR BOUNDARIES - Graceful Failure", () => {
             createdAt: "invalid-date",
             title: "Corrupted",
             updatedAt: "invalid",
-          } as any,
+          } as never,
         ],
         activeChatId: "corrupted",
       });
@@ -555,14 +466,18 @@ describe("⚡ PERFORMANCE - Stress Tests", () => {
     const store = useChatStore.getState();
     store.createNewChat();
 
-    const initialMemory = (performance as any).memory?.usedJSHeapSize || 0;
+    // Chrome-only memory API, typed safely
+    const perf = performance as Performance & {
+      memory?: { usedJSHeapSize: number };
+    };
+    const initialMemory = perf.memory?.usedJSHeapSize || 0;
 
     for (let i = 0; i < 1000; i++) {
       store.setLoading(i % 2 === 0);
       store.setError(i % 3 === 0 ? `Error ${i}` : null);
     }
 
-    const finalMemory = (performance as any).memory?.usedJSHeapSize || 0;
+    const finalMemory = perf.memory?.usedJSHeapSize || 0;
     const memIncrease = finalMemory - initialMemory;
 
     if (initialMemory > 0) {
