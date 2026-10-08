@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import axios from "axios";
 import { useAuthStore } from "../stores/authStore";
 import authService from "../services/auth.service";
+import Logo from "../components/brand/Logo";
 
 // Shown after email sign-up, and whenever solving says the email is not verified.
 // Arriving with { sendCode: true } (from login or a refused solve) means there may
@@ -101,16 +102,9 @@ const VerifyEmail = () => {
         <div className="text-center">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 sm:gap-3 mb-6 sm:mb-8 group"
+            className="inline-flex items-center mb-6 sm:mb-8 [--logo-h:28px] sm:[--logo-h:34px]"
           >
-            <img
-              src="/NeoMath-Logo.png"
-              alt="NeoMath Logo"
-              className="h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-110"
-            />
-            <span className="text-2xl sm:text-3xl font-normal tracking-wider font-['Rye'] text-gray-900 dark:text-white">
-              NeoMath
-            </span>
+            <Logo height="var(--logo-h)" />
           </Link>
 
           <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">

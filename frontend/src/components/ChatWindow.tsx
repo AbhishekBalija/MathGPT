@@ -11,6 +11,7 @@ import MathSymbolToolbar from "./MathSymbolToolbar";
 import MathInputPreview from "./MathInputPreview";
 import { useAutocomplete } from "../hooks/useAutocomplete";
 import { AutocompleteDropdown } from "./AutocompleteDropdown";
+import NeoMascot from "./brand/NeoMascot";
 
 // Helper to render LaTeX with XSS protection
 const renderLatex = (text: string) => {
@@ -442,18 +443,9 @@ const ChatWindow = () => {
       <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 pb-32 scroll-smooth">
         {!activeChat || activeChat.messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8 animate-in fade-in duration-500">
-            {/* NEO Avatar - Centered & Blue/Cyan Theme */}
+            {/* Neo, the mascot */}
             <div className="flex justify-center mb-6 sm:mb-8">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-linear-to-br from-blue-500 via-cyan-400 to-blue-600 p-1 shadow-xl shadow-cyan-500/20 hover:scale-105 transition-transform flex items-center justify-center overflow-hidden">
-                <img
-                  src="/neo-avatar.png"
-                  alt="NEO"
-                  className="w-full h-full rounded-full object-cover bg-gray-900 scale-160"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
-              </div>
+              <NeoMascot className="w-20 h-20 sm:w-24 sm:h-24" />
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
               Meet{" "}
@@ -502,7 +494,7 @@ const ChatWindow = () => {
               >
                 {/* Avatar */}
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                     message.role === "user" ? "bg-blue-600 text-white" : ""
                   }`}
                 >
@@ -521,16 +513,7 @@ const ChatWindow = () => {
                       />
                     </svg>
                   ) : (
-                    <img
-                      src="/neo-avatar.png"
-                      alt="NEO"
-                      className="w-full h-full rounded-full object-cover scale-[1.8]"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                        e.currentTarget.parentElement!.innerHTML =
-                          '<span class="text-xs font-bold">N</span>';
-                      }}
-                    />
+                    <NeoMascot className="w-full h-full" />
                   )}
                 </div>
 
@@ -559,17 +542,8 @@ const ChatWindow = () => {
             {/* Loading Indicator */}
             {isLoading && (
               <div className="flex gap-4">
-                <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center shrink-0 animate-pulse">
-                  <img
-                    src="/neo-avatar.png"
-                    alt="NEO"
-                    className="w-full h-full object-cover scale-[1.6]"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                      e.currentTarget.parentElement!.innerHTML =
-                        '<span class="text-xs font-bold text-white">N</span>';
-                    }}
-                  />
+                <div className="w-8 h-8 flex items-center justify-center shrink-0 animate-pulse">
+                  <NeoMascot className="w-full h-full" />
                 </div>
                 <div className="px-5 py-4 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-2">
                   <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">

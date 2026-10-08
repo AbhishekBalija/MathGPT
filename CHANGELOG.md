@@ -38,6 +38,20 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- New brand: the NeoMath logo is the Honk wordmark with π-Neo sitting on
+  the 'h'. It is a baked SVG (no colour-font support needed), has a dark-mode
+  version with a white rim, and is used in the navbar, sidebar, sign-in pages
+  and admin. Neo replaces the 5.7 MB avatar image in the chat. New favicons,
+  home-screen icons and a link preview card (og:image). Accent colour is now
+  the logo pink, contrast-checked; dark mode uses warm blacks and a solid pink. See
+  docs/brand.md.
+
+- The landing waves are smoother: no stretching, softer curves that fade at
+  the edges, and a seamless symbol loop.
+
+- Removed unused decorative fonts (seven Google Fonts loaded on every page)
+  and unused images (about 8 MB).
+
 - Landing page touch-up: copy now only promises what the solver does (no
   "verified" or "no hallucinations" claims), one accent colour taken from the
   logo, tighter hero spacing, no slow or endless animations (the math waves

@@ -201,3 +201,28 @@ instance, which an in-memory counter cannot.
 a Node API Bun has not implemented. Pinning `bson` to the version from the old
 lockfile fixed it. Lesson: caret ranges can pull in new behavior on a fresh
 install, and lockfiles are what make installs reproducible.
+
+## Frontend and design
+
+### Intermediate: Why is the logo an SVG instead of text in the logo font?
+
+The font (Honk) is a colour font: each letter is three layers filled with
+gradients, stored in the COLRv1 table. Not every browser supports COLRv1, and a
+text logo also waits for the font file to load. Copying the layers and
+gradients into a plain SVG ("baking" it) gives the same look everywhere, with
+no font download and no flash of a fallback font.
+
+### Intermediate: How does one component make the logo responsive?
+
+Every size in `Logo` is a multiple of one CSS length, the word's height. The
+caller passes `height="var(--logo-h)"` and sets the variable per breakpoint
+(`[--logo-h:24px] md:[--logo-h:30px]`). `calc()` then scales the word, places
+the mascot on the `h` and reserves space above it, so nothing is re-measured
+in JavaScript.
+
+### Basic: Why does the dark theme use a pinker text colour than the light one?
+
+Contrast. WCAG asks for at least 4.5:1 for normal text. The logo pink is about
+3.2:1 on white, so light mode uses a darker pink (4.9:1), and dark mode uses a
+lighter one (7.1:1 on near-black). The bright logo pink is kept for shapes,
+where the rule does not apply.
