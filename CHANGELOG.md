@@ -8,6 +8,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Deploys of the backend stop at build time when the database is missing a
+  migration (`bun run db:check`, run as `vercel-build`), so the live site
+  never runs code ahead of its schema.
+
 - The backend is ready for Vercel: `backend/src/app.ts` is the deployed
   entry (imports express, default-exports the app; `server.ts` only listens
   locally), `backend/vercel.json`
