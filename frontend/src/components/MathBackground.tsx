@@ -1,28 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useThemeStore } from "../stores/themeStore";
 import { useReducedMotion } from "framer-motion";
 
 const MathBackground = () => {
-  // Read theme once on mount, then watch for changes
-  const [isDark, setIsDark] = useState(
-    () =>
-      typeof document !== "undefined" &&
-      document.documentElement.classList.contains("dark")
-  );
-
-  useEffect(() => {
-    // Watch for theme changes and update state in the callback
-    const checkTheme = () => {
-      setIsDark(document.documentElement.classList.contains("dark"));
-    };
-
-    const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    return () => observer.disconnect();
-  }, []);
+  // Read the theme from the same store the toggle uses. Checking the <html>
+  // class on mount was too early: the Navbar switches dark mode on after the
+  // waves had already picked their light-mode colours.
+  const isDark = useThemeStore((state) => state.isDark);
 
   // Colors for light mode (darker waves on light bg) vs dark mode (lighter waves on dark bg)
   const waveColors = isDark
