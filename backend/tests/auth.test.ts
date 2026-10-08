@@ -93,3 +93,29 @@ describe("sessions", () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe("login errors", () => {
+  it("never reveal whether an email is registered", async () => {
+    const { email } = await registerUser();
+    const googleOnlyEmail = uniqueEmail();
+    // Setup: a Google-only User has no password
+    const { userRepository } = await import("../src/modules/users/user.repository");
+    await userRepository.create({
+      email: googleOnlyEmail,
+      name: "Google User",
+      provider: "google",
+      googleId: `google-${googleOnlyEmail}`,
+    });
+
+    const responses = await Promise.all([
+      post("/auth/login", { email: uniqueEmail(), password: TEST_PASSWORD }),
+      post("/auth/login", { email, password: "Wrong#Pass1" }),
+      post("/auth/login", { email: googleOnlyEmail, password: TEST_PASSWORD }),
+    ]);
+
+    const bodies = await Promise.all(responses.map((res) => res.json()));
+    expect(responses.map((res) => res.status)).toEqual([401, 401, 401]);
+    expect(new Set(bodies.map((body) => JSON.stringify(body))).size).toBe(1);
+    expect(bodies[0].error).toBe("Invalid email or password.");
+  });
+});

@@ -81,6 +81,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
   address could be linked to someone else's NeoMath account.
 - `scripts/create-admin.ts` applies the same password rules as sign-up.
 - User names are HTML-escaped in emails.
+- Failed logins all return "Invalid email or password." and take about the
+  same time, so login no longer reveals which emails are registered (#17).
 - `GET /api/solution/:id` only returns your own Solutions. Before, any
   logged-in User could open anyone's Solution by id.
 - Malformed user ids (in tokens or admin URLs) are rejected before any
