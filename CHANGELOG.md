@@ -38,6 +38,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Landing page touch-up: copy now only promises what the solver does (no
+  "verified" or "no hallucinations" claims), one accent colour taken from the
+  logo, tighter hero spacing, no slow or endless animations (the math waves
+  pause for reduced motion), and the stock 3D feature images are replaced by
+  real slices of the app in a bento grid with a closing sign-up section.
+
 - The landing page shows a "Get started" button to sign-up and the user
   count, and the navbar shows Log in and Sign up on the landing page again.
 - Solving requires a verified email (403 `EMAIL_NOT_VERIFIED` otherwise).

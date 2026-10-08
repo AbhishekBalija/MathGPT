@@ -1,6 +1,14 @@
 @import "tailwindcss";
 @variant dark (&:where(.dark, .dark *));
 
+/* Brand blues, sampled from the NeoMath logo rings */
+@theme {
+  --color-brand-300: #40c4ff;
+  --color-brand-500: #1e88f0;
+  --color-brand-600: #1570d1;
+  --color-brand-700: #0a3fa8;
+}
+
 html,
 body,
 #root {

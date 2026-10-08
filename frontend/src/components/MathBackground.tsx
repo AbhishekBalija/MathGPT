@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useReducedMotion } from "framer-motion";
 
 const MathBackground = () => {
   // Read theme once on mount, then watch for changes
@@ -135,6 +136,9 @@ const FlowingWavePath = ({
   direction: number;
   startOffset: number;
 }) => {
+  // Keep the symbols still for people who ask their system for less motion
+  const reduceMotion = useReducedMotion();
+
   // Stable id for this wave, created once
   const [id] = useState(() => `wave-${Math.random().toString(36).slice(2, 11)}`);
 
@@ -188,14 +192,16 @@ const FlowingWavePath = ({
         fontWeight="500"
       >
         <textPath href={`#${id}`} startOffset="0%">
-          <animate
-            attributeName="startOffset"
-            from={`${primaryFrom}%`}
-            to={`${primaryTo}%`}
-            dur={`${duration}s`}
-            repeatCount="indefinite"
-            begin="0s"
-          />
+          {!reduceMotion && (
+            <animate
+              attributeName="startOffset"
+              from={`${primaryFrom}%`}
+              to={`${primaryTo}%`}
+              dur={`${duration}s`}
+              repeatCount="indefinite"
+              begin="0s"
+            />
+          )}
           {symbols.map((s, i) => (
             <tspan key={i} dx={i === 0 ? "50" : "160"}>
               {s}
@@ -212,14 +218,16 @@ const FlowingWavePath = ({
         fontWeight="500"
       >
         <textPath href={`#${id}`} startOffset="0%">
-          <animate
-            attributeName="startOffset"
-            from={`${secondaryFrom}%`}
-            to={`${secondaryTo}%`}
-            dur={`${duration}s`}
-            repeatCount="indefinite"
-            begin="0s"
-          />
+          {!reduceMotion && (
+            <animate
+              attributeName="startOffset"
+              from={`${secondaryFrom}%`}
+              to={`${secondaryTo}%`}
+              dur={`${duration}s`}
+              repeatCount="indefinite"
+              begin="0s"
+            />
+          )}
           {symbols.map((s, i) => (
             <tspan key={i} dx={i === 0 ? "50" : "160"}>
               {s}

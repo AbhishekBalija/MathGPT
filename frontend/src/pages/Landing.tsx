@@ -1,187 +1,152 @@
+import type { ReactNode } from "react";
 import Navbar from "../components/Navbar";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import UserStats from "../components/UserStats";
 import MathBackground from "../components/MathBackground";
+import {
+  HistoryPreview,
+  StepPreview,
+  SymbolBarPreview,
+} from "../components/LandingPreviews";
 
 const Landing = () => {
   return (
-    <div className="min-h-screen bg-[#fafafa] dark:bg-[#0a0a0a] bg-grid-white font-sans text-gray-900 dark:text-white selection:bg-gray-200 dark:selection:bg-gray-800 selection:text-black dark:selection:text-white overflow-x-hidden transition-colors duration-300">
+    <div className="min-h-screen bg-[#fafafa] dark:bg-[#0a0a0a] font-sans text-gray-900 dark:text-white selection:bg-brand-500/20 overflow-x-hidden transition-colors duration-300">
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative pt-24 pb-16 md:pt-32 md:pb-24 lg:pt-48 lg:pb-40 overflow-hidden">
+      <section className="relative pt-24 pb-12 md:pt-32 md:pb-16 lg:pt-40 lg:pb-20 overflow-hidden">
         {/* Math Flow Background */}
         <MathBackground />
 
         <div className="container mx-auto px-4 md:px-6 lg:px-12 relative z-10">
-          <div className="flex flex-col lg:flex-col items-center gap-8 md:gap-16 text-center">
+          <div className="flex flex-col items-center gap-6 md:gap-10 text-center">
             {/* Hero Text */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="max-w-4xl mx-auto"
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="inline-flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900 border border-green-300 dark:border-green-700 rounded-full text-green-600 dark:text-green-400 text-xs font-medium uppercase tracking-wider mb-8 shadow-[0_0_20px_rgba(34,197,94,0.4)] dark:shadow-[0_0_20px_rgba(34,197,94,0.3)]"
-              >
-                <Sparkles className="w-3 h-3 text-green-500" />
-                <span>AI-Powered Precision</span>
-              </motion.div>
+            <div className="max-w-4xl mx-auto">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900 border border-brand-500/30 rounded-full text-brand-600 dark:text-brand-300 text-xs font-medium mb-8">
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-500" />
+                <span>Free while in beta</span>
+              </div>
 
               <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-semibold tracking-tighter text-gray-900 dark:text-white mb-6 md:mb-8 leading-none">
-                <motion.span
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.8,
-                    delay: 0.2,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
-                  className="block"
-                >
-                  Master Math
-                </motion.span>
-                <motion.span
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.8,
-                    delay: 0.3,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
-                  className="text-gray-400 dark:text-gray-600 block"
-                >
-                  Step by Step.
-                </motion.span>
+                <span className="block">Stuck on a problem?</span>
+                <span className="block text-brand-600 dark:text-brand-300">
+                  See every step.
+                </span>
               </h1>
 
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 1, delay: 0.5 }}
-                className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-500 dark:text-gray-400 mb-8 md:mb-10 max-w-2xl mx-auto font-light leading-relaxed px-2 md:px-0"
-              >
-                Teacher-quality explanations verified by symbolic AI. Understand
-                the "why", not just the "what".
-              </motion.p>
-
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
-                className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-4 sm:px-0 sm:w-auto"
-              >
-                <div className="flex flex-col items-center w-full">
-                  <UserStats threshold={5} />
-                  <Link
-                    to="/register"
-                    className="group px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-full font-medium text-base flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
-                  >
-                    Get started
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                  </Link>
-                </div>
-              </motion.div>
-            </motion.div>
-
-            {/* Who is this for? Micro-section */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8, duration: 1 }}
-              className="mt-12 text-center"
-            >
-              <p className="text-sm text-gray-400 dark:text-gray-500 font-medium">
-                Perfect for students preparing for exams, college math, and
-                anyone tired of wrong AI answers.
+              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600 dark:text-gray-400 mb-8 md:mb-10 max-w-2xl mx-auto leading-relaxed px-2 md:px-0">
+                Type your problem and get the full working, one step at a time,
+                with a short reason for each step.
               </p>
-            </motion.div>
 
-            {/* Hero Video Container */}
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-6xl mx-auto mt-16 px-4"
-            >
-              {/* Floating Animation Wrapper */}
-              <motion.div
-                animate={{ y: [0, -15, 0] }}
-                transition={{
-                  duration: 6,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              >
-                {/* Video Container */}
-                <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-                  {/* Actual Video */}
-                  <video
-                    className="w-full h-auto block"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                  >
-                    <source src="/NeoMath_Hero.mp4" type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
-                </div>
+              <div className="flex flex-col items-center w-full px-4 sm:px-0">
+                <UserStats threshold={5} />
+                <Link
+                  to="/register"
+                  className="group px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-full font-medium text-base flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                >
+                  Get started
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </div>
 
-                <div className="mt-6 text-center">
-                  <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 font-medium">
-                    No hallucinations. Every step checked.
-                  </p>
-                </div>
+              <p className="mt-8 text-sm text-gray-500 font-medium">
+                Made for students revising for exams and working through college
+                math.
+              </p>
+            </div>
 
-                {/* Glow effect behind */}
-                <div className="absolute -inset-1 bg-linear-to-t from-blue-500/20 via-purple-500/20 to-transparent dark:from-blue-500/10 dark:via-purple-500/10 dark:to-transparent blur-3xl opacity-60 -z-10 rounded-xl"></div>
-              </motion.div>
-            </motion.div>
+            {/* Hero Video */}
+            <div className="w-full max-w-6xl mx-auto px-4">
+              <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+                <video
+                  className="w-full h-auto block"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                >
+                  <source src="/NeoMath_Hero.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-16 md:py-32 bg-white dark:bg-[#0a0a0a]">
-        <div className="container mx-auto px-4 md:px-6 lg:px-12">
-          <div className="grid md:grid-cols-3 gap-8 md:gap-12 lg:gap-16">
-            <FeatureCard
-              image="/feature-verification.png"
-              title="Never get a wrong step"
-              description="Zero hallucinations. Every step is mathematically verified by our symbolic engine."
-              delay={0}
-            />
-            <FeatureCard
-              image="/feature-education.png"
-              title="Understand, don't memorize"
-              description="Logic-based breakdowns that teach you the underlying concepts, not just the answer."
-              delay={0.2}
-            />
-            <FeatureCard
-              image="/feature-growth.png"
-              title="Track how you improve"
-              description="Your personal library of problems. Review, retry, and master topics over time."
-              delay={0.4}
-            />
+      {/* What you get: real slices of the app in a bento grid */}
+      <section className="py-16 md:py-24 bg-white dark:bg-[#0a0a0a]">
+        <div className="container mx-auto px-4 md:px-6 lg:px-12 max-w-6xl">
+          <h2 className="text-3xl md:text-5xl font-semibold tracking-tighter max-w-2xl">
+            Built for the night before the exam.
+          </h2>
+          <p className="mt-4 text-base md:text-lg text-gray-600 dark:text-gray-400 max-w-xl">
+            Everything here is what you see inside NeoMath.
+          </p>
+
+          <div className="mt-10 md:mt-14 grid gap-4 md:grid-cols-3 md:grid-rows-2">
+            <FeatureTile
+              className="md:col-span-2 md:row-span-2"
+              title="Every step, with the why"
+              description="Each step shows the working and a one-line reason, so you can follow the method and use it on the next question."
+            >
+              <StepPreview />
+            </FeatureTile>
+            <FeatureTile
+              title="A math keyboard built in"
+              description="Tap ∫, √ or θ from the symbol bar, or type /int to insert ∫."
+            >
+              <SymbolBarPreview />
+            </FeatureTile>
+            <FeatureTile
+              title="Your problems, saved"
+              description="Everything you solve stays in your history, ready to review before a test."
+            >
+              <HistoryPreview />
+            </FeatureTile>
           </div>
+        </div>
+      </section>
+
+      {/* Closing call to action */}
+      <section className="py-16 md:py-24 bg-white dark:bg-[#0a0a0a] border-t border-gray-100 dark:border-gray-800">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-5xl font-semibold tracking-tighter">
+            Got homework tonight?
+          </h2>
+          <p className="mt-4 text-base md:text-lg text-gray-600 dark:text-gray-400">
+            Sign up with Google or email and solve your first problem in a
+            minute.
+          </p>
+          <Link
+            to="/register"
+            className="group mt-8 inline-flex px-8 py-4 bg-brand-600 text-white rounded-full font-medium text-base items-center justify-center gap-2 hover:bg-brand-700 transition-colors"
+          >
+            Get started
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="bg-white dark:bg-[#0a0a0a] border-t border-gray-100 dark:border-gray-800 py-8 md:py-12">
         <div className="container mx-auto px-4 md:px-6 flex flex-col md:flex-row justify-between items-center text-center md:text-left text-sm text-gray-500 dark:text-gray-400">
-          <div className="flex flex-col items-center md:items-start gap-2">
+          <div className="flex flex-col items-center md:items-start gap-1">
             <p>&copy; {new Date().getFullYear()} NeoMath</p>
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
-              Built by an indie dev
-            </span>
+            <p>
+              Built by{" "}
+              <a
+                href="https://x.com/AbhishekBalija1"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-900 dark:text-white hover:text-brand-600 dark:hover:text-brand-300 transition-colors"
+              >
+                Abhishek Balija
+              </a>
+            </p>
           </div>
           <div className="flex space-x-6 md:space-x-8 mt-4 md:mt-0">
             <Link
@@ -211,41 +176,31 @@ const Landing = () => {
   );
 };
 
-const FeatureCard = ({
-  image,
+const FeatureTile = ({
   title,
   description,
-  delay = 0,
+  className = "",
+  children,
 }: {
-  image: string;
   title: string;
   description: string;
-  delay?: number;
+  className?: string;
+  children: ReactNode;
 }) => {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.6, delay }}
-      className="group flex flex-col items-center text-center md:items-start md:text-left p-2"
+    <div
+      className={`flex flex-col rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#0f1115] p-3 ${className}`}
     >
-      <div className="mb-6 w-full aspect-square relative bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden group-hover:border-gray-200 dark:group-hover:border-gray-700 transition-colors duration-300">
-        <img
-          src={image}
-          alt={title}
-          className="w-full h-full object-cover transform scale-100 group-hover:scale-110 transition-transform duration-700 ease-out"
-        />
-        {/* Inner shadow/vignette for depth */}
-        <div className="absolute inset-0 bg-radial-[circle_at_center,var(--tw-gradient-stops)] from-transparent to-gray-100/20 dark:to-black/20 pointer-events-none"></div>
+      <div className="flex-1 min-h-56">{children}</div>
+      <div className="px-3 pt-5 pb-3">
+        <h3 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">
+          {title}
+        </h3>
+        <p className="mt-1.5 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+          {description}
+        </p>
       </div>
-      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 tracking-tight">
-        {title}
-      </h3>
-      <p className="text-base text-gray-500 dark:text-gray-400 leading-relaxed font-light">
-        {description}
-      </p>
-    </motion.div>
+    </div>
   );
 };
 
