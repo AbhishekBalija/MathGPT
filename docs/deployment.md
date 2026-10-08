@@ -26,10 +26,10 @@ Both Vercel projects deploy `main` to production and every PR to a preview.
 
 ## Backend on Vercel
 
-The backend is an Express app. Vercel finds `backend/src/server.ts`, which
-exports the app as its default export (it only calls `listen()` when not on
-Vercel). `backend/vercel.json` selects the Bun runtime and the Singapore
-region.
+The backend is an Express app. Vercel serves `backend/src/app.ts`: it imports
+`express` and default-exports the app, which is what Vercel's Express
+detection needs. `src/server.ts` only listens, for local development.
+`backend/vercel.json` selects the Bun runtime and the Singapore region.
 
 ### Project settings
 
