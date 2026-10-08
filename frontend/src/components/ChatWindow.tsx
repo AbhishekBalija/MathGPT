@@ -462,8 +462,8 @@ const ChatWindow = () => {
               </span>
             </h2>
             <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 max-w-sm mb-6 sm:mb-8 leading-relaxed px-4 sm:px-0">
-              Your personal math assistant. Type a problem or snap a photo, and
-              I'll break it down step-by-step.
+              Your personal math assistant. Type a problem and I'll break it
+              down step-by-step.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
