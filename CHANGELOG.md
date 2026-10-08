@@ -8,8 +8,9 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- The backend is ready for Vercel: `backend/src/server.ts` is the single
-  entry (default export, listens only outside Vercel), `backend/vercel.json`
+- The backend is ready for Vercel: `backend/src/app.ts` is the deployed
+  entry (imports express, default-exports the app; `server.ts` only listens
+  locally), `backend/vercel.json`
   selects the Bun runtime and the Singapore region, background work uses
   `waitUntil` and the Postgres pool is attached with `attachDatabasePool`
   (`@vercel/functions`).
