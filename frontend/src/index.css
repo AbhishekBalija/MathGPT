@@ -1,12 +1,15 @@
 @import "tailwindcss";
 @variant dark (&:where(.dark, .dark *));
 
-/* Brand blues, sampled from the NeoMath logo rings */
+/* Brand pinks, from the logo. Contrast checked (WCAG):
+   300 for text on dark (7.1:1 on #0a0a0a), 500 is the logo pink (shapes and
+   tints only, too light for text on white), 600 for text and buttons on white
+   (4.9:1), 700 for hover. */
 @theme {
-  --color-brand-300: #40c4ff;
-  --color-brand-500: #1e88f0;
-  --color-brand-600: #1570d1;
-  --color-brand-700: #0a3fa8;
+  --color-brand-300: #ff5cbf;
+  --color-brand-500: #ff3caf;
+  --color-brand-600: #d1257f;
+  --color-brand-700: #b0156e;
 }
 
 html,

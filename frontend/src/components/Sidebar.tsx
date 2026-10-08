@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { Moon, Sun } from "lucide-react";
 import HelpSection from "./HelpSection";
 import SidebarResizer from "./SidebarResizer";
+import Logo from "./brand/Logo";
 
 const SIDEBAR_MIN_WIDTH = 240;
 const SIDEBAR_MAX_WIDTH = 480;
@@ -122,15 +123,8 @@ const Sidebar = () => {
         <div className="flex flex-col h-full">
           {/* Header Area */}
           <div className="flex items-center justify-between p-4 pt-5 pb-2">
-            <div className="flex items-center gap-2 px-2">
-              <img
-                src="/NeoMath-Logo.png"
-                alt="NeoMath"
-                className="w-8 h-8 object-contain"
-              />
-              <span className="text-base font-['Rye'] font-normal text-gray-900 dark:text-white tracking-tight">
-                NeoMath
-              </span>
+            <div className="flex items-center px-2">
+              <Logo height="20px" />
             </div>
             <div className="flex items-center gap-1">
               {/* Theme Toggle */}

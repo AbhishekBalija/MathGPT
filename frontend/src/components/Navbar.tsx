@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Moon, Sun, Menu, X } from "lucide-react";
 import { useThemeStore } from "../stores/themeStore";
+import Logo from "./brand/Logo";
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -52,20 +53,13 @@ const Navbar = () => {
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled || !isLanding
-            ? "bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 py-3"
+            ? "bg-white/80 dark:bg-[#120d12]/80 backdrop-blur-md border-b border-gray-100 dark:border-white/10 py-3"
             : "bg-transparent py-5"
         }`}
       >
         <div className="container mx-auto px-4 md:px-6 lg:px-12 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 group">
-            <img
-              src="/NeoMath-Logo.png"
-              alt="NeoMath Logo"
-              className="h-12 md:h-14 w-auto object-contain transition-transform group-hover:scale-110"
-            />
-            <span className="text-2xl md:text-3xl font-normal tracking-wider font-['Rye'] text-gray-900 dark:text-white">
-              NeoMath
-            </span>
+          <Link to="/" className="flex items-center [--logo-h:24px] md:[--logo-h:30px]">
+            <Logo height="var(--logo-h)" />
           </Link>
 
           {/* Desktop Navigation - unchanged */}
@@ -140,7 +134,7 @@ const Navbar = () => {
 
         {/* Menu Panel */}
         <div
-          className={`absolute top-0 right-0 w-72 h-full bg-white dark:bg-gray-900 shadow-2xl transform transition-transform duration-300 ${
+          className={`absolute top-0 right-0 w-72 h-full bg-white dark:bg-[#151015] shadow-2xl transform transition-transform duration-300 ${
             mobileMenuOpen ? "translate-x-0" : "translate-x-full"
           }`}
         >
@@ -148,14 +142,14 @@ const Navbar = () => {
             <Link
               to="/login"
               onClick={() => setMobileMenuOpen(false)}
-              className="py-4 text-lg font-medium text-gray-700 dark:text-gray-200 hover:text-black dark:hover:text-white border-b border-gray-100 dark:border-gray-800 transition-colors"
+              className="py-4 text-lg font-medium text-gray-700 dark:text-gray-200 hover:text-black dark:hover:text-white border-b border-gray-100 dark:border-white/10 transition-colors"
             >
               Log in
             </Link>
             <Link
               to="/register"
               onClick={() => setMobileMenuOpen(false)}
-              className="py-4 text-lg font-medium text-gray-700 dark:text-gray-200 hover:text-black dark:hover:text-white border-b border-gray-100 dark:border-gray-800 transition-colors"
+              className="py-4 text-lg font-medium text-gray-700 dark:text-gray-200 hover:text-black dark:hover:text-white border-b border-gray-100 dark:border-white/10 transition-colors"
             >
               Sign up
             </Link>

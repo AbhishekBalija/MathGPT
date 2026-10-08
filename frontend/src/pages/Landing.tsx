@@ -26,7 +26,7 @@ const Landing = () => {
             <div className="max-w-4xl mx-auto">
               <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-semibold tracking-tighter text-gray-900 dark:text-white mb-6 md:mb-8 leading-none">
                 <span className="block">Stuck on a problem?</span>
-                <span className="block text-brand-600 dark:text-brand-300">
+                <span className="block text-brand-600 dark:bg-linear-to-r dark:from-[#ffd166] dark:to-brand-300 dark:bg-clip-text dark:text-transparent">
                   See every step.
                 </span>
               </h1>
@@ -55,7 +55,7 @@ const Landing = () => {
 
             {/* Hero Video */}
             <div className="w-full max-w-6xl mx-auto px-4">
-              <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+              <div className="relative bg-white dark:bg-[#151015] rounded-xl shadow-2xl border border-gray-200 dark:border-white/10 overflow-hidden">
                 <video
                   className="w-full h-auto block"
                   autoPlay
@@ -107,7 +107,7 @@ const Landing = () => {
       </section>
 
       {/* Closing call to action */}
-      <section className="py-16 md:py-24 bg-white dark:bg-[#0a0a0a] border-t border-gray-100 dark:border-gray-800">
+      <section className="py-16 md:py-24 bg-white dark:bg-[#0a0a0a] border-t border-gray-100 dark:border-white/10">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-5xl font-semibold tracking-tighter">
             Got homework tonight?
@@ -127,7 +127,7 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-[#0a0a0a] border-t border-gray-100 dark:border-gray-800 py-8 md:py-12">
+      <footer className="bg-white dark:bg-[#0a0a0a] border-t border-gray-100 dark:border-white/10 py-8 md:py-12">
         <div className="container mx-auto px-4 md:px-6 flex flex-col md:flex-row justify-between items-center text-center md:text-left text-sm text-gray-500 dark:text-gray-400">
           <div className="flex flex-col items-center md:items-start gap-1">
             <p>&copy; {new Date().getFullYear()} NeoMath</p>
@@ -184,7 +184,7 @@ const FeatureTile = ({
 }) => {
   return (
     <div
-      className={`flex flex-col rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#0f1115] p-3 ${className}`}
+      className={`flex flex-col rounded-3xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#151015] p-3 ${className}`}
     >
       <div className="flex-1 min-h-56">{children}</div>
       <div className="px-3 pt-5 pb-3">
