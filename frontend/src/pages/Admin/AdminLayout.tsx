@@ -2,7 +2,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
 import { useAdminStore } from "../../stores/adminStore";
 import { useThemeStore } from "../../stores/themeStore";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Menu, X, Moon, Sun } from "lucide-react";
 
 const AdminLayout = () => {
@@ -11,10 +11,7 @@ const AdminLayout = () => {
   const { isDark, toggleTheme } = useThemeStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Close sidebar on route change (mobile)
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, []);
+  // Sidebar starts closed and closes on nav clicks below
 
   const handleLogout = async () => {
     clearAdminData();

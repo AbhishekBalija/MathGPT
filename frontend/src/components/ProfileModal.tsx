@@ -33,7 +33,8 @@ const ProfileModal = () => {
       // Trigger animation after mount
       requestAnimationFrame(() => setIsAnimating(true));
     } else {
-      setIsAnimating(false);
+      // Reset in a callback so the effect itself stays pure
+      requestAnimationFrame(() => setIsAnimating(false));
     }
   }, [isProfileOpen]);
 

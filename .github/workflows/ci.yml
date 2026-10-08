@@ -74,10 +74,8 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      # Not blocking yet: existing errors are tracked in #13
       - name: Lint
         run: bun run lint
-        continue-on-error: true
 
       - name: Typecheck
         run: bun run typecheck

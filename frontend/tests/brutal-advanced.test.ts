@@ -13,7 +13,7 @@
  * Run: npm test -- --run tests/brutal-advanced.test.ts
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useChatStore } from "../src/stores/chatStore";
 import { useAuthStore } from "../src/stores/authStore";
 import DOMPurify from "dompurify";
@@ -140,8 +140,12 @@ describe("🔐 AUTH STORE - Token Security", () => {
         "../src/stores/authStore"
       );
       const state = reloadedStore.getState();
-      expect((state as any).isAdmin).toBeUndefined();
-      expect((Object.prototype as any).isAdmin).toBeUndefined();
+      expect(
+        (state as unknown as Record<string, unknown>).isAdmin
+      ).toBeUndefined();
+      expect(
+        (Object.prototype as unknown as Record<string, unknown>).isAdmin
+      ).toBeUndefined();
     });
   });
 });
@@ -385,7 +389,7 @@ describe("🚨 ERROR BOUNDARIES - Graceful Failure", () => {
             createdAt: "invalid-date",
             title: "Corrupted",
             updatedAt: "invalid",
-          } as any,
+          } as never,
         ],
         activeChatId: "corrupted",
       });
@@ -462,14 +466,18 @@ describe("⚡ PERFORMANCE - Stress Tests", () => {
     const store = useChatStore.getState();
     store.createNewChat();
 
-    const initialMemory = (performance as any).memory?.usedJSHeapSize || 0;
+    // Chrome-only memory API, typed safely
+    const perf = performance as Performance & {
+      memory?: { usedJSHeapSize: number };
+    };
+    const initialMemory = perf.memory?.usedJSHeapSize || 0;
 
     for (let i = 0; i < 1000; i++) {
       store.setLoading(i % 2 === 0);
       store.setError(i % 3 === 0 ? `Error ${i}` : null);
     }
 
-    const finalMemory = (performance as any).memory?.usedJSHeapSize || 0;
+    const finalMemory = perf.memory?.usedJSHeapSize || 0;
     const memIncrease = finalMemory - initialMemory;
 
     if (initialMemory > 0) {

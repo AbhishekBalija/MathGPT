@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import adminService, {
   type ErrorItem,
   type ErrorStats,
@@ -12,7 +12,7 @@ const Errors = () => {
   const [showResolved, setShowResolved] = useState(false);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
 
-  const fetchErrors = async () => {
+  const fetchErrors = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -27,11 +27,11 @@ const Errors = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [showResolved]);
 
   useEffect(() => {
     fetchErrors();
-  }, [showResolved]);
+  }, [fetchErrors]);
 
   const handleResolve = async (errorId: string) => {
     setResolvingId(errorId);

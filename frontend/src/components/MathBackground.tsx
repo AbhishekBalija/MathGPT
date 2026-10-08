@@ -1,18 +1,19 @@
 import { useEffect, useState } from "react";
 
 const MathBackground = () => {
-  const [mounted, setMounted] = useState(false);
-  const [isDark, setIsDark] = useState(false);
+  // Read theme once on mount, then watch for changes
+  const [isDark, setIsDark] = useState(
+    () =>
+      typeof document !== "undefined" &&
+      document.documentElement.classList.contains("dark")
+  );
 
   useEffect(() => {
-    setMounted(true);
-    // Check initial theme
+    // Watch for theme changes and update state in the callback
     const checkTheme = () => {
       setIsDark(document.documentElement.classList.contains("dark"));
     };
-    checkTheme();
 
-    // Watch for theme changes
     const observer = new MutationObserver(checkTheme);
     observer.observe(document.documentElement, {
       attributes: true,
@@ -21,8 +22,6 @@ const MathBackground = () => {
 
     return () => observer.disconnect();
   }, []);
-
-  if (!mounted) return null;
 
   // Colors for light mode (darker waves on light bg) vs dark mode (lighter waves on dark bg)
   const waveColors = isDark
@@ -136,7 +135,8 @@ const FlowingWavePath = ({
   direction: number;
   startOffset: number;
 }) => {
-  const id = `wave-${Math.random().toString(36).substr(2, 9)}`;
+  // Stable id for this wave, created once
+  const [id] = useState(() => `wave-${Math.random().toString(36).slice(2, 11)}`);
 
   // Create a smooth horizontal sine wave path
   const createSinePath = () => {
