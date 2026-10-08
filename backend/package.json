@@ -11,7 +11,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "test:watch": "vitest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "db:check": "bun scripts/check-migrations.ts",
+    "vercel-build": "bun scripts/check-migrations.ts"
   },
   "keywords": [],
   "dependencies": {

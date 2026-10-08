@@ -85,7 +85,8 @@ Schema changes are committed SQL files in `backend/drizzle/` (ADR-0002).
 They are never applied automatically on deploy:
 
 1. Read the new SQL files in the PR.
-2. Run them against the target database on purpose:
+2. Run them against the target database on purpose (preview branch first,
+   then production):
 
    ```bash
    cd backend
@@ -93,6 +94,18 @@ They are never applied automatically on deploy:
    ```
 
 3. Deploy the code that needs them.
+
+**Safety net:** the backend's Vercel build step (`vercel-build` in
+`backend/package.json`) runs `scripts/check-migrations.ts` against that
+environment's `DATABASE_URL`. If the database is missing a migration, the
+build fails with the list of missing files and the current deployment keeps
+serving, so the live site never runs code ahead of its schema. Apply the
+migration, then redeploy. Run the same check locally with
+`DATABASE_URL=... bun run db:check`.
+
+Write migrations **additive first**: add tables and columns before code uses
+them, and drop old ones only in a later release, so old and new code both
+work while a deploy rolls out.
 
 ---
 
