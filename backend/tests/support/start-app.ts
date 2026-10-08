@@ -5,7 +5,7 @@
 
 import { once } from "node:events";
 import { afterAll } from "vitest";
-import { createApp } from "../../src/app";
+import { createApp } from "../../src/create-app";
 import { randomIp } from "./network";
 import { fakeEmailSender, fakeMathSolver } from "./test-app";
 

@@ -32,8 +32,8 @@ curl http://localhost:3000/health
 
 ```
 src/
-  app.ts            builds the Express app (CORS, JSON, routes, error handling)
-  server.ts         local entry point, calls listen()
+  create-app.ts     builds the Express app (CORS, JSON, routes, error handling)
+  server.ts         the one entry: listens locally, default export for Vercel
   routes/           one file per endpoint, all registered in routes/index.ts
   events/           work that runs after a request (emails, analytics, saving)
   db/               Postgres: Drizzle schema and the one shared connection pool
