@@ -7,7 +7,7 @@
  * Run: npm test
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import { randomIp } from "./support/network";
 import { registerVerifiedUser, uniqueEmail } from "./support/users";
 
@@ -602,7 +602,7 @@ describe("🧮 SOLVE API - Brutal Stress Tests", () => {
       `;
 
       const startTime = Date.now();
-      const res = await fetch(`${API_URL}/api/solve`, {
+      await fetch(`${API_URL}/api/solve`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -819,7 +819,7 @@ describe("👤 PROFILE - Privilege Escalation Prevention", () => {
     });
 
     it("should NOT allow mass assignment attacks", async () => {
-      const res = await fetch(`${API_URL}/api/profile`, {
+      await fetch(`${API_URL}/api/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

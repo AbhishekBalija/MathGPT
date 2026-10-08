@@ -12,7 +12,7 @@
  * Run: npm test -- --run tests/brutal-advanced.test.ts
  */
 
-import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import { registerVerifiedUser, uniqueEmail } from "./support/users";
 
 const API_URL = process.env.TEST_API_URL || "http://localhost:3000";
@@ -71,7 +71,6 @@ describe("🔴 REDIS STATE - Rate Limiting Verification", () => {
         responses.push(res);
       }
 
-      const successCount = responses.filter((r) => r.status === 200).length;
       // At least one request should complete (not all 500 errors)
       const serverErrorCount = responses.filter((r) => r.status === 500).length;
       expect(serverErrorCount).toBeLessThan(3); // Most requests should not be server errors
@@ -219,7 +218,7 @@ describe("💳 DAILY CREDIT LIMITS - Abuse Prevention", () => {
     });
 
     it("should NOT allow negative credits via API manipulation", async () => {
-      const res = await fetch(`${API_URL}/api/profile`, {
+      await fetch(`${API_URL}/api/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
