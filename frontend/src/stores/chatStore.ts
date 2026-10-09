@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { SolveError } from "../utils/errorMessages";
 
 export interface Message {
   id: string;
@@ -57,12 +58,17 @@ interface ChatState {
   globalLoading: boolean; // For app-wide loading overlay
   solutionLoading: boolean; // For solution fetch (shows skeleton, not overlay)
   error: string | null;
-  sidebarOpen: boolean;
-  showAnswerPanel: boolean;
   historyLoaded: boolean;
   isProfileOpen: boolean;
+  // Solver page: problem waiting to be sent, last solve error, and which view is open
+  pendingProblem: string | null;
+  solveError: SolveError | null;
+  view: "all" | "one" | "hint";
 
   // Actions
+  setPendingProblem: (problem: string | null) => void;
+  setSolveError: (error: SolveError | null) => void;
+  setView: (view: "all" | "one" | "hint") => void;
   createNewChat: () => string;
   setActiveChat: (chatId: string) => void;
   addMessage: (
@@ -71,8 +77,6 @@ interface ChatState {
   ) => void;
   setSolution: (chatId: string, solution: Solution) => void;
   setError: (error: string | null) => void;
-  toggleSidebar: () => void;
-  setShowAnswerPanel: (show: boolean) => void;
   setLoading: (loading: boolean) => void;
   setGlobalLoading: (loading: boolean) => void;
   loadHistory: (
@@ -88,21 +92,31 @@ interface ChatState {
     }>
   ) => void;
   fetchSolution: (chatId: string, solutionId: string) => Promise<void>;
-  deleteChat: (chatId: string, solutionId?: string) => Promise<boolean>;
+  // silent: skip the full-screen loading overlay (used by delete with Undo)
+  deleteChat: (
+    chatId: string,
+    solutionId?: string,
+    options?: { silent?: boolean }
+  ) => Promise<boolean>;
   clearAllChats: () => Promise<boolean>;
   toggleProfileModal: () => void;
 }
 
-export const useChatStore = create<ChatState>((set, get) => ({
+export const useChatStore = create<ChatState>((set) => ({
   chats: [],
   activeChatId: null,
   isLoading: false,
   globalLoading: false,
   solutionLoading: false,
   error: null,
-  sidebarOpen: false,
-  showAnswerPanel: false,
   historyLoaded: false,
+  pendingProblem: null,
+  solveError: null,
+  view: "all",
+
+  setPendingProblem: (problem) => set({ pendingProblem: problem }),
+  setSolveError: (error) => set({ solveError: error }),
+  setView: (view) => set({ view }),
 
   createNewChat: () => {
     const newChat: Chat = {
@@ -115,17 +129,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((state) => ({
       chats: [newChat, ...state.chats],
       activeChatId: newChat.id,
-      showAnswerPanel: false,
     }));
     return newChat.id;
   },
 
   setActiveChat: (chatId) => {
-    const chat = get().chats.find((c) => c.id === chatId);
-    set({
-      activeChatId: chatId,
-      showAnswerPanel: chat?.solution ? true : false,
-    });
+    set({ activeChatId: chatId });
   },
 
   fetchSolution: async (chatId, solutionId) => {
@@ -155,13 +164,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
         chats: state.chats.map((chat) =>
           chat.id === chatId ? { ...chat, solution } : chat
         ),
-        showAnswerPanel: true,
       }));
       return;
     }
 
     // Not cached - fetch and cache (use solutionLoading for skeleton, not globalLoading)
-    set({ solutionLoading: true, showAnswerPanel: true });
+    set({ solutionLoading: true });
     try {
       const solutionData = await useAppDataStore
         .getState()
@@ -186,7 +194,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
           chats: state.chats.map((chat) =>
             chat.id === chatId ? { ...chat, solution } : chat
           ),
-          showAnswerPanel: true,
         }));
       }
     } finally {
@@ -222,16 +229,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       chats: state.chats.map((chat) =>
         chat.id === chatId ? { ...chat, solution } : chat
       ),
-      showAnswerPanel: true,
     }));
-  },
-
-  toggleSidebar: () => {
-    set((state) => ({ sidebarOpen: !state.sidebarOpen }));
-  },
-
-  setShowAnswerPanel: (show) => {
-    set({ showAnswerPanel: show });
   },
 
   setLoading: (loading) => {
@@ -284,8 +282,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }));
   },
 
-  deleteChat: async (chatId, solutionId) => {
-    set({ globalLoading: true });
+  deleteChat: async (chatId, solutionId, options) => {
+    const silent = options?.silent === true;
+    if (!silent) set({ globalLoading: true });
     try {
       // If there's a solutionId, delete from backend
       if (solutionId) {
@@ -305,12 +304,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
           activeChatId: isActiveDeleted
             ? newChats[0]?.id || null
             : state.activeChatId,
-          showAnswerPanel: isActiveDeleted ? false : state.showAnswerPanel,
         };
       });
       return true;
     } finally {
-      set({ globalLoading: false });
+      if (!silent) set({ globalLoading: false });
     }
   },
 
@@ -325,7 +323,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
         set({
           chats: [],
           activeChatId: null,
-          showAnswerPanel: false,
         });
       }
 
