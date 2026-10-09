@@ -33,6 +33,11 @@ describe("trySolveArithmetic", () => {
     expect(content.answer.latex).toBe("-2");
   });
 
+  it("keeps the minus sign when a long division is negated", () => {
+    const content = solve("-(156 / 4)");
+    expect(content.answer.latex).toBe("-39");
+  });
+
   it.each(["156 ÷ 4", "Divide 156 by 4", "156 / 4"])("uses long division for %s", (problem) => {
     const content = solve(problem);
     expect(content.steps[0].block).toEqual({ type: "longDivision", dividend: 156, divisor: 4 });

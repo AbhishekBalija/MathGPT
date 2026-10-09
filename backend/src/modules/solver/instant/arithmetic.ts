@@ -166,7 +166,8 @@ function walk(node: MathNode, steps: Step[]): Fraction {
 // The answer, with quotient and remainder when the last step is a long division
 function makeAnswer(steps: Step[], value: Fraction): SolutionV2Content["answer"] {
   const last = steps[steps.length - 1].block;
-  if (last.type === "longDivision") {
+  // Only when the division is the final value; a minus sign around it changes the answer
+  if (last.type === "longDivision" && Number(value.s) >= 0) {
     const quotient = BigInt(last.dividend) / BigInt(last.divisor);
     const remainder = BigInt(last.dividend) % BigInt(last.divisor);
     return {
