@@ -81,7 +81,10 @@ const VerifyEmail = () => {
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 429) {
         setCooldown(Number(err.response.data?.retryAfter) || 60);
-        setError(err.response.data?.error ?? "Please wait before requesting another code.");
+        setError(
+          err.response.data?.error ??
+            "Please wait before requesting another code.",
+        );
       } else if (axios.isAxiosError(err) && err.response?.data?.error) {
         setError(err.response.data.error);
       } else {
@@ -101,7 +104,9 @@ const VerifyEmail = () => {
     <AuthLayout>
       <h1 className={ui.heading}>Check your email</h1>
       <p className={ui.subheading}>
-        {shouldSendCode ? "We're sending a 6-digit code to" : "We sent a 6-digit code to"}{" "}
+        {shouldSendCode
+          ? "We're sending a 6-digit code to"
+          : "We sent a 6-digit code to"}{" "}
         <span className="font-medium text-gray-900 dark:text-white">
           {user?.email ?? "your email"}
         </span>
@@ -141,7 +146,11 @@ const VerifyEmail = () => {
               placeholder="000000"
             />
           </div>
-          <button type="submit" disabled={isVerifying || code.length !== 6} className={ui.primaryButton}>
+          <button
+            type="submit"
+            disabled={isVerifying || code.length !== 6}
+            className={ui.primaryButton}
+          >
             {isVerifying ? "Verifying..." : "Verify email"}
           </button>
         </form>
@@ -163,7 +172,11 @@ const VerifyEmail = () => {
             </button>
           </p>
           <p>
-            <button type="button" onClick={handleUseAnotherAccount} className="hover:underline underline-offset-4">
+            <button
+              type="button"
+              onClick={handleUseAnotherAccount}
+              className="hover:underline underline-offset-4"
+            >
               Use a different account
             </button>
           </p>

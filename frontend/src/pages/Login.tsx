@@ -13,8 +13,6 @@ const Login = () => {
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  // Google comes first; the email form opens when asked for
-  const [showEmail, setShowEmail] = useState(false);
 
   const getRedirectPath = (isAdmin: boolean | undefined) => {
     // If there's a saved location, go there (unless it's an admin trying to access /app which is fine)
@@ -28,7 +26,7 @@ const Login = () => {
   };
 
   const handleGoogleSuccess = async (
-    credentialResponse: CredentialResponse
+    credentialResponse: CredentialResponse,
   ) => {
     setError(null);
     if (credentialResponse.credential) {
@@ -108,57 +106,56 @@ const Login = () => {
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleError}
             theme="outline"
-            width="340"
+            width="384"
             text="continue_with"
             shape="rectangular"
           />
         </div>
 
-        {showEmail ? (
-          <form className="space-y-3 pt-2" onSubmit={handleEmailLogin}>
-            <div>
-              <label htmlFor="email-address" className={ui.label}>
-                Email
-              </label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                autoFocus
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-                className={ui.input}
-                placeholder="you@example.com"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className={ui.label}>
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-                className={ui.input}
-              />
-            </div>
-            <button type="submit" disabled={isLoading} className={`${ui.primaryButton} !mt-5`}>
-              {isLoading ? "Signing in..." : "Sign in"}
-            </button>
-          </form>
-        ) : (
-          <button type="button" onClick={() => setShowEmail(true)} className={ui.quietButton}>
-            or continue with email
+        <div className={ui.divider}>or</div>
+
+        <form className="space-y-3" onSubmit={handleEmailLogin}>
+          <div>
+            <label htmlFor="email-address" className={ui.label}>
+              Email
+            </label>
+            <input
+              id="email-address"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
+              className={ui.input}
+              placeholder="you@example.com"
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className={ui.label}>
+              Password
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
+              className={ui.input}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className={`${ui.primaryButton} !mt-5`}
+          >
+            {isLoading ? "Signing in..." : "Sign in"}
           </button>
-        )}
+        </form>
       </div>
     </AuthLayout>
   );

@@ -12,8 +12,18 @@ interface AuthLayoutProps {
 /** Steps illustration: light, and a dark version with a white rim (see docs/brand.md). */
 const StepsScene = ({ className = "" }: { className?: string }) => (
   <>
-    <img src="/brand/scene-steps.svg" alt="" className={`dark:hidden ${className}`} draggable={false} />
-    <img src="/brand/scene-steps-dark.svg" alt="" className={`hidden dark:block ${className}`} draggable={false} />
+    <img
+      src="/brand/scene-steps.svg"
+      alt=""
+      className={`dark:hidden ${className}`}
+      draggable={false}
+    />
+    <img
+      src="/brand/scene-steps-dark.svg"
+      alt=""
+      className={`hidden dark:block ${className}`}
+      draggable={false}
+    />
   </>
 );
 
@@ -33,14 +43,19 @@ const AuthLayout = ({ corner, children }: AuthLayoutProps) => (
       </Link>
       <div className="flex-1 flex flex-col items-center justify-center gap-8">
         <StepsScene className="w-full max-w-md" />
-        <p className="text-gray-500 dark:text-gray-400">Stuck on a problem? See every step.</p>
+        <p className="text-gray-500 dark:text-gray-400">
+          Stuck on a problem? See every step.
+        </p>
       </div>
     </aside>
 
     {/* Form side */}
     <main className="flex flex-col px-5 py-5 sm:px-10 sm:py-8">
       <div className="flex items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400">
-        <Link to="/" className="lg:invisible [--logo-h:22px] sm:[--logo-h:26px]">
+        <Link
+          to="/"
+          className="lg:invisible [--logo-h:22px] sm:[--logo-h:26px]"
+        >
           <Logo height="var(--logo-h)" />
         </Link>
         <div>{corner}</div>

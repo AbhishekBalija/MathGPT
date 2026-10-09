@@ -13,11 +13,9 @@ const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  // Google comes first; the email form opens when asked for
-  const [showEmail, setShowEmail] = useState(false);
 
   const handleGoogleSuccess = async (
-    credentialResponse: CredentialResponse
+    credentialResponse: CredentialResponse,
   ) => {
     setError(null);
     if (credentialResponse.credential) {
@@ -91,75 +89,74 @@ const Register = () => {
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleError}
             theme="outline"
-            width="340"
+            width="384"
             text="signup_with"
             shape="rectangular"
           />
         </div>
 
-        {showEmail ? (
-          <form className="space-y-3 pt-2" onSubmit={handleEmailRegister}>
-            <div>
-              <label htmlFor="full-name" className={ui.label}>
-                Name
-              </label>
-              <input
-                id="full-name"
-                name="name"
-                type="text"
-                autoComplete="name"
-                required
-                autoFocus
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={isLoading}
-                className={ui.input}
-                placeholder="Your name"
-              />
-            </div>
-            <div>
-              <label htmlFor="email-address" className={ui.label}>
-                Email
-              </label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-                className={ui.input}
-                placeholder="you@example.com"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className={ui.label}>
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-                className={ui.input}
-                placeholder="At least 8 characters"
-              />
-            </div>
-            <button type="submit" disabled={isLoading} className={`${ui.primaryButton} !mt-5`}>
-              {isLoading ? "Creating account..." : "Create account"}
-            </button>
-          </form>
-        ) : (
-          <button type="button" onClick={() => setShowEmail(true)} className={ui.quietButton}>
-            or sign up with email
+        <div className={ui.divider}>or</div>
+
+        <form className="space-y-3" onSubmit={handleEmailRegister}>
+          <div>
+            <label htmlFor="full-name" className={ui.label}>
+              Name
+            </label>
+            <input
+              id="full-name"
+              name="name"
+              type="text"
+              autoComplete="name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={isLoading}
+              className={ui.input}
+              placeholder="Your name"
+            />
+          </div>
+          <div>
+            <label htmlFor="email-address" className={ui.label}>
+              Email
+            </label>
+            <input
+              id="email-address"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
+              className={ui.input}
+              placeholder="you@example.com"
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className={ui.label}>
+              Password
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
+              className={ui.input}
+              placeholder="At least 8 characters"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className={`${ui.primaryButton} !mt-5`}
+          >
+            {isLoading ? "Creating account..." : "Create account"}
           </button>
-        )}
+        </form>
 
         <p className="pt-2 text-center text-xs text-gray-500 dark:text-gray-400">
           By signing up you agree to the{" "}

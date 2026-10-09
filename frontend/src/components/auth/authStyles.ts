@@ -12,10 +12,12 @@ export const input =
 export const primaryButton =
   "flex w-full justify-center rounded-xl bg-black dark:bg-white px-3 py-3 text-sm font-semibold text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black disabled:opacity-60 disabled:cursor-not-allowed";
 
-export const quietButton =
-  "w-full py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white";
+// A thin line with "or" in the middle, between Google and the email form
+export const divider =
+  "flex items-center gap-3 text-xs text-gray-400 before:h-px before:flex-1 before:bg-gray-200 dark:before:bg-white/10 after:h-px after:flex-1 after:bg-gray-200 dark:after:bg-white/10";
 
-export const textLink = "font-semibold text-gray-900 dark:text-white hover:underline underline-offset-4";
+export const textLink =
+  "font-semibold text-gray-900 dark:text-white hover:underline underline-offset-4";
 
 export const errorBox =
   "rounded-xl border border-red-100 dark:border-red-900/50 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm font-medium text-red-600 dark:text-red-400";
