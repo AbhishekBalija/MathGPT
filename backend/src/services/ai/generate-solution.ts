@@ -11,7 +11,7 @@ import { z } from "zod";
 import { logger } from "../../lib/logger";
 import { solutionV2Schema } from "../../modules/solutions/solution-v2.schema";
 import type { SolveResult, TokenUsage } from "../../modules/ai/math-solver";
-import type { ProblemType } from "../../types/solve.types";
+import { PROBLEM_TYPES, type ProblemType } from "../../types/solve.types";
 import { buildRetryPrompt } from "./prompts";
 import { InvalidSolverOutputError, UnsolvableProblemError } from "./solver-errors";
 
@@ -20,20 +20,10 @@ export interface ModelOutput {
   tokenUsage?: TokenUsage;
 }
 
-const MAX_ERROR_SUMMARY = 500;
+const MAX_REFUSAL_LOG = 200;
+export const REFUSAL_MESSAGE = "I couldn't read that problem. Try writing it like x^2 + 5x + 6 = 0.";
+export const MAX_ERROR_SUMMARY = 500;
 const MAX_ERROR_ISSUES = 5;
-
-const PROBLEM_TYPES: ProblemType[] = [
-  "algebra",
-  "calculus_derivative",
-  "calculus_integral",
-  "calculus_limit",
-  "trigonometry",
-  "linear_algebra",
-  "geometry",
-  "statistics",
-  "unknown",
-];
 
 const refusalSchema = z.object({ refused: z.literal(true), reason: z.string().optional() });
 
@@ -44,6 +34,25 @@ export function stripCodeFences(text: string): string {
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/, "")
     .trim();
+}
+
+/**
+ * Finds the JSON in a model reply. Drops <think> blocks and code fences,
+ * and if that still is not JSON, takes everything from the first "{" to the
+ * last "}" (models sometimes add a sentence before or after the JSON).
+ */
+export function parseModelJson(text: string): unknown {
+  const cleaned = stripCodeFences(text.replace(/<think>[\s\S]*?<\/think>/gi, ""));
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    if (start === -1 || end <= start) {
+      throw new Error("No JSON found");
+    }
+    return JSON.parse(cleaned.slice(start, end + 1));
+  }
 }
 
 function toProblemType(type: unknown): ProblemType {
@@ -66,16 +75,17 @@ type Checked =
 function checkOutput(text: string): Checked {
   let raw: unknown;
   try {
-    raw = JSON.parse(stripCodeFences(text));
+    raw = parseModelJson(text);
   } catch {
     return { ok: false, reason: "The reply was not valid JSON." };
   }
 
   const refusal = refusalSchema.safeParse(raw);
   if (refusal.success) {
-    throw new UnsolvableProblemError(
-      refusal.data.reason || "That does not look like a math problem. Try typing a math question."
-    );
+    // The model's reason stays in our logs; the student sees fixed, friendly copy
+    const reason = (refusal.data.reason ?? "").slice(0, MAX_REFUSAL_LOG);
+    logger.info("AI refused the problem", { reason });
+    throw new UnsolvableProblemError(REFUSAL_MESSAGE, reason);
   }
 
   const envelope = z.object({ problemType: z.unknown(), solution: z.unknown() }).safeParse(raw);

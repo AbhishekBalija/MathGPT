@@ -1,8 +1,12 @@
 /** Errors the AI solver can throw, shared by the real and the fake solver. */
 
 export class UnsolvableProblemError extends Error {
-  constructor(message: string) {
+  /** The AI's own reason, for server logs only. Never sent to the client. */
+  readonly reason?: string;
+
+  constructor(message: string, reason?: string) {
     super(message);
+    this.reason = reason;
     this.name = "UnsolvableProblemError";
   }
 }

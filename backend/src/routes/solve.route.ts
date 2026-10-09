@@ -15,6 +15,7 @@ import {
   InvalidSolverOutputError,
   UnsolvableProblemError,
 } from "../services/ai/solver-errors";
+import { METHOD_ID_PATTERN } from "../services/ai/prompts";
 import type { Solution } from "../types/solve.types";
 import type { MathSolver } from "../modules/ai/math-solver";
 import { getCurrentUser } from "../modules/auth/auth.middleware";
@@ -46,7 +47,7 @@ const solveRequestSchema = z.object({
     .default("step_by_step"),
   chatId: z.string().optional(),
   // Id of the method the student picked, e.g. "quadratic-formula"
-  method: z.string().min(1).max(50).optional(),
+  method: z.string().min(1).max(50).regex(METHOD_ID_PATTERN, "Invalid method").optional(),
 });
 
 // POST /api/solve

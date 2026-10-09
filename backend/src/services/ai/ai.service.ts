@@ -15,8 +15,6 @@ import { generateValidSolution, type ModelOutput } from "./generate-solution";
 import { MATH_TUTOR_SYSTEM_PROMPT, buildSolvePrompt } from "./prompts";
 import { UnsolvableProblemError } from "./solver-errors";
 
-export { UnsolvableProblemError, InvalidSolverOutputError } from "./solver-errors";
-
 // ============================================================================
 // CONFIGURATION
 // ============================================================================

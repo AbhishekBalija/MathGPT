@@ -6,16 +6,18 @@
 import type { SolutionV2Content } from "../modules/solutions/solution-v2.schema";
 
 // Problem types we can handle
-export type ProblemType =
-  | "algebra"
-  | "calculus_derivative"
-  | "calculus_integral"
-  | "calculus_limit"
-  | "trigonometry"
-  | "linear_algebra"
-  | "geometry"
-  | "statistics"
-  | "unknown";
+export const PROBLEM_TYPES = [
+  "algebra",
+  "calculus_derivative",
+  "calculus_integral",
+  "calculus_limit",
+  "trigonometry",
+  "linear_algebra",
+  "geometry",
+  "statistics",
+  "unknown",
+] as const;
+export type ProblemType = (typeof PROBLEM_TYPES)[number];
 
 // Mode of solution delivery
 export type SolveMode = "step_by_step" | "hint" | "full";
@@ -107,19 +109,4 @@ export interface SolveResponse {
   success: boolean;
   solution?: Solution;
   error?: string;
-}
-
-/**
- * Raw response structure from Gemini AI
- * This is what we expect the AI to return (before parsing)
- */
-export interface AISolutionResponse {
-  problemType: ProblemType;
-  steps: Array<{
-    expression: string;
-    justification: string;
-    explanation: string;
-  }>;
-  finalAnswer: string;
-  summary: string;
 }

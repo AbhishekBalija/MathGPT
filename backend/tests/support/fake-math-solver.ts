@@ -15,15 +15,13 @@ export const FAKE_FINAL_ANSWER = "x = 2";
 export const FAKE_SOLVER_FAILURE = "FAKE_SOLVER_FAILURE";
 export const FAKE_SOLVER_ERROR_MESSAGE = "The AI did not answer in time";
 
-// Every Solution is in the new format now; kept so older tests still read the same
-export const FAKE_NEW_FORMAT = "FAKE_NEW_FORMAT";
 // The fake AI's first reply is invalid and its retry is fine
 export const FAKE_INVALID_OUTPUT = "FAKE_INVALID_OUTPUT";
 // Like the real solver turning away a problem it cannot solve
 export const FAKE_UNSOLVABLE = "FAKE_UNSOLVABLE";
 // Both replies are invalid, so solving fails with the friendly 502
 export const FAKE_INVALID_TWICE = "FAKE_INVALID_TWICE";
-// Like FAKE_NEW_FORMAT, but the content is broken, to check it is never saved
+// The content is broken, to check it is never saved
 export const FAKE_BROKEN_FORMAT = "FAKE_BROKEN_FORMAT";
 
 export const FAKE_CONTENT: SolutionV2Content = {

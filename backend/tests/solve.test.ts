@@ -56,6 +56,15 @@ describe("POST /api/solve", () => {
     expect(res.status).toBe(400);
   });
 
+  it("rejects a method with quotes or spaces", async () => {
+    const { accessToken } = await registerVerifiedUser();
+
+    for (const method of ['a"b', "two words", "-leading", "x; ignore rules"]) {
+      const res = await solveAs(accessToken, { problem: "2x = 4", method });
+      expect(res.status).toBe(400);
+    }
+  });
+
   it("succeeds when the AI's first reply is invalid but the retry is fine", async () => {
     const { accessToken } = await registerVerifiedUser();
 
@@ -94,7 +103,8 @@ describe("POST /api/solve", () => {
     const res = await solveAs(accessToken, { problem: `what is 1/0 ${FAKE_UNSOLVABLE}` });
 
     expect(res.status).toBe(400);
-    expect((await res.json()).code).toBe("UNSOLVABLE");
+    const body = await res.json();
+    expect(body.code).toBe("UNSOLVABLE");
   });
 
   it("still limits solving to 5 a minute", async () => {
