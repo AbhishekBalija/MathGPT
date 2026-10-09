@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { resolveSolution } from "../features/solver/model/resolve";
+import type { SolutionV2 } from "../features/solver/model/solution";
 import type { SolveError } from "../utils/errorMessages";
 
 export interface Message {
@@ -29,6 +31,7 @@ export interface Step {
   notes?: string;
 }
 
+// The old saved format (format version 1). The adapter turns it into SolutionV2.
 export interface Solution {
   id: string;
   problem: string;
@@ -44,7 +47,7 @@ export interface Chat {
   id: string;
   title: string;
   messages: Message[];
-  solution?: Solution;
+  solution?: SolutionV2;
   solutionId?: string; // For history items - used to fetch full solution on demand
   createdAt: Date;
   updatedAt: Date;
@@ -75,7 +78,7 @@ interface ChatState {
     chatId: string,
     message: Omit<Message, "id" | "timestamp">
   ) => void;
-  setSolution: (chatId: string, solution: Solution) => void;
+  setSolution: (chatId: string, solution: SolutionV2) => void;
   setError: (error: string | null) => void;
   setLoading: (loading: boolean) => void;
   setGlobalLoading: (loading: boolean) => void;
@@ -88,6 +91,7 @@ interface ChatState {
       finalAnswer: string;
       summary: string;
       stepsCount: number;
+      formatVersion?: number;
       createdAt: string;
     }>
   ) => void;
@@ -146,25 +150,14 @@ export const useChatStore = create<ChatState>((set) => ({
 
     if (cachedSolution) {
       // Use cached solution - instant!
-      const solution = {
-        id: cachedSolution.id,
-        problem: cachedSolution.problem,
-        problemType: cachedSolution.problemType as Solution["problemType"],
-        steps: cachedSolution.steps.map((s) => ({
-          ...s,
-          status: s.status as Step["status"],
-        })),
-        finalAnswer: cachedSolution.finalAnswer,
-        summary: cachedSolution.summary,
-        processingTimeMs: cachedSolution.processingTimeMs,
-        createdAt: new Date(cachedSolution.createdAt),
-      };
-
-      set((state) => ({
-        chats: state.chats.map((chat) =>
-          chat.id === chatId ? { ...chat, solution } : chat
-        ),
-      }));
+      const solution = resolveSolution(cachedSolution);
+      if (solution) {
+        set((state) => ({
+          chats: state.chats.map((chat) =>
+            chat.id === chatId ? { ...chat, solution } : chat
+          ),
+        }));
+      }
       return;
     }
 
@@ -175,21 +168,8 @@ export const useChatStore = create<ChatState>((set) => ({
         .getState()
         .fetchAndCacheSolution(solutionId);
 
-      if (solutionData) {
-        const solution = {
-          id: solutionData.id,
-          problem: solutionData.problem,
-          problemType: solutionData.problemType as Solution["problemType"],
-          steps: solutionData.steps.map((s) => ({
-            ...s,
-            status: s.status as Step["status"],
-          })),
-          finalAnswer: solutionData.finalAnswer,
-          summary: solutionData.summary,
-          processingTimeMs: solutionData.processingTimeMs,
-          createdAt: new Date(solutionData.createdAt),
-        };
-
+      const solution = solutionData ? resolveSolution(solutionData) : null;
+      if (solution) {
         set((state) => ({
           chats: state.chats.map((chat) =>
             chat.id === chatId ? { ...chat, solution } : chat

@@ -5,6 +5,7 @@
  */
 
 import api from "./api";
+import type { SolutionContent } from "../features/solver/model/resolve";
 
 export interface HistoryItem {
   id: string;
@@ -14,6 +15,8 @@ export interface HistoryItem {
   finalAnswer: string;
   summary: string;
   stepsCount: number;
+  // 1 for old rows, 2 for typed-block solutions
+  formatVersion?: number;
   createdAt: string;
 }
 
@@ -55,6 +58,9 @@ export interface FullSolution {
   summary: string;
   processingTimeMs: number;
   createdAt: string;
+  // The typed blocks of a v2 solution. null for old rows.
+  formatVersion?: number;
+  content?: SolutionContent | null;
 }
 
 interface SolutionResponse {

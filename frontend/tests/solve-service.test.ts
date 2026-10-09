@@ -16,6 +16,11 @@ beforeEach(() => {
 });
 
 describe("solveProblem failures", () => {
+  it("maps UNSOLVABLE and INVALID_OUTPUT to calm copy", () => {
+    expect(toSolveError({ status: 400, code: "UNSOLVABLE" }).message).toBe(SOLVE_ERROR_COPY.unsolvable);
+    expect(toSolveError({ status: 502, code: "INVALID_OUTPUT" }).message).toBe(SOLVE_ERROR_COPY.serverTrouble);
+  });
+
   it("passes a 429 RATE_LIMITED reply through to the store", async () => {
     post.mockRejectedValue({
       response: { status: 429, data: { error: "Too many requests.", code: "RATE_LIMITED", retryAfter: 40 } },

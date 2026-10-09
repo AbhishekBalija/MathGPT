@@ -10,7 +10,13 @@
  */
 
 import { z, ZodError } from "zod";
-import { UnsolvableProblemError } from "../services/ai/ai.service";
+import { randomUUID } from "node:crypto";
+import {
+  InvalidSolverOutputError,
+  UnsolvableProblemError,
+} from "../services/ai/solver-errors";
+import { METHOD_ID_PATTERN } from "../services/ai/prompts";
+import type { Solution } from "../types/solve.types";
 import type { MathSolver } from "../modules/ai/math-solver";
 import { getCurrentUser } from "../modules/auth/auth.middleware";
 import { userRepository } from "../modules/users/user.repository";
@@ -40,6 +46,8 @@ const solveRequestSchema = z.object({
     .optional()
     .default("step_by_step"),
   chatId: z.string().optional(),
+  // Id of the method the student picked, e.g. "quadratic-formula"
+  method: z.string().min(1).max(50).regex(METHOD_ID_PATTERN, "Invalid method").optional(),
 });
 
 // POST /api/solve
@@ -51,12 +59,14 @@ export function createSolveRoute(solver: MathSolver) {
     let problem: string;
     let mode: "step_by_step" | "hint" | "full";
     let chatId: string | undefined;
+    let method: string | undefined;
 
     try {
       const parsed = solveRequestSchema.parse(req.body);
       problem = parsed.problem;
       mode = parsed.mode;
       chatId = parsed.chatId;
+      method = parsed.method;
     } catch (error) {
       if (error instanceof ZodError) {
         logger.warn("Solve validation failed", { errors: error.issues });
@@ -171,11 +181,27 @@ export function createSolveRoute(solver: MathSolver) {
       }
 
       // Solve the problem using AI
-      const solution = await solver.solve(problem);
+      const result = await solver.solve(problem, { method });
+      const { content } = result;
+
+      // The new format keeps its steps in `content`. The old columns still
+      // need a value, so they get the answer as text and no steps.
+      const solution: Solution = {
+        id: randomUUID(),
+        problem,
+        problemType: result.problemType,
+        steps: [],
+        finalAnswer: content.answer.latex ?? content.answer.text ?? "",
+        summary: content.problem.task,
+        content,
+        processingTimeMs: result.processingTimeMs,
+        tokenUsage: result.tokenUsage,
+        createdAt: new Date().toISOString(),
+      };
 
       logger.info("Problem solved successfully", {
         problemType: solution.problemType,
-        stepsCount: solution.steps.length,
+        stepsCount: content.steps.length,
         processingTimeMs: solution.processingTimeMs,
         userId,
       });
@@ -216,7 +242,7 @@ export function createSolveRoute(solver: MathSolver) {
           event: "solution_saved",
           properties: {
             problemType: solution.problemType,
-            stepsCount: solution.steps.length,
+            stepsCount: content.steps.length,
             processingTimeMs: solution.processingTimeMs,
             userId,
           },
@@ -240,7 +266,12 @@ export function createSolveRoute(solver: MathSolver) {
         status: 200 as const,
         body: {
           success: true,
-          solution,
+          solution: {
+            id: solution.id,
+            createdAt: solution.createdAt,
+            formatVersion: 2,
+            content,
+          },
         },
       };
     } catch (error) {
@@ -255,6 +286,36 @@ export function createSolveRoute(solver: MathSolver) {
           status: 400 as const,
           body: {
             error: error.message,
+            code: "UNSOLVABLE",
+          },
+        };
+      }
+
+      // The AI answered twice in a broken format. Friendly message, no credit spent.
+      if (error instanceof InvalidSolverOutputError) {
+        logger.error("AI output stayed invalid after a retry", {
+          problem: problem.slice(0, 100),
+          error: error.message,
+          processingTimeMs: Date.now() - startTime,
+          userId,
+        });
+        runInBackground("problem-error", () =>
+          handleSolveError({
+            chatId,
+            userId,
+            problem: problem.slice(0, 200),
+            errorCode: "INVALID_OUTPUT",
+            errorMessage: error.message,
+            processingTimeMs: Date.now() - startTime,
+            timestamp: new Date().toISOString(),
+          })
+        );
+        return {
+          status: 502 as const,
+          body: {
+            success: false,
+            error: "Neo got confused by this one. Please try again.",
+            code: "INVALID_OUTPUT",
           },
         };
       }

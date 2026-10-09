@@ -36,6 +36,13 @@
       "when": 1791393330264,
       "tag": "0004_analytics_and_error_logs",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791563775890,
+      "tag": "0005_solution_content",
+      "breakpoints": true
     }
   ]
 }
