@@ -15,6 +15,9 @@ export const DISPLAY_PROFILES: Record<Level, DisplayProfile> = {
   grad: { sections: false, marksKey: false },
 };
 
-export function profileFor(level: Level): DisplayProfile {
-  return DISPLAY_PROFILES[level];
+// Old saved solutions have no level, so they show no extras.
+const NO_EXTRAS: DisplayProfile = { sections: false, marksKey: false };
+
+export function profileFor(level: Level | undefined): DisplayProfile {
+  return level ? DISPLAY_PROFILES[level] : NO_EXTRAS;
 }

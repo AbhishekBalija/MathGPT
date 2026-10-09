@@ -5,8 +5,6 @@ export interface HistoryGroup<T> {
   items: T[];
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 // Midnight at the start of the day, in the student's own time zone.
 function startOfDay(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
@@ -16,7 +14,8 @@ function startOfDay(date: Date): number {
 // Groups with nothing in them are left out. The order of items is kept.
 export function groupByDate<T extends { createdAt: string }>(items: T[], now: Date): HistoryGroup<T>[] {
   const today = startOfDay(now);
-  const weekStart = today - 6 * DAY_MS;
+  // Built from calendar fields so a daylight-saving change never moves it off midnight
+  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6).getTime();
 
   const groups: HistoryGroup<T>[] = [
     { label: "Today", items: [] },

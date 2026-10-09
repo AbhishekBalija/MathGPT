@@ -46,12 +46,15 @@ describe("toSolutionV2", () => {
   it("never carries a Verified status", () => {
     expect(JSON.stringify(toSolutionV2(oldSolution))).not.toMatch(/verified/i);
   });
-  it("uses a neutral default header for old rows", () => {
-    expect(toSolutionV2(oldSolution).header).toMatchObject({
-      level: "class9-10",
-      questionType: "algebra",
-      method: { id: "default", label: "", alternatives: [] },
-    });
+  it("gives old rows no level, so no class label is invented", () => {
+    const header = toSolutionV2(oldSolution).header;
+    expect(header.level).toBeUndefined();
+    expect(header).toMatchObject({ questionType: "algebra", method: { id: "default", label: "", alternatives: [] } });
+  });
+  it("keeps a math expression as LaTeX and a sentence as plain text", () => {
+    expect(toSolutionV2(oldSolution).problem).toEqual({ latex: "2x + 3 = 7", task: "" });
+    expect(toSolutionV2({ ...oldSolution, problem: "sin(x) + \\sqrt{x}" }).problem.latex).toBe("sin(x) + \\sqrt{x}");
+    expect(toSolutionV2({ ...oldSolution, problem: "Divide 156 by 4" }).problem).toEqual({ text: "Divide 156 by 4", task: "" });
   });
 });
 
@@ -59,6 +62,9 @@ describe("profileFor", () => {
   it("hides the marks key and sections for class 1-5 and college", () => {
     expect(profileFor("class1-5")).toEqual({ sections: false, marksKey: false });
     expect(profileFor("college")).toEqual({ sections: false, marksKey: false });
+  });
+  it("shows no extras when the level is unknown", () => {
+    expect(profileFor(undefined)).toEqual({ sections: false, marksKey: false });
   });
   it("shows them for class 9-10", () => {
     expect(profileFor("class9-10")).toEqual({ sections: true, marksKey: true });

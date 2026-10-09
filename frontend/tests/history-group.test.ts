@@ -42,4 +42,11 @@ describe("groupByDate", () => {
       ["Older", "seven"],
     ]);
   });
+  it("keeps an item from six days ago in This week across a daylight-saving change", () => {
+    // A daylight-saving change sits inside this week in zones that have one; the result must not depend on it
+    const autumnNow = new Date(2026, 9, 28, 12, 0, 0);
+    const sixDaysAgo = new Date(2026, 9, 22, 0, 30).toISOString();
+    const groups = groupByDate([{ id: "x", createdAt: sixDaysAgo }], autumnNow);
+    expect(groups).toEqual([{ label: "This week", items: [{ id: "x", createdAt: sixDaysAgo }] }]);
+  });
 });

@@ -32,7 +32,7 @@ export interface SolutionV2 {
   id: string;
   createdAt: string; // ISO date string
   header: {
-    level: Level;
+    level?: Level; // unknown for old saved solutions
     board?: string;
     questionType: string;
     method: { id: string; label: string; alternatives: { id: string; label: string }[] };

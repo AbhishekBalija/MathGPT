@@ -23,7 +23,7 @@ const SMALL_BUTTON =
 // Top of the solution: level, the problem, what to do, and a link down to the answer.
 export function ProblemHeader({ solution, onEdit, onNew }: ProblemHeaderProps) {
   const { header, problem } = solution;
-  const label = [LEVEL_LABELS[header.level], header.board, header.questionType].filter(Boolean).join(" · ");
+  const label = [header.level ? LEVEL_LABELS[header.level] : undefined, header.board, header.questionType].filter(Boolean).join(" · ");
 
   return (
     <header>
