@@ -1,0 +1,55 @@
+import { useState } from "react";
+import { InlineText } from "./blocks/InlineText";
+import { Math } from "./blocks/Math";
+import type { SolutionV2 } from "./model/solution";
+
+// The last step: a boxed conclusion with Copy. The check line only shows when the solution has one.
+export function AnswerStep({ answer }: { answer: SolutionV2["answer"] }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    const value = answer.text ?? answer.latex ?? "";
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Copy can be blocked by the browser. Nothing else to do.
+    }
+  }
+
+  return (
+    <section
+      id="answer"
+      data-testid="answer"
+      className="mt-6 flex scroll-mt-4 items-center justify-between gap-4 rounded-2xl border-2 border-brand-600 bg-white p-4 dark:border-brand-300 dark:bg-gray-900"
+    >
+      <div className="min-w-0">
+        <p className="text-xs font-bold uppercase tracking-wider text-brand-600 dark:text-brand-300">Answer</p>
+        <div className="mt-1 flex items-center gap-2 text-2xl">
+          <span aria-hidden="true">∴</span>
+          {answer.latex ? <Math latex={answer.latex} /> : null}
+          {answer.text ? <InlineText text={answer.text} /> : null}
+          {answer.unit ? <span className="text-lg">{answer.unit}</span> : null}
+        </div>
+        {answer.sentence ? (
+          <p className="mt-1">
+            <InlineText text={answer.sentence} />
+          </p>
+        ) : null}
+        {answer.check ? (
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            <InlineText text={answer.check} />
+          </p>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        onClick={copy}
+        className="min-h-11 shrink-0 rounded-xl border border-gray-300 px-4 text-sm font-semibold dark:border-gray-600"
+      >
+        {copied ? "Copied" : "Copy"}
+      </button>
+    </section>
+  );
+}
