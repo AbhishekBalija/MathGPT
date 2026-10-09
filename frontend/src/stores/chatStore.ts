@@ -61,8 +61,15 @@ interface ChatState {
   showAnswerPanel: boolean;
   historyLoaded: boolean;
   isProfileOpen: boolean;
+  // Solver page: problem waiting to be sent, last solve error, and which view is open
+  pendingProblem: string | null;
+  solveError: { message: string; retryAfter?: number } | null;
+  view: "all" | "one" | "hint";
 
   // Actions
+  setPendingProblem: (problem: string | null) => void;
+  setSolveError: (error: { message: string; retryAfter?: number } | null) => void;
+  setView: (view: "all" | "one" | "hint") => void;
   createNewChat: () => string;
   setActiveChat: (chatId: string) => void;
   addMessage: (
@@ -103,6 +110,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
   sidebarOpen: false,
   showAnswerPanel: false,
   historyLoaded: false,
+  pendingProblem: null,
+  solveError: null,
+  view: "all",
+
+  setPendingProblem: (problem) => set({ pendingProblem: problem }),
+  setSolveError: (error) => set({ solveError: error }),
+  setView: (view) => set({ view }),
 
   createNewChat: () => {
     const newChat: Chat = {
