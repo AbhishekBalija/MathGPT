@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Camera, Sigma } from "lucide-react";
 import { Keypad } from "./Keypad";
 import { ReadAs } from "./ReadAs";
@@ -20,7 +20,13 @@ function freeLine(remaining: number): string {
   return `${remaining} of ${DAILY_LIMIT} free problems left today`;
 }
 
-export function Composer({ value, onChange, onSolve, disabled = false, remaining }: ComposerProps) {
+export function Composer({
+  value,
+  onChange,
+  onSolve,
+  disabled = false,
+  remaining,
+}: ComposerProps) {
   const [keypadOpen, setKeypadOpen] = useState(false);
   const fieldRef = useRef<HTMLTextAreaElement>(null);
   const problem = value.trim();
@@ -32,10 +38,13 @@ export function Composer({ value, onChange, onSolve, disabled = false, remaining
   }
 
   // Grow the field with its text, up to about 5 lines, then scroll.
-  function autoGrow(field: HTMLTextAreaElement) {
+  // Runs on every value change, so keypad inserts and clearing after Solve resize too.
+  useLayoutEffect(() => {
+    const field = fieldRef.current;
+    if (!field) return;
     field.style.height = "auto";
     field.style.height = `${Math.min(field.scrollHeight, MAX_FIELD_HEIGHT)}px`;
-  }
+  }, [value]);
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     // Enter solves, Shift+Enter adds a line. Ignore Enter while an IME is composing.
@@ -70,10 +79,7 @@ export function Composer({ value, onChange, onSolve, disabled = false, remaining
             rows={1}
             aria-label="Your math problem"
             placeholder="Type a problem, like x^2 + 5x + 6 = 0"
-            onChange={(event) => {
-              autoGrow(event.target);
-              onChange(event.target.value);
-            }}
+            onChange={(event) => onChange(event.target.value)}
             onKeyDown={handleKeyDown}
             className="max-h-32 min-h-11 w-full flex-1 resize-none overflow-y-auto bg-transparent px-1 py-2.5 sm:w-auto sm:px-0 text-base text-gray-900 placeholder:text-gray-600 focus:outline-none dark:text-gray-50 dark:placeholder:text-gray-400"
           />
@@ -96,26 +102,30 @@ export function Composer({ value, onChange, onSolve, disabled = false, remaining
           >
             <Sigma className="size-5" aria-hidden="true" />
           </button>
-          <button
-            type="button"
-            disabled={cannotSolve}
-            onClick={() => submit("hint")}
-            className="min-h-11 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900 disabled:opacity-50 dark:border-white/10 dark:text-gray-50"
-          >
-            Just a hint
-          </button>
-          <button
-            type="button"
-            disabled={cannotSolve}
-            onClick={() => submit("all")}
-            className="min-h-11 rounded-xl bg-gray-900 px-4 text-sm font-semibold text-white disabled:opacity-50 dark:bg-gray-50 dark:text-gray-900"
-          >
-            Solve
-          </button>
+          <div className="ml-auto flex gap-2">
+            <button
+              type="button"
+              disabled={cannotSolve}
+              onClick={() => submit("hint")}
+              className="min-h-11 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900 disabled:opacity-50 dark:border-white/10 dark:text-gray-50"
+            >
+              Just a hint
+            </button>
+            <button
+              type="button"
+              disabled={cannotSolve}
+              onClick={() => submit("all")}
+              className="min-h-11 rounded-xl bg-gray-900 px-4 text-sm font-semibold text-white disabled:opacity-50 dark:bg-gray-50 dark:text-gray-900"
+            >
+              Solve
+            </button>
+          </div>
         </div>
         {keypadOpen && <Keypad onInsert={insertAtCursor} />}
         {remaining !== undefined && (
-          <p className="mt-2 px-1 text-xs text-gray-600 dark:text-gray-400">{freeLine(remaining)}</p>
+          <p className="mt-2 px-1 text-xs text-gray-600 dark:text-gray-400">
+            {freeLine(remaining)}
+          </p>
         )}
       </div>
     </div>

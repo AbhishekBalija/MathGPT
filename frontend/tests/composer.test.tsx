@@ -31,6 +31,19 @@ describe("Composer", () => {
     expect(text).toContain("α");
     expect(text).toContain("∞");
   });
+  it("shows Read as for algebra like 2x+3=7", () => {
+    const { container } = render(<Harness initial="2x+3=7" />);
+    expect(container.querySelector(".katex")).toBeTruthy();
+  });
+  it("resets the field height when the value is cleared", () => {
+    const { rerender } = render(<Composer value={"a\nb\nc\nd"} onChange={() => {}} onSolve={() => {}} />);
+    const el = field();
+    Object.defineProperty(el, "scrollHeight", { configurable: true, get: () => (el.value ? 90 : 44) });
+    rerender(<Composer value={"a\nb\nc\nd\ne"} onChange={() => {}} onSolve={() => {}} />);
+    expect(el.style.height).toBe("90px");
+    rerender(<Composer value="" onChange={() => {}} onSolve={() => {}} />);
+    expect(el.style.height).toBe("44px");
+  });
   it("shows no Read as for plain words", () => {
     render(<Harness initial="hello" />);
     expect(screen.queryByText("Read as")).toBeNull();

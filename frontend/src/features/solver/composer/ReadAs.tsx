@@ -5,10 +5,13 @@ interface ReadAsProps {
   value: string;
 }
 
+// Algebra like "2x+3=7" is math even when containsMath does not spot it.
+const looksLikeMath = (text: string): boolean => containsMath(text) || /[\d=^+\-*/×÷√π∫]/.test(text.trim());
+
 // Shows how Neo understood the typed problem. Hidden when the field is empty
-// or the text does not look like math.
+// or it is plain words.
 export function ReadAs({ value }: ReadAsProps) {
-  if (!value.trim() || !containsMath(value)) return null;
+  if (!value.trim() || !looksLikeMath(value)) return null;
   return (
     <p className="mb-2 flex items-center gap-2 px-1 text-sm text-gray-600 dark:text-gray-400">
       <span>Read as</span>
