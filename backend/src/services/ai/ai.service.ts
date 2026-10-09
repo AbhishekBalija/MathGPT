@@ -27,6 +27,9 @@ const BACKUP_TIMEOUT_MS = 20000;
 // Models
 const PRIMARY_MODEL = "gemini-2.5-flash"; // Direct Gemini API
 const BACKUP_MODEL = "deepseek/deepseek-v4-flash"; // OpenRouter, a different maker than Gemini
+// Companies allowed to run the backup model for us (OpenRouter host ids).
+// Students' problems only go to these, so check the privacy policy before adding one.
+const BACKUP_HOSTS = ["deepinfra", "relace", "parasail", "azure", "cloudflare", "digitalocean"];
 
 // Initialize Gemini client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_MATH_AI_API || "");
@@ -128,9 +131,14 @@ async function callOpenRouter(
         ],
         temperature: 0.3,
         max_tokens: 8192,
-        // Several companies host this model and some are very slow;
-        // ask OpenRouter for the fastest one so we stay inside the time limit
-        provider: { sort: "throughput" },
+        provider: {
+          // Only US/EU hosts, and only ones that do not keep or train on prompts
+          only: BACKUP_HOSTS,
+          data_collection: "deny",
+          // Some hosts are very slow; pick the fastest so we stay inside the time limit
+          sort: "throughput",
+        },
+        // Thinking makes the answer slower than our time limit allows
         reasoning: { enabled: false },
       }),
       // Stop the request itself, not just our wait for it
