@@ -5,11 +5,13 @@ import { useState, type FormEvent } from "react";
 import axios from "axios";
 import AuthLayout from "../components/auth/AuthLayout";
 import * as ui from "../components/auth/authStyles";
+import { useGoogleButtonWidth } from "../components/auth/useGoogleButtonWidth";
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { loginWithGoogle, loginWithEmail, isLoading } = useAuthStore();
+  const googleWidth = useGoogleButtonWidth();
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -84,7 +86,7 @@ const Login = () => {
     <AuthLayout
       corner={
         <>
-          New here?{" "}
+          <span className="hidden sm:inline">New here? </span>
           <Link to="/register" className={ui.textLink}>
             Create an account
           </Link>
@@ -106,7 +108,7 @@ const Login = () => {
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleError}
             theme="outline"
-            width="384"
+            width={String(googleWidth)}
             text="continue_with"
             shape="rectangular"
           />
