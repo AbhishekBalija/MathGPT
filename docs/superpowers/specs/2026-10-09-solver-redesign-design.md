@@ -128,7 +128,7 @@ Display profile per level (frontend constant, later per board):
 
 - Photo input (#43). The input keeps a disabled camera slot.
 - Onboarding questions and level-aware prompts per board (#39). Until then the solver infers the level.
-- "Something looks wrong?" reporting (needs a small backend table and an admin list). The mockup keeps a placeholder; build it next.
+- An admin screen for reports (the report itself is built with the cache, since reports remove cached answers).
 - Graph and figure blocks.
 - Neo's thinking and loading motion (separate motion step).
 - Free-model switch (#34) and child-privacy changes (#40) are separate tickets.
@@ -151,7 +151,7 @@ Each step is its own PR into `redesign`.
 ## Fast and safe solving (added 2026-10-09)
 
 - **Instant answers:** plain arithmetic ("5 + 3", "156 ÷ 4") is solved in code, instantly, with exact column and long-division layouts. No AI call.
-- **Shared cache:** the same problem (same level, method and prompt version) reuses a stored solution for every student. Nothing about the student is stored with it.
+- **Shared cache:** the same problem (same level, method and prompt version) reuses a stored solution for every student. Nothing about the student is stored with it. A solution is only shared after two independent AI answers agree, and a "Something looks wrong?" report removes it from the cache at once.
 - **Free limit:** instant answers and cache hits do not count toward the 5 free problems a day; only AI solves do.
 - **Math only:** text that does not look like math is turned away before the AI; the AI also refuses non-math and ignores instructions inside a problem. The "unsolvable" filter stops rejecting valid problems that mention infinity.
 - **Sign-up abuse:** Cloudflare Turnstile and a list of throwaway email domains. Per-IP limits sized for a classroom on one school network (20 sign-ups and 100 solves per hour).

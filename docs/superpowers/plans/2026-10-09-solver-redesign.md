@@ -486,12 +486,14 @@ Branch: `feat/fast-safe-solving` from `redesign` (after PR 2 merges).
 **Interfaces:**
 - Produces: `cacheKey(problem: string, level: string | undefined, method: string | undefined): string` = sha256 of `PROMPT_VERSION + "|" + normalize(problem) + "|" + (level ?? "") + "|" + (method ?? "")`; `normalize` trims, collapses whitespace and unifies the minus sign (`−` → `-`) only, never touching letters. `solutionCache.get(key)`, `solutionCache.put(key, content, problemType)`.
 - Order in the route: validate → per-minute limit → instant (Task 12) → cache → daily credit → AI → cache put. A cache hit still saves a `solutions` row for the student's history and does not use a daily credit. Nothing about the student is stored in `solution_cache`.
+- **Safeguard against spreading a wrong answer (owner heads-up, 2026-10-09):** a cache entry starts as `status = 'candidate'` and is not served. The next solve of the same key calls the AI again and compares the normalised final answers (`answer.latex ?? answer.text`, whitespace removed); if they match the entry becomes `status = 'shared'` and is served from then on; if they differ, the entry is replaced by the newer answer and stays a candidate. Add columns `status text not null default 'candidate'`, `confirmations integer not null default 1`.
+- **Reports evict:** `POST /api/solutions/:id/report` (requireUser; body `{ reason?: string }`, max 500 chars) stores a row in a new `solution_reports` table (`id`, `solution_id`, `user_id`, `reason`, `created_at`) and sets the matching cache entry to `status = 'blocked'` (never served, never re-shared until the prompt version changes). The frontend "Something looks wrong? Tell us" link calls it and shows "Thanks. We'll check it."
 
-- [ ] **Step 1: Write the failing tests:** two students solving the same problem → the fake solver is called once, both get the same content, the second student's `dailyCredits.used` stays 0; the same problem with a different `method` → a new AI call; changing `PROMPT_VERSION` (inject via a test helper) → a new AI call; the cache row has no user id column.
+- [ ] **Step 1: Write the failing tests:** the first solve stores a candidate that is not served; a second student's solve calls the fake solver again and, with a matching answer, the entry becomes shared; a third student gets the shared content with no AI call and `dailyCredits.used` stays 0; a mismatching second answer keeps the entry a candidate; reporting a solution blocks its cache entry and the next student gets a fresh AI solve; the same problem with a different `method` → a new AI call; changing `PROMPT_VERSION` (inject via a test helper) → a new AI call; the cache row has no user id column.
 - [ ] **Step 2: Run** `bunx vitest run tests/solution-cache.test.ts` → FAIL.
 - [ ] **Step 3: Implement.**
 - [ ] **Step 4: Run** the backend suite → PASS.
-- [ ] **Step 5: Commit** `feat(backend): share solutions between students through a cache`.
+- [ ] **Step 5: Commit** `feat(backend): share confirmed solutions between students, and let reports remove them`.
 
 ### Task 14: Math-only guard, prompt hardening and the unsolvable filter
 
