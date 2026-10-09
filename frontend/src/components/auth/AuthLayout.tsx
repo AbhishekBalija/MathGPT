@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import Logo from "../brand/Logo";
+import NeoMascot from "../brand/NeoMascot";
 
 interface AuthLayoutProps {
   /** Small link in the top-right corner, e.g. "New here? Create an account". */
@@ -19,7 +20,9 @@ const StepsScene = ({ className = "" }: { className?: string }) => (
 /**
  * Shared frame for sign-in, sign-up and email verification.
  * Desktop: a pink panel with Neo on the left, the form on the right.
- * Phone: logo on top, a smaller Neo, then the form.
+ * Phone: logo on top, Neo on his own, then the form (the full steps
+ * illustration is too busy at that size, and two Neos side by side on
+ * desktop would repeat, so Neo alone only shows on small screens).
  */
 const AuthLayout = ({ corner, children }: AuthLayoutProps) => (
   <div className="min-h-screen grid lg:grid-cols-2 bg-white dark:bg-[#0d0a0d] text-gray-900 dark:text-white">
@@ -44,7 +47,7 @@ const AuthLayout = ({ corner, children }: AuthLayoutProps) => (
       </div>
 
       <div className="flex-1 flex flex-col justify-center w-full max-w-sm mx-auto py-8">
-        <StepsScene className="lg:hidden w-48 mx-auto mb-8" />
+        <NeoMascot className="lg:hidden w-20 h-20 mx-auto mb-6" />
         {children}
       </div>
     </main>
