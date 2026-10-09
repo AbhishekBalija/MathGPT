@@ -33,13 +33,14 @@ function ErrorBody({ message, retryAfter, onRetry }: ErrorStateProps) {
 
   return (
     <div
-      role="alert"
       className="mt-6 flex flex-wrap items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-white/5"
     >
       <NeoMascot className="w-14 shrink-0" />
       <div className="min-w-0 flex-1">
-        <b className="block text-gray-900 dark:text-gray-50">{message}</b>
-        <span className="text-sm text-gray-600 dark:text-gray-400">
+        <b role="alert" className="block text-gray-900 dark:text-gray-50">
+          {message}
+        </b>
+        <span aria-live="off" className="text-sm text-gray-600 dark:text-gray-400">
           {waiting ? (
             <>
               Take a breath. You can try again in <span className="tabular-nums">{formatClock(left)}</span>. Your

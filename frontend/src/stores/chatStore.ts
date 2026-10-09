@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { SolveError } from "../utils/errorMessages";
 
 export interface Message {
   id: string;
@@ -63,12 +64,12 @@ interface ChatState {
   isProfileOpen: boolean;
   // Solver page: problem waiting to be sent, last solve error, and which view is open
   pendingProblem: string | null;
-  solveError: { message: string; retryAfter?: number } | null;
+  solveError: SolveError | null;
   view: "all" | "one" | "hint";
 
   // Actions
   setPendingProblem: (problem: string | null) => void;
-  setSolveError: (error: { message: string; retryAfter?: number } | null) => void;
+  setSolveError: (error: SolveError | null) => void;
   setView: (view: "all" | "one" | "hint") => void;
   createNewChat: () => string;
   setActiveChat: (chatId: string) => void;

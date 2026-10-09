@@ -27,6 +27,19 @@ describe("ErrorState", () => {
     fireEvent.click(button);
     expect(retry).toHaveBeenCalledOnce();
   });
+  it("restarts the countdown when retryAfter changes", () => {
+    const { rerender } = render(<ErrorState message="Wait" retryAfter={40} onRetry={() => {}} />);
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
+    expect(screen.getByText("0:30")).toBeTruthy();
+    rerender(<ErrorState message="Wait" retryAfter={60} onRetry={() => {}} />);
+    expect(screen.getByText("1:00")).toBeTruthy();
+  });
+  it("keeps the ticking countdown out of the alert", () => {
+    render(<ErrorState message="Wait" retryAfter={40} onRetry={() => {}} />);
+    expect(screen.getByRole("alert").textContent).toBe("Wait");
+  });
   it("shows minutes as m:ss", () => {
     render(<ErrorState message="Wait" retryAfter={75} onRetry={() => {}} />);
     expect(screen.getByText("1:15")).toBeTruthy();
@@ -68,6 +81,10 @@ describe("EmptyState", () => {
     expect(screen.getByText("What are we solving?")).toBeTruthy();
     expect(screen.getByText("Type a problem below. Neo shows every step.")).toBeTruthy();
   });
+  it("draws example problems with KaTeX", () => {
+    const { container } = render(<EmptyState onPick={() => {}} />);
+    expect(container.querySelectorAll(".katex").length).toBe(3);
+  });
   it("picks an example problem", () => {
     const pick = vi.fn();
     render(<EmptyState onPick={pick} />);
@@ -106,10 +123,22 @@ describe("toSolveError", () => {
       message: "You've used today's 5 free problems. Come back tomorrow.",
     });
   });
-  it("maps an unreadable problem", () => {
-    expect(toSolveError({ status: 422 }).message).toBe(
-      "I couldn't read that problem. Try writing it like x^2 + 5x + 6 = 0.",
+  it("maps a 400 to the unreadable problem copy", () => {
+    expect(toSolveError({ status: 400 }).message).toBe(SOLVE_ERROR_COPY.unsolvable);
+  });
+  it("maps code UNSOLVABLE even on a 500", () => {
+    expect(toSolveError({ status: 500, code: "UNSOLVABLE" }).message).toBe(SOLVE_ERROR_COPY.unsolvable);
+  });
+  it("maps server failures to an honest message", () => {
+    expect(toSolveError({ status: 500 }).message).toBe("Something went wrong on our side. Try again.");
+    expect(toSolveError({ status: 502 }).message).toBe("Something went wrong on our side. Try again.");
+  });
+  it("maps 401 and 403", () => {
+    expect(toSolveError({ status: 401 }).message).toBe("Please log in again.");
+    expect(toSolveError({ status: 403, code: "EMAIL_NOT_VERIFIED" }).message).toBe(
+      "Please check your email and verify your account first.",
     );
+    expect(toSolveError({ status: 403 }).message).toBe("Please log in again.");
   });
   it("maps no reply to the network message", () => {
     expect(toSolveError({})).toEqual({ message: "No internet. Your problem is still here." });

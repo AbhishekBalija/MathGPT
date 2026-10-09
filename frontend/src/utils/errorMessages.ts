@@ -145,6 +145,9 @@ export const SOLVE_ERROR_COPY = {
   rateLimit: "That's 5 problems in a minute.",
   dailyLimit: "You've used today's 5 free problems. Come back tomorrow.",
   unsolvable: "I couldn't read that problem. Try writing it like x^2 + 5x + 6 = 0.",
+  login: "Please log in again.",
+  verifyEmail: "Please check your email and verify your account first.",
+  serverTrouble: "Something went wrong on our side. Try again.",
   network: "No internet. Your problem is still here.",
 } as const;
 
@@ -159,6 +162,14 @@ export function toSolveError(failure: SolveFailure): SolveError {
     return { message: SOLVE_ERROR_COPY.rateLimit, retryAfter };
   }
 
-  // Anything else (bad input, server trouble) reads as "I couldn't solve that".
-  return { message: SOLVE_ERROR_COPY.unsolvable };
+  // 400 or an UNSOLVABLE code: the problem itself could not be read
+  if (status === 400 || code === "UNSOLVABLE") return { message: SOLVE_ERROR_COPY.unsolvable };
+
+  if (status === 401) return { message: SOLVE_ERROR_COPY.login };
+  if (status === 403) {
+    return { message: code === "EMAIL_NOT_VERIFIED" ? SOLVE_ERROR_COPY.verifyEmail : SOLVE_ERROR_COPY.login };
+  }
+
+  // 5xx and anything unknown: not the student's fault
+  return { message: SOLVE_ERROR_COPY.serverTrouble };
 }
