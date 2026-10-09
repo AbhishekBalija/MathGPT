@@ -38,6 +38,13 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Sign-in, sign-up and email verification share a new layout: a pink panel
+  with Neo on top of three steps (desktop) and the form on the right; on
+  phones the logo, Neo on his own, then the form. Google comes first, then
+  the email form, separated by a thin "or" line. Removed the "Remember me" box and the
+  "Forgot password?" link, which did nothing (password reset is tracked as
+  its own issue).
+
 - New brand: the NeoMath logo is the Honk wordmark with π-Neo sitting on
   the 'h'. It is a baked SVG (no colour-font support needed), has a dark-mode
   version with a white rim, and is used in the navbar, sidebar, sign-in pages

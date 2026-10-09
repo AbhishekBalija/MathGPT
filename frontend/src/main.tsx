@@ -6,6 +6,12 @@ import "./index.css";
 import "katex/dist/katex.min.css";
 import App from "./App.tsx";
 import GoogleAuthProvider from "./components/GoogleAuthProvider.tsx";
+import { useThemeStore } from "./stores/themeStore";
+
+// Apply the saved (or system) theme before the first paint, on every page.
+// It used to run only inside the Navbar and Sidebar, so pages without them
+// (sign-in, sign-up) always opened in light mode.
+useThemeStore.getState().initTheme();
 
 // Initialize Google Analytics
 const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
@@ -44,5 +50,5 @@ createRoot(document.getElementById("root")!).render(
         <App />
       </Sentry.ErrorBoundary>
     </GoogleAuthProvider>
-  </StrictMode>
+  </StrictMode>,
 );

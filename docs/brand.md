@@ -14,6 +14,7 @@ on the `h`. Neo is the π symbol: the bar is his head, the legs hang over the
 | `frontend/public/favicon.svg`, `favicon-*.png`, `favicon.ico` | Browser tab (Neo with a white rim) |
 | `frontend/public/apple-touch-icon*.png`, `android-chrome-*.png` | Home-screen icons |
 | `frontend/public/og-image.png` | Link preview card (1200×630) |
+| `frontend/public/brand/scene-steps.svg`, `scene-steps-dark.svg` | Illustration: Neo on top of three steps (1, 2, ✓). Used on the auth pages. Numbers are drawn shapes, so no font is needed |
 
 In the app, use the components instead of the files:
 
