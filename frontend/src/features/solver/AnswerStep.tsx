@@ -28,7 +28,7 @@ export function AnswerStep({ answer }: { answer: SolutionV2["answer"] }) {
     <section
       id="answer"
       data-testid="answer"
-      className="mt-6 flex scroll-mt-4 items-center justify-between gap-4 rounded-2xl border-2 border-brand-600 bg-white p-4 dark:border-brand-300 dark:bg-gray-900"
+      className="mt-6 flex scroll-mt-4 items-center justify-between gap-4 rounded-2xl border-2 border-brand-600 bg-white p-4 dark:border-brand-300 dark:bg-white/5"
     >
       <div className="min-w-0">
         <p className="text-xs font-bold uppercase tracking-wider text-brand-600 dark:text-brand-300">Answer</p>

@@ -148,7 +148,7 @@ export const SOLVE_ERROR_COPY = {
   login: "Please log in again.",
   verifyEmail: "Please check your email and verify your account first.",
   serverTrouble: "Something went wrong on our side. Try again.",
-  network: "No internet. Your problem is still here.",
+  network: "No internet right now.",
 } as const;
 
 export function toSolveError(failure: SolveFailure): SolveError {

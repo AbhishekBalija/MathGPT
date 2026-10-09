@@ -26,7 +26,7 @@ export function StepItem({ step, number, id, showMarks }: StepItemProps) {
   const pink = showMarks && step.earnsMarks;
 
   return (
-    <li data-testid="step" className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+    <li data-testid="step" className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-white/5">
       <div className="flex items-center gap-3">
         <span
           data-testid={`step-num-${number}`}

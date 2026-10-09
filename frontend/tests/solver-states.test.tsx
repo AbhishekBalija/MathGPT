@@ -45,7 +45,7 @@ describe("ErrorState", () => {
     expect(screen.getByText("1:15")).toBeTruthy();
   });
   it("is ready straight away with no retryAfter", () => {
-    render(<ErrorState message="No internet. Your problem is still here." onRetry={() => {}} />);
+    render(<ErrorState message="No internet right now." onRetry={() => {}} />);
     expect((screen.getByRole("button", { name: "Try again" }) as HTMLButtonElement).disabled).toBe(false);
   });
   it("clears its timer on unmount", () => {
@@ -141,7 +141,7 @@ describe("toSolveError", () => {
     expect(toSolveError({ status: 403 }).message).toBe("Please log in again.");
   });
   it("maps no reply to the network message", () => {
-    expect(toSolveError({})).toEqual({ message: "No internet. Your problem is still here." });
+    expect(toSolveError({})).toEqual({ message: "No internet right now." });
   });
 });
 

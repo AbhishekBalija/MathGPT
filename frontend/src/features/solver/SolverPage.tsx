@@ -308,7 +308,7 @@ export function SolverPage() {
   );
 
   return (
-    <div className="flex h-dvh min-w-0 bg-white text-gray-900 dark:bg-[#0f1117] dark:text-gray-50">
+    <div className="flex h-dvh min-w-0 bg-white text-gray-900 dark:bg-[#120d12] dark:text-gray-50">
       <HistorySidebar
         entries={entries}
         activeId={activeChatId}
@@ -416,7 +416,7 @@ export function SolverPage() {
           ref={phoneInputRef}
           role="dialog"
           aria-label="Ask a problem"
-          className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-[#0f1117]"
+          className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-[#120d12]"
         >
           <div className="flex items-center justify-between border-b border-gray-200 px-4 dark:border-white/10">
             <h2 className="font-semibold">Ask a problem</h2>
@@ -490,7 +490,7 @@ function HintView({
 // Phone only: sits at the bottom of the screen where the input normally is.
 function NextStepBar({ onNext, shown, total }: { onNext: () => void; shown: number; total: number }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-20 flex items-center gap-3 border-t border-gray-200 bg-white px-3 pb-4 pt-3 dark:border-white/10 dark:bg-[#0f1117]">
+    <div className="fixed inset-x-0 bottom-0 z-20 flex items-center gap-3 border-t border-gray-200 bg-white px-3 pb-4 pt-3 dark:border-white/10 dark:bg-[#120d12]">
       <span className="text-sm text-gray-600 dark:text-gray-400">
         Step {shown} of {total}
       </span>

@@ -36,7 +36,7 @@ function ErrorBody({ message, retryAfter, onRetry }: ErrorStateProps) {
       className="mt-6 flex flex-wrap items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-white/5"
     >
       <NeoMascot className="w-14 shrink-0" />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 basis-56">
         <b role="alert" className="block text-gray-900 dark:text-gray-50">
           {message}
         </b>
