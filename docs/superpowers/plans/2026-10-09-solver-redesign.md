@@ -12,7 +12,9 @@
 
 ## Global Constraints
 
-- Branches: one branch per PR, each PR into `redesign`, never `main`. PR 1 = Tasks 1-7, PR 2 = Tasks 8-11, PR 3 = Task 12.
+- Branches: one branch per PR, each PR into `redesign`, never `main`. PR 1 = Tasks 1-7, PR 2 = Tasks 8-11, PR 3 = Tasks 12-15 (fast and safe solving), PR 4 = Task 16.
+- Owner decisions (2026-10-09): instant answers (arithmetic solved in code, cache hits) do not count toward the 5 free problems a day; the cache is shared between students (keyed only by problem, level, method and prompt version); Cloudflare Turnstile on sign-up (approved: one frontend package, `@marsidev/react-turnstile`); throwaway email domains blocked with a list kept in the repo (no npm package).
+- Shared networks: a whole class can share one school IP. Per-IP limits must allow a classroom (sign-up 20 per hour once Turnstile is in; solving 100 per hour per IP).
 - Every UI PR includes Playwright screenshots (desktop 1440×900 and phone 390×844, light and dark) via the `pr-assets` branch.
 - Copy: short, plain words a class 3 student can read; no jargon, no raw error codes; no em dashes.
 - No gradient text, no pill badges, no sparkle icons, no neon glow (brand rules, `docs/brand.md`).
@@ -31,6 +33,7 @@
 3. **Long or wide content on a 390px phone** (word problems, 10-digit long division, long equations): no horizontal page scroll. Test: Task 3 `overflow-x-auto` class assertion and Task 7 Playwright check `document.documentElement.scrollWidth <= 390`.
 4. **Long division with zeros and remainders** (412 ÷ 4 = 103, 1000 ÷ 8, 157 ÷ 4 r 1): digits stay under the right columns. Tests: Task 2.
 5. **Limits while solving** (5 per minute with `retryAfter`, 5 per day): the problem text is kept, the countdown uses the server's `retryAfter`, and "Try again" enables at 0. Test: Task 5 error-state test.
+6. **A classroom on one IP** (30 students signing up and solving from a school network): nobody is blocked by per-IP limits in normal use. Test: Task 15 (20 sign-ups and 100 solves from one IP succeed).
 
 ---
 
@@ -449,11 +452,91 @@ Branch: `feat/solution-v2-backend` from `redesign` (after PR 1 merges).
 
 ---
 
-## PR 3: Small fixes
+## PR 3: Fast and safe solving
+
+Branch: `feat/fast-safe-solving` from `redesign` (after PR 2 merges).
+
+### Task 12: Instant answers for plain arithmetic
+
+**Files:**
+- Create: `backend/src/modules/solver/instant/arithmetic.ts`
+- Modify: `backend/src/routes/solve.route.ts` (try instant first; skip the AI and the daily credit when it answers; the per-minute limit still applies)
+- Test: `backend/tests/unit/instant-arithmetic.test.ts`, `backend/tests/solve.test.ts` (extend)
+
+**Interfaces:**
+- Produces: `trySolveArithmetic(problem: string): SolutionV2Content | null`. Returns `null` for anything that is not pure arithmetic (any letter other than a recognised phrase, `=`, more than 12 digits per number).
+- Accepts: integers and decimals; `+ - × x(between numbers) * ÷ / ( )`; the phrases "divide A by B", "add A and B", "A plus/minus/times B".
+- Output: `header.level = "class1-5"`, `method = { id: "arithmetic", label: "Arithmetic", alternatives: [] }`. One operation per step in BODMAS order. Blocks: integer `a + b` (2+ digits) → `columnArithmetic` "+"; integer `a - b` with `a >= b` → `columnArithmetic` "-"; integer `a ÷ b` with `a >= 10`, `b <= 99` → `longDivision`; otherwise `equation`. Answer `{ latex, sentence }`, e.g. "Quotient = 39, remainder = 0". Never use `eval` or `Function`; parse with a small tokenizer and shunting-yard.
+- Response adds `source: "instant"`.
+
+- [ ] **Step 1: Write the failing tests:** `trySolveArithmetic("5+3")` → one `equation` step, answer "8"; `"47 + 38"` → `columnArithmetic`; `"156 ÷ 4"` and `"Divide 156 by 4"` → `longDivision`, sentence "Quotient = 39, remainder = 0"; `"2 + 3 × 4"` → steps `3 × 4 = 12` then `2 + 12 = 14`; `"x + 3 = 5"` → `null`; `"7 ÷ 0"` → throws `UnsolvableProblemError` with "You can't divide by zero."; HTTP: solving "5+3" returns in under 300 ms, the fake solver is not called, and `/api/profile` `dailyCredits.used` stays 0.
+- [ ] **Step 2: Run** `cd backend && bunx vitest run tests/unit/instant-arithmetic.test.ts tests/solve.test.ts` → FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** → PASS.
+- [ ] **Step 5: Commit** `feat(backend): answer plain arithmetic instantly without the AI`.
+
+### Task 13: Shared solution cache
+
+**Files:**
+- Modify: `backend/src/db/schema.ts` (new table `solution_cache`: `key text primary key`, `content jsonb not null`, `problem_type text not null`, `hits integer not null default 0`, `created_at timestamptz default now()`), migration via `bun run db:generate` (additive)
+- Create: `backend/src/modules/solver/cache/solution-cache.ts`
+- Modify: `backend/src/routes/solve.route.ts`, `backend/src/services/ai/prompts.ts` (export `PROMPT_VERSION = "2026-10-09.1"`)
+- Test: `backend/tests/solution-cache.test.ts`
+
+**Interfaces:**
+- Produces: `cacheKey(problem: string, level: string | undefined, method: string | undefined): string` = sha256 of `PROMPT_VERSION + "|" + normalize(problem) + "|" + (level ?? "") + "|" + (method ?? "")`; `normalize` trims, collapses whitespace and unifies the minus sign (`−` → `-`) only, never touching letters. `solutionCache.get(key)`, `solutionCache.put(key, content, problemType)`.
+- Order in the route: validate → per-minute limit → instant (Task 12) → cache → daily credit → AI → cache put. A cache hit still saves a `solutions` row for the student's history and does not use a daily credit. Nothing about the student is stored in `solution_cache`.
+
+- [ ] **Step 1: Write the failing tests:** two students solving the same problem → the fake solver is called once, both get the same content, the second student's `dailyCredits.used` stays 0; the same problem with a different `method` → a new AI call; changing `PROMPT_VERSION` (inject via a test helper) → a new AI call; the cache row has no user id column.
+- [ ] **Step 2: Run** `bunx vitest run tests/solution-cache.test.ts` → FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the backend suite → PASS.
+- [ ] **Step 5: Commit** `feat(backend): share solutions between students through a cache`.
+
+### Task 14: Math-only guard, prompt hardening and the unsolvable filter
+
+**Files:**
+- Modify: `backend/src/services/ai/ai.service.ts` (remove the `infinity`, `undefined` and `no solution` patterns from `UNSOLVABLE_PATTERNS`; keep only literal division by zero), `backend/src/services/ai/prompts.ts`
+- Create: `backend/src/modules/solver/guard/looks-like-math.ts`
+- Modify: `backend/src/modules/solutions/solution-v2.schema.ts` (the AI may return `{ "notMath": true }` instead of a solution)
+- Test: `backend/tests/unit/looks-like-math.test.ts`, `backend/tests/solve.test.ts` (extend)
+
+**Interfaces:**
+- Produces: `looksLikeMath(problem: string): boolean`: true if the text has a digit, a math symbol (`+ - × ÷ * / = ^ √ ∫ π θ < > ≤ ≥`), or a math word (solve, simplify, factor, factorise, integrate, differentiate, derivative, limit, area, volume, probability, mean, prove, equation, fraction, percent, find).
+- Route: `looksLikeMath` false → 422 "That doesn't look like a math problem. Try something like x^2 + 5x + 6 = 0." (no AI call, no credit). AI returns `notMath` → same 422; the credit is used, since the AI was called.
+- Prompt: the student's text goes inside clearly marked delimiters and is described as data, never instructions; the model must answer only math problems and return `{"notMath": true}` for anything else, and must ignore instructions inside the problem.
+
+- [ ] **Step 1: Write the failing tests:** `looksLikeMath("write my essay about dogs")` → false; `looksLikeMath("Find the area of a circle of radius 7 cm")` → true; HTTP: "write my essay" → 422 with the message and the fake solver not called; "limit as x approaches infinity of 1/x" now reaches the solver (no `UnsolvableProblemError`); fake solver marker `FAKE_NOT_MATH` → 422.
+- [ ] **Step 2: Run** → FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the backend suite → PASS.
+- [ ] **Step 5: Commit** `fix(backend): only solve math, and stop rejecting valid limit problems`.
+
+### Task 15: Sign-up and per-IP abuse limits
+
+**Files:**
+- Create: `backend/src/modules/auth/disposable-domains.txt` (from the open `disposable-email-domains` list, CC0; note the source and date at the top), `backend/src/modules/auth/disposable-email.ts`, `backend/src/modules/auth/turnstile.ts`
+- Modify: `backend/src/routes/auth/register.route.ts`, `backend/src/routes/index.ts` (register limit 5 → 20 per hour; add `limitByIp("solve", 100, 60 * 60)` before the solve route), `backend/.env.example` (`TURNSTILE_SECRET_KEY`), `frontend/.env.example` (`VITE_TURNSTILE_SITE_KEY`), `frontend/src/pages/Register.tsx` (Turnstile widget, `@marsidev/react-turnstile`)
+- Test: `backend/tests/auth-register.test.ts`, `backend/tests/rate-limits.test.ts` (extend)
+
+**Interfaces:**
+- Produces: `isDisposableEmail(email: string): boolean`; `verifyTurnstile(token: string, ip: string): Promise<boolean>` (POST to `https://challenges.cloudflare.com/turnstile/v0/siteverify`).
+- Register: disposable → 400 "Please use a school or personal email address."; Turnstile failure → 400 "Please confirm you're not a robot and try again." Tests use Cloudflare's published test secrets (always-pass `1x0000000000000000000000000000000AA`, always-fail `2x0000000000000000000000000000000AA`) through the env.
+- Owner action before deploy: create the free Cloudflare Turnstile site and put the keys in Vercel (never in chat).
+
+- [ ] **Step 1: Write the failing tests:** `user@mailinator.com` → 400 with the message; failing Turnstile secret → 400; passing secret → 201; 20 registrations from one IP in an hour succeed and the 21st gets 429; 100 solves from one IP across several accounts succeed (per-minute and daily limits set high in the test), the 101st gets 429.
+- [ ] **Step 2: Run** → FAIL.
+- [ ] **Step 3: Install** `cd frontend && bun add @marsidev/react-turnstile` (approved). **Implement.**
+- [ ] **Step 4: Run** both suites → PASS. Playwright screenshot of the sign-up page with the widget.
+- [ ] **Step 5: Commit, push, PR 3** into `redesign` with screenshots: `feat: fast answers, shared cache and abuse guards`.
+
+---
+
+## PR 4: Small fixes
 
 Branch: `fix/solver-polish` from `redesign`.
 
-### Task 12: Password rules on sign-up
+### Task 16: Password rules on sign-up
 
 **Files:**
 - Modify: `frontend/src/pages/Register.tsx`
