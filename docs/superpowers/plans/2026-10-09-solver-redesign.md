@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Branches: one branch per PR, each PR into `redesign`, never `main`. PR 1 = Tasks 1-7, PR 2 = Tasks 8-11, PR 3 = Tasks 12-15 (fast and safe solving), PR 4 = Task 16.
-- Approved dependencies: `@marsidev/react-turnstile` (frontend, Task 15), `mathjs` (backend, Task 13).
+- Approved dependencies: `@marsidev/react-turnstile` (frontend, Task 15), `mathjs` (backend, Task 12, reused in Task 13).
 - Owner decisions (2026-10-09): instant answers (arithmetic solved in code, cache hits) do not count toward the 5 free problems a day; the cache is shared between students (keyed only by problem, level, method and prompt version); Cloudflare Turnstile on sign-up (approved: one frontend package, `@marsidev/react-turnstile`); throwaway email domains blocked with a list kept in the repo (no npm package).
 - Shared networks: a whole class can share one school IP. Per-IP limits must allow a classroom (sign-up 20 per hour once Turnstile is in; solving 100 per hour per IP).
 - Every UI PR includes Playwright screenshots (desktop 1440×900 and phone 390×844, light and dark) via the `pr-assets` branch.
@@ -467,10 +467,10 @@ Branch: `feat/fast-safe-solving` from `redesign` (after PR 2 merges).
 **Interfaces:**
 - Produces: `trySolveArithmetic(problem: string): SolutionV2Content | null`. Returns `null` for anything that is not pure arithmetic (any letter other than a recognised phrase, `=`, more than 12 digits per number).
 - Accepts: integers and decimals; `+ - × x(between numbers) * ÷ / ( )`; the phrases "divide A by B", "add A and B", "A plus/minus/times B".
-- Output: `header.level = "class1-5"`, `method = { id: "arithmetic", label: "Arithmetic", alternatives: [] }`. One operation per step in BODMAS order. Blocks: integer `a + b` (2+ digits) → `columnArithmetic` "+"; integer `a - b` with `a >= b` → `columnArithmetic` "-"; integer `a ÷ b` with `a >= 10`, `b <= 99` → `longDivision`; otherwise `equation`. Answer `{ latex, sentence }`, e.g. "Quotient = 39, remainder = 0". Never use `eval` or `Function`; parse with a small tokenizer and shunting-yard.
+- Output: `header.level = "class1-5"`, `method = { id: "arithmetic", label: "Arithmetic", alternatives: [] }`. One operation per step in BODMAS order. Blocks: integer `a + b` (2+ digits) → `columnArithmetic` "+"; integer `a - b` with `a >= b` → `columnArithmetic` "-"; integer `a ÷ b` with `a >= 10`, `b <= 99` → `longDivision`; otherwise `equation`. Answer `{ latex, sentence }`, e.g. "Quotient = 39, remainder = 0". Never use `eval`, `Function` or `mathjs.evaluate`. Parse with `mathjs.parse` (owner decision 2026-10-09: mathjs replaces a hand-written tokenizer; `cd backend && bun add mathjs` happens here, Task 13 reuses it) after rewriting the phrases and `×`/`÷`/`x` to `* /`. Accept only trees made of `ConstantNode`, `ParenthesisNode` and `OperatorNode` with `+ - * /` (unary minus allowed); any `SymbolNode`, `FunctionNode`, `AssignmentNode` or other node → `null`. Walk the tree bottom-up, one step per operator, and compute with mathjs `BigNumber` (or `Fraction` for `/` when exact) so `0.1 + 0.2` gives `0.3`, not `0.30000000000000004`.
 - Response adds `source: "instant"`.
 
-- [ ] **Step 1: Write the failing tests:** `trySolveArithmetic("5+3")` → one `equation` step, answer "8"; `"47 + 38"` → `columnArithmetic`; `"156 ÷ 4"` and `"Divide 156 by 4"` → `longDivision`, sentence "Quotient = 39, remainder = 0"; `"2 + 3 × 4"` → steps `3 × 4 = 12` then `2 + 12 = 14`; `"x + 3 = 5"` → `null`; `"7 ÷ 0"` → throws `UnsolvableProblemError` with "You can't divide by zero."; HTTP: solving "5+3" returns in under 300 ms, the fake solver is not called, and `/api/profile` `dailyCredits.used` stays 0.
+- [ ] **Step 1: Write the failing tests:** `trySolveArithmetic("5+3")` → one `equation` step, answer "8"; `"47 + 38"` → `columnArithmetic`; `"156 ÷ 4"` and `"Divide 156 by 4"` → `longDivision`, sentence "Quotient = 39, remainder = 0"; `"2 + 3 × 4"` → steps `3 × 4 = 12` then `2 + 12 = 14`; `"x + 3 = 5"` → `null`; `"sqrt(16)"` and `"a = 5"` → `null`; `"0.1 + 0.2"` → answer "0.3"; `"7 ÷ 0"` → throws `UnsolvableProblemError` with "You can't divide by zero."; HTTP: solving "5+3" returns in under 300 ms, the fake solver is not called, and `/api/profile` `dailyCredits.used` stays 0.
 - [ ] **Step 2: Run** `cd backend && bunx vitest run tests/unit/instant-arithmetic.test.ts tests/solve.test.ts` → FAIL.
 - [ ] **Step 3: Implement.**
 - [ ] **Step 4: Run** → PASS.
@@ -480,7 +480,7 @@ Branch: `feat/fast-safe-solving` from `redesign` (after PR 2 merges).
 
 **Files:**
 - Modify: `backend/src/db/schema.ts` (new table `solution_cache`: `key text primary key`, `content jsonb not null`, `problem_type text not null`, `hits integer not null default 0`, `created_at timestamptz default now()`), migration via `bun run db:generate` (additive)
-- Create: `backend/src/modules/solver/cache/solution-cache.ts`, `backend/src/modules/solver/verify/verify-answer.ts` (+ `backend/tests/unit/verify-answer.test.ts`); `cd backend && bun add mathjs` (approved)
+- Create: `backend/src/modules/solver/cache/solution-cache.ts`, `backend/src/modules/solver/verify/verify-answer.ts` (+ `backend/tests/unit/verify-answer.test.ts`); mathjs is already added in Task 12
 - Modify: `backend/src/routes/solve.route.ts`, `backend/src/services/ai/prompts.ts` (export `PROMPT_VERSION = "2026-10-09.1"`)
 - Test: `backend/tests/solution-cache.test.ts`
 
