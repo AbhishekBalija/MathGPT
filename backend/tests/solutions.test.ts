@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { FAKE_FINAL_ANSWER } from "./support/fake-math-solver";
+import {
+  FAKE_BROKEN_FORMAT,
+  FAKE_CONTENT,
+  FAKE_FINAL_ANSWER,
+  FAKE_NEW_FORMAT,
+} from "./support/fake-math-solver";
 import { authedFetch, registerAdmin, registerVerifiedUser } from "./support/users";
 
 async function solve(accessToken: string, problem = "2x = 4") {
@@ -34,6 +39,48 @@ describe("a User's Solutions", () => {
     expect(deleted.status).toBe(200);
     const reopened = await authedFetch(accessToken, `/api/solution/${solution.id}`);
     expect(reopened.status).toBe(404);
+  });
+
+  it("saved in the new format come back with their content unchanged", async () => {
+    const { accessToken } = await registerVerifiedUser();
+    const solution = await solve(accessToken, `2x = 4 ${FAKE_NEW_FORMAT}`);
+
+    const res = await authedFetch(accessToken, `/api/solution/${solution.id}`);
+
+    const body = await res.json();
+    expect(body.solution.formatVersion).toBe(2);
+    expect(body.solution.content).toEqual(FAKE_CONTENT);
+    const history = await (await authedFetch(accessToken, "/api/history")).json();
+    expect(history.history[0].formatVersion).toBe(2);
+    // History stays light
+    expect(history.history[0].content).toBeUndefined();
+  });
+
+  it("saved in the old format come back as version 1 with their steps and no content", async () => {
+    const { accessToken } = await registerVerifiedUser();
+    const solution = await solve(accessToken);
+
+    const res = await authedFetch(accessToken, `/api/solution/${solution.id}`);
+
+    const body = await res.json();
+    expect(body.solution.formatVersion).toBe(1);
+    expect(body.solution.content).toBeNull();
+    expect(body.solution.steps).toHaveLength(2);
+    const history = await (await authedFetch(accessToken, "/api/history")).json();
+    expect(history.history[0].formatVersion).toBe(1);
+  });
+
+  it("with broken new-format content are not saved", async () => {
+    const { accessToken } = await registerVerifiedUser();
+
+    const res = await authedFetch(accessToken, "/api/solve", {
+      method: "POST",
+      body: { problem: `2x = 4 ${FAKE_BROKEN_FORMAT}` },
+    });
+
+    expect(res.status).toBe(500);
+    const history = await (await authedFetch(accessToken, "/api/history")).json();
+    expect(history.history).toEqual([]);
   });
 
   it("show in History newest first", async () => {

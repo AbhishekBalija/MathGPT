@@ -33,6 +33,9 @@ export const getSolutionRoute = route(async (req) => {
         })),
         finalAnswer: row.finalAnswer,
         summary: row.summary,
+        formatVersion: row.formatVersion,
+        // Stored as saved; null for old-style solutions
+        content: row.content,
         processingTimeMs: row.processingTimeMs,
         createdAt: row.createdAt.toISOString(),
       },

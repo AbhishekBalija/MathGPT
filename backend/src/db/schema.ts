@@ -18,6 +18,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import type { ProblemType, SolutionStep } from "../types/solve.types";
+import type { SolutionV2Content } from "../modules/solutions/solution-v2.schema";
 
 export type AuthProvider = "email" | "google";
 
@@ -95,6 +96,9 @@ export const solutions = pgTable(
     steps: jsonb("steps").$type<SolutionStep[]>().notNull(),
     finalAnswer: text("final_answer").notNull(),
     summary: text("summary").notNull(),
+    // New format (null on old rows); format_version says which one a row uses
+    content: jsonb("content").$type<SolutionV2Content>(),
+    formatVersion: integer("format_version").notNull().default(1),
     processingTimeMs: integer("processing_time_ms").notNull(),
     inputTokens: integer("input_tokens").notNull().default(0),
     outputTokens: integer("output_tokens").notNull().default(0),

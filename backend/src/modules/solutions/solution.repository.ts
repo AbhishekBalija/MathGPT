@@ -12,6 +12,7 @@ import { isUuid as isId } from "../../lib/ids";
 import type { DbExecutor } from "../../db/transaction";
 import { solutions, type SolutionRow } from "../../db/schema";
 import type { ProblemType, Solution } from "../../types/solve.types";
+import { solutionV2Schema } from "./solution-v2.schema";
 
 export type StoredSolution = SolutionRow;
 
@@ -20,6 +21,7 @@ export interface HistoryItem {
   problem: string;
   problemType: ProblemType;
   finalAnswer: string;
+  formatVersion: number;
   createdAt: Date;
 }
 
@@ -29,13 +31,18 @@ function toCountMap(rows: Array<{ problemType: string; count: number }>): Record
 }
 
 export const solutionRepository = {
-  /** Stores a Solution under the id and time the solver gave it. */
+  /**
+   * Stores a Solution under the id and time the solver gave it. If it has
+   * new-format content, the content is checked first and saved as version 2.
+   */
   async create(
     userId: string,
     solution: Solution,
     chatId?: string,
     executor: DbExecutor = db
   ): Promise<StoredSolution> {
+    // Throws if the content does not match the schema, so bad content is never saved
+    const content = solution.content ? solutionV2Schema.parse(solution.content) : null;
     const [row] = await executor
       .insert(solutions)
       .values({
@@ -47,6 +54,8 @@ export const solutionRepository = {
         steps: solution.steps,
         finalAnswer: solution.finalAnswer,
         summary: solution.summary,
+        content,
+        formatVersion: content ? 2 : 1,
         processingTimeMs: solution.processingTimeMs,
         inputTokens: solution.tokenUsage?.inputTokens ?? 0,
         outputTokens: solution.tokenUsage?.outputTokens ?? 0,
@@ -80,6 +89,7 @@ export const solutionRepository = {
         problem: solutions.problem,
         problemType: solutions.problemType,
         finalAnswer: solutions.finalAnswer,
+        formatVersion: solutions.formatVersion,
         createdAt: solutions.createdAt,
       })
       .from(solutions)

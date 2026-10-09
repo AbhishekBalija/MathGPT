@@ -3,6 +3,8 @@
  * Structured to support notebook-style step-by-step solutions
  */
 
+import type { SolutionV2Content } from "../modules/solutions/solution-v2.schema";
+
 // Problem types we can handle
 export type ProblemType =
   | "algebra"
@@ -66,6 +68,9 @@ export interface Solution {
 
   /** Brief summary of the solution approach */
   summary: string;
+
+  /** The new step-by-step format. Absent on old-style solutions. */
+  content?: SolutionV2Content;
 
   /** Processing time in milliseconds */
   processingTimeMs: number;
