@@ -148,6 +148,15 @@ Display profile per level (frontend constant, later per board):
 
 Each step is its own PR into `redesign`.
 
+## Fast and safe solving (added 2026-10-09)
+
+- **Instant answers:** plain arithmetic ("5 + 3", "156 ÷ 4") is solved in code, instantly, with exact column and long-division layouts. No AI call.
+- **Shared cache:** the same problem (same level, method and prompt version) reuses a stored solution for every student. Nothing about the student is stored with it.
+- **Free limit:** instant answers and cache hits do not count toward the 5 free problems a day; only AI solves do.
+- **Math only:** text that does not look like math is turned away before the AI; the AI also refuses non-math and ignores instructions inside a problem. The "unsolvable" filter stops rejecting valid problems that mention infinity.
+- **Sign-up abuse:** Cloudflare Turnstile and a list of throwaway email domains. Per-IP limits sized for a classroom on one school network (20 sign-ups and 100 solves per hour).
+- **Corrections to this spec:** the 5-a-day limit is real (the input shows "N of 5 free problems left today"); hint mode was never wired to the AI, so every solution now includes a hint and "Just a hint" needs no second request.
+
 ## Decided after review
 
 - Exam style: the answer is the last step, a boxed "∴" conclusion with a sentence and units, as in the mockup (owner, 2026-10-09).
