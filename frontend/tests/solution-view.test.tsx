@@ -81,6 +81,12 @@ describe("SolutionView", () => {
     expect(screen.getByText("Method: Long division")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Change" })).toBeNull();
   });
+
+  it("hides the method line when an old solution has no method name", () => {
+    const old = { ...quadratic, header: { ...quadratic.header, method: { id: "", label: "", alternatives: [] } } };
+    render(<SolutionView solution={old} mode="all" onModeChange={noop} />);
+    expect(screen.queryByText(/Method:/)).toBeNull();
+  });
   it("shows Given / To find when the profile allows and sections exist", () => {
     const { unmount } = render(<SolutionView solution={trainProblem} mode="all" onModeChange={noop} />);
     expect(screen.getByText("Given:")).toBeTruthy();

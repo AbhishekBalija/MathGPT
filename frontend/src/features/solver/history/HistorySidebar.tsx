@@ -82,8 +82,9 @@ export function HistorySidebar({
       ) : null}
       <aside
         aria-label="History"
-        className={`fixed inset-y-0 left-0 z-40 flex w-[85vw] max-w-80 flex-col border-r border-gray-200 bg-white transition-transform duration-200 dark:border-white/10 dark:bg-[#0f1117] sm:static sm:z-auto sm:w-65 sm:max-w-none sm:shrink-0 sm:translate-x-0 ${
-          open ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 z-40 flex w-[85vw] max-w-80 flex-col border-r border-gray-200 bg-white transition-[transform,visibility] duration-200 dark:border-white/10 dark:bg-[#0f1117] sm:static sm:z-auto sm:w-65 sm:max-w-none sm:shrink-0 sm:visible sm:translate-x-0 ${
+          // A closed drawer is also invisible, so its buttons leave the tab order on phones
+          open ? "visible translate-x-0" : "invisible -translate-x-full"
         }`}
       >
         <div className="flex items-center justify-between gap-1 px-3 pt-3">

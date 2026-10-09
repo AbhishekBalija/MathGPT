@@ -36,7 +36,7 @@ export function ProblemHeader({ solution, onEdit, onNew }: ProblemHeaderProps) {
             </button>
           ) : null}
           {onNew ? (
-            <button type="button" onClick={onNew} className={SMALL_BUTTON}>
+            <button type="button" onClick={onNew} className={`${SMALL_BUTTON} max-sm:hidden`}>
               New problem
             </button>
           ) : null}

@@ -81,7 +81,7 @@ export function Composer({
             placeholder="Type a problem, like x^2 + 5x + 6 = 0"
             onChange={(event) => onChange(event.target.value)}
             onKeyDown={handleKeyDown}
-            className="max-h-32 min-h-11 w-full flex-1 resize-none overflow-y-auto bg-transparent px-1 py-2.5 sm:w-auto sm:px-0 text-base text-gray-900 placeholder:text-gray-600 focus:outline-none dark:text-gray-50 dark:placeholder:text-gray-400"
+            className="max-h-32 min-h-11 grow basis-full resize-none overflow-y-auto bg-transparent px-1 py-2.5 sm:basis-0 sm:px-0 text-base text-gray-900 placeholder:text-gray-600 focus:outline-none dark:text-gray-50 dark:placeholder:text-gray-400"
           />
           <button
             type="button"

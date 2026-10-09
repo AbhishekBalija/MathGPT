@@ -63,18 +63,21 @@ function SolutionBody({
         </dl>
       ) : null}
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-3 text-sm text-gray-600 dark:text-gray-400">
-        <span>Method: {method.label}</span>
-        {method.alternatives.length > 0 ? (
-          <button
-            type="button"
-            onClick={() => setPickingMethod(!pickingMethod)}
-            className="min-h-11 font-semibold underline underline-offset-4"
-          >
-            Change
-          </button>
-        ) : null}
-      </div>
+      {/* Old saved solutions have no method name, so the line is hidden for them */}
+      {method.label ? (
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 text-sm text-gray-600 dark:text-gray-400">
+          <span>Method: {method.label}</span>
+          {method.alternatives.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setPickingMethod(!pickingMethod)}
+              className="min-h-11 font-semibold underline underline-offset-4"
+            >
+              Change
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {pickingMethod ? (
         <ul className="mt-2 flex flex-wrap gap-2">
           {method.alternatives.map((alt) => (
@@ -129,9 +132,12 @@ function SolutionBody({
               Next step
             </button>
           )}
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            {shown} of {total}
-          </span>
+          {/* The phone bar shows its own "Step N of M" */}
+          {renderNextStep ? null : (
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {shown} of {total}
+            </span>
+          )}
         </div>
       ) : null}
 
@@ -140,7 +146,7 @@ function SolutionBody({
       ) : (
         <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-dashed border-gray-300 p-4 text-sm text-gray-600 dark:border-gray-600 dark:text-gray-400">
           <span>The answer shows after the last step.</span>
-          <button type="button" onClick={showAll} className={`${BUTTON} font-semibold underline`}>
+          <button type="button" onClick={showAll} className={`${BUTTON} shrink-0 whitespace-nowrap font-semibold underline`}>
             Show it now
           </button>
         </div>

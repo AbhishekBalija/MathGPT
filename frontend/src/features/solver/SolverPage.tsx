@@ -404,7 +404,6 @@ export function SolverPage() {
             <SlimComposer
               label={input.trim() || (activeSolution ? "Ask another problem" : "Type a problem")}
               onOpen={() => setPhoneInputOpen(true)}
-              onNew={activeSolution ? newProblem : undefined}
             />
           ) : (
             composer
