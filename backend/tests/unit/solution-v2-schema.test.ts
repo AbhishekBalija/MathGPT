@@ -303,6 +303,53 @@ describe("solutionV2Schema", () => {
   });
 });
 
+describe("extra keys and more block shapes", () => {
+  it("strips unknown keys instead of rejecting them", () => {
+    const solution = clone();
+    const input = {
+      ...solution,
+      extraTop: 1,
+      steps: [{ ...solution.steps[0], extraStep: 2, block: { ...solution.steps[0].block, extraBlock: 3 } }],
+    };
+    const result = solutionV2Schema.safeParse(input);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data).not.toHaveProperty("extraTop");
+    expect(result.data.steps[0]).not.toHaveProperty("extraStep");
+    expect(result.data.steps[0].block).not.toHaveProperty("extraBlock");
+  });
+
+  it("accepts a statementReason block", () => {
+    const block = { type: "statementReason", rows: [{ statement: "$AB = AC$", reason: "Given" }] };
+    expect(solutionV2Schema.safeParse(withBlock(block)).success).toBe(true);
+  });
+
+  it("accepts a table block", () => {
+    const block = { type: "table", headers: ["x", "y"], rows: [["1", "2"], ["3", "4"]] };
+    expect(solutionV2Schema.safeParse(withBlock(block)).success).toBe(true);
+  });
+
+  it("rejects a table row with the wrong number of cells", () => {
+    const block = { type: "table", headers: ["x", "y"], rows: [["1"]] };
+    expect(solutionV2Schema.safeParse(withBlock(block)).success).toBe(false);
+  });
+
+  it("rejects 11 table columns", () => {
+    const row = Array.from({ length: 11 }, () => "1");
+    const block = { type: "table", headers: row, rows: [row] };
+    expect(solutionV2Schema.safeParse(withBlock(block)).success).toBe(false);
+  });
+
+  it("rejects a 301 character table cell", () => {
+    const block = { type: "table", headers: ["x"], rows: [["a".repeat(301)]] };
+    expect(solutionV2Schema.safeParse(withBlock(block)).success).toBe(false);
+  });
+
+  it("rejects an empty steps array", () => {
+    expect(solutionV2Schema.safeParse({ ...clone(), steps: [] }).success).toBe(false);
+  });
+});
+
 describe("longDivision block", () => {
   const division = (dividend: number, divisor: number) =>
     withBlock({ type: "longDivision", dividend, divisor });
@@ -313,6 +360,10 @@ describe("longDivision block", () => {
 
   it("rejects a divisor of 0", () => {
     expect(solutionV2Schema.safeParse(division(156, 0)).success).toBe(false);
+  });
+
+  it("rejects a negative dividend", () => {
+    expect(solutionV2Schema.safeParse(division(-156, 4)).success).toBe(false);
   });
 
   it("rejects decimals", () => {
@@ -347,6 +398,14 @@ describe("columnArithmetic block", () => {
 
   it("rejects subtraction where the first number is smaller", () => {
     expect(solutionV2Schema.safeParse(column("-", [18, 50])).success).toBe(false);
+  });
+
+  it("rejects 11 operands", () => {
+    expect(solutionV2Schema.safeParse(column("+", Array.from({ length: 11 }, () => 1))).success).toBe(false);
+  });
+
+  it("rejects negative numbers", () => {
+    expect(solutionV2Schema.safeParse(column("+", [-5, 10])).success).toBe(false);
   });
 
   it("rejects decimals and unsafe numbers", () => {

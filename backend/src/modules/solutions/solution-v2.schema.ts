@@ -16,13 +16,18 @@ const stepKindSchema = z.enum([
 ]);
 
 const MAX_LONG_TEXT = 2000;
-const MAX_REASON = 300;
+const MAX_REASON = 300; // a step's reason
+const MAX_SHORT_TEXT = 300; // board, unit, labels, headers and table cells
+const MAX_OPERANDS = 10;
+const MAX_TABLE_COLUMNS = 10;
 const MAX_WHY = 2000;
 const MAX_STEPS = 30;
 const MAX_TABLE_ROWS = 50;
 
 const longText = z.string().min(1).max(MAX_LONG_TEXT);
 const safeInt = z.number().refine(Number.isSafeInteger, "Must be a safe integer");
+// The column renderer draws digits only, so no negatives
+const digitsInt = safeInt.refine((n) => n >= 0, "Must not be negative");
 
 const equationBlock = z.object({
   type: z.literal("equation"),
@@ -45,7 +50,7 @@ const columnArithmeticBlock = z
   .object({
     type: z.literal("columnArithmetic"),
     op: z.enum(["+", "-"]),
-    operands: z.array(safeInt).min(2).max(10),
+    operands: z.array(digitsInt).min(2).max(MAX_OPERANDS),
   })
   .refine((b) => b.op === "+" || b.operands.length === 2, {
     message: "Subtraction needs exactly 2 numbers",
@@ -63,19 +68,24 @@ const statementReasonBlock = z.object({
       z.object({
         // Both are plain text with inline math written as $...$
         statement: longText,
-        reason: z.string().min(1).max(MAX_REASON),
+        reason: z.string().min(1).max(MAX_SHORT_TEXT),
       }),
     )
     .min(1)
     .max(MAX_TABLE_ROWS),
 });
 
-const tableBlock = z.object({
-  type: z.literal("table"),
-  // Header and cells are plain text with inline math written as $...$
-  headers: z.array(z.string().max(MAX_REASON)).min(1).max(10),
-  rows: z.array(z.array(z.string().max(MAX_REASON)).max(10)).max(MAX_TABLE_ROWS),
-});
+const tableBlock = z
+  .object({
+    type: z.literal("table"),
+    // Header and cells are plain text with inline math written as $...$
+    headers: z.array(z.string().max(MAX_SHORT_TEXT)).min(1).max(MAX_TABLE_COLUMNS),
+    rows: z.array(z.array(z.string().max(MAX_SHORT_TEXT)).max(MAX_TABLE_COLUMNS)).max(MAX_TABLE_ROWS),
+  })
+  .refine((t) => t.rows.every((row) => row.length === t.headers.length), {
+    message: "Every row needs one cell per header",
+    path: ["rows"],
+  });
 
 export const blockSchema = z.discriminatedUnion("type", [
   equationBlock,
@@ -99,7 +109,7 @@ const answerSchema = z
     latex: longText.optional(),
     text: longText.optional(),
     sentence: z.string().max(MAX_LONG_TEXT).optional(),
-    unit: z.string().max(MAX_REASON).optional(),
+    unit: z.string().max(MAX_SHORT_TEXT).optional(),
     check: z.string().max(MAX_LONG_TEXT).optional(),
   })
   .refine((a) => a.latex !== undefined || a.text !== undefined, {
@@ -110,13 +120,13 @@ export const solutionV2Schema = z.object({
   formatVersion: z.literal(2),
   header: z.object({
     level: levelSchema,
-    board: z.string().max(MAX_REASON).optional(),
-    questionType: z.string().min(1).max(MAX_REASON),
+    board: z.string().max(MAX_SHORT_TEXT).optional(),
+    questionType: z.string().min(1).max(MAX_SHORT_TEXT),
     method: z.object({
       id: z.string().min(1).max(100),
-      label: z.string().min(1).max(MAX_REASON),
+      label: z.string().min(1).max(MAX_SHORT_TEXT),
       alternatives: z
-        .array(z.object({ id: z.string().min(1).max(100), label: z.string().min(1).max(MAX_REASON) }))
+        .array(z.object({ id: z.string().min(1).max(100), label: z.string().min(1).max(MAX_SHORT_TEXT) }))
         .max(10),
     }),
   }),
