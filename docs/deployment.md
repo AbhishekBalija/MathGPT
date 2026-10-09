@@ -48,7 +48,7 @@ detection needs. `src/server.ts` only listens, for local development.
 | `REFRESH_TOKEN_EXPIRY` | `7d`                                                                  |
 | `GOOGLE_CLIENT_ID`     | Google OAuth client id (same as the frontend's)                       |
 | `GEMINI_MATH_AI_API`   | Gemini API key                                                        |
-| `OPEN_ROUTER_API_KEY`  | OpenRouter key (backup models)                                        |
+| `OPEN_ROUTER_API_KEY`  | OpenRouter key (backup model when Gemini fails)                       |
 | `USE_MULTI_MODEL`      | `false` or `true`                                                     |
 | `RESEND_API`           | Resend API key                                                        |
 | `FROM_EMAIL`           | Verified sender, e.g. `NeoMath <hello@your-domain>`                   |
