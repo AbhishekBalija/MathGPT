@@ -1,6 +1,6 @@
 # Solver redesign
 
-Status: draft for review · 2026-10-09 · Part of the `redesign` branch (nothing ships to production until the whole redesign is ready).
+Status: approved · 2026-10-09 · Part of the `redesign` branch (nothing ships to production until the whole redesign is ready).
 
 ## Goal
 
@@ -148,7 +148,7 @@ Display profile per level (frontend constant, later per board):
 
 Each step is its own PR into `redesign`.
 
-## Open questions
+## Decided after review
 
-- Exam-style details (∴ symbol, "Ans.", boxed or underlined answer) are partly unconfirmed; research gaps are listed in `docs/research/answer-formats.md`. The owner may share real answer sheets to settle them.
-- Which board to default to before onboarding exists (proposal: CBSE conventions, since the research is strongest there).
+- Exam style: the answer is the last step, a boxed "∴" conclusion with a sentence and units, as in the mockup (owner, 2026-10-09).
+- Default conventions before onboarding exists: CBSE.
