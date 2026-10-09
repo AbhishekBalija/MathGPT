@@ -13,6 +13,7 @@
 ## Global Constraints
 
 - Branches: one branch per PR, each PR into `redesign`, never `main`. PR 1 = Tasks 1-7, PR 2 = Tasks 8-11, PR 3 = Tasks 12-15 (fast and safe solving), PR 4 = Task 16.
+- Approved dependencies: `@marsidev/react-turnstile` (frontend, Task 15), `mathjs` (backend, Task 13).
 - Owner decisions (2026-10-09): instant answers (arithmetic solved in code, cache hits) do not count toward the 5 free problems a day; the cache is shared between students (keyed only by problem, level, method and prompt version); Cloudflare Turnstile on sign-up (approved: one frontend package, `@marsidev/react-turnstile`); throwaway email domains blocked with a list kept in the repo (no npm package).
 - Shared networks: a whole class can share one school IP. Per-IP limits must allow a classroom (sign-up 20 per hour once Turnstile is in; solving 100 per hour per IP).
 - Every UI PR includes Playwright screenshots (desktop 1440×900 and phone 390×844, light and dark) via the `pr-assets` branch.
@@ -479,17 +480,22 @@ Branch: `feat/fast-safe-solving` from `redesign` (after PR 2 merges).
 
 **Files:**
 - Modify: `backend/src/db/schema.ts` (new table `solution_cache`: `key text primary key`, `content jsonb not null`, `problem_type text not null`, `hits integer not null default 0`, `created_at timestamptz default now()`), migration via `bun run db:generate` (additive)
-- Create: `backend/src/modules/solver/cache/solution-cache.ts`
+- Create: `backend/src/modules/solver/cache/solution-cache.ts`, `backend/src/modules/solver/verify/verify-answer.ts` (+ `backend/tests/unit/verify-answer.test.ts`); `cd backend && bun add mathjs` (approved)
 - Modify: `backend/src/routes/solve.route.ts`, `backend/src/services/ai/prompts.ts` (export `PROMPT_VERSION = "2026-10-09.1"`)
 - Test: `backend/tests/solution-cache.test.ts`
 
 **Interfaces:**
 - Produces: `cacheKey(problem: string, level: string | undefined, method: string | undefined): string` = sha256 of `PROMPT_VERSION + "|" + normalize(problem) + "|" + (level ?? "") + "|" + (method ?? "")`; `normalize` trims, collapses whitespace and unifies the minus sign (`−` → `-`) only, never touching letters. `solutionCache.get(key)`, `solutionCache.put(key, content, problemType)`.
 - Order in the route: validate → per-minute limit → instant (Task 12) → cache → daily credit → AI → cache put. A cache hit still saves a `solutions` row for the student's history and does not use a daily credit. Nothing about the student is stored in `solution_cache`.
-- **Safeguard against spreading a wrong answer (owner heads-up, 2026-10-09):** a cache entry starts as `status = 'candidate'` and is not served. The next solve of the same key calls the AI again and compares the normalised final answers (`answer.latex ?? answer.text`, whitespace removed); if they match the entry becomes `status = 'shared'` and is served from then on; if they differ, the entry is replaced by the newer answer and stays a candidate. Add columns `status text not null default 'candidate'`, `confirmations integer not null default 1`.
+- **Safeguard against spreading a wrong answer (owner decisions, 2026-10-09):** a cache entry is only served (`status = 'shared'`) once its answer passed an independent check; otherwise it stays `status = 'unchecked'` and is never served. Independent check, in order:
+  1. **Code check** with `mathjs` (approved dependency, backend only), in `backend/src/modules/solver/verify/verify-answer.ts`, `verifyAnswer(problem: string, content: SolutionV2Content): "passed" | "failed" | "unchecked"`: equations in one variable → substitute each root (both sides equal within 1e-9 relative); plain arithmetic → recompute; derivatives → compare to a central-difference slope at 3 points; definite integrals → numeric integration (Simpson, 1000 intervals); indefinite integrals → differentiate the answer numerically and compare with the integrand at 3 points. Anything else → "unchecked". Never use `eval`; parse with `mathjs.parse` and evaluate with a fixed scope.
+  2. **Different-model check** when the code check is "unchecked": ask the fallback model from a different vendor (OpenRouter, see #34) for the final answer only; share if the normalised answers match.
+  3. Otherwise never shared: each student gets their own fresh solve.
+  Columns: `status text not null default 'unchecked'`, `check_method text` ('code' | 'second-model' | null). A "failed" code check also logs the solution for the admin (existing error log) and is not shared.
+- **Honest label:** when `verifyAnswer` returns "passed", the response sets `content.answer.check` to "Checked by putting the answer back in." (or "Checked by recomputing." for arithmetic). Nothing else ever claims a check.
 - **Reports evict:** `POST /api/solutions/:id/report` (requireUser; body `{ reason?: string }`, max 500 chars) stores a row in a new `solution_reports` table (`id`, `solution_id`, `user_id`, `reason`, `created_at`) and sets the matching cache entry to `status = 'blocked'` (never served, never re-shared until the prompt version changes). The frontend "Something looks wrong? Tell us" link calls it and shows "Thanks. We'll check it."
 
-- [ ] **Step 1: Write the failing tests:** the first solve stores a candidate that is not served; a second student's solve calls the fake solver again and, with a matching answer, the entry becomes shared; a third student gets the shared content with no AI call and `dailyCredits.used` stays 0; a mismatching second answer keeps the entry a candidate; reporting a solution blocks its cache entry and the next student gets a fresh AI solve; the same problem with a different `method` → a new AI call; changing `PROMPT_VERSION` (inject via a test helper) → a new AI call; the cache row has no user id column.
+- [ ] **Step 1: Write the failing tests:** `verifyAnswer` passes x = -2 or x = -3 for x^2 + 5x + 6 = 0 and fails x = 2; passes d/dx sin(x) = cos(x) and fails = -cos(x); passes the definite integral of x^2 from 0 to 1 = 1/3; returns "unchecked" for a geometry proof. HTTP: a code-checked solve becomes shared and a second student gets it with no AI call and `dailyCredits.used` 0; a failed check is not shared; an unchecked problem calls the second model (fake) and is shared only when it agrees; reporting a solution blocks its entry and the next student gets a fresh AI solve; the same problem with a different `method` → a new AI call; changing `PROMPT_VERSION` → a new AI call; the cache row has no user id column.
 - [ ] **Step 2: Run** `bunx vitest run tests/solution-cache.test.ts` → FAIL.
 - [ ] **Step 3: Implement.**
 - [ ] **Step 4: Run** the backend suite → PASS.

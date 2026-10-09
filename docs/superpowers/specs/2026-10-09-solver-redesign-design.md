@@ -151,7 +151,7 @@ Each step is its own PR into `redesign`.
 ## Fast and safe solving (added 2026-10-09)
 
 - **Instant answers:** plain arithmetic ("5 + 3", "156 ÷ 4") is solved in code, instantly, with exact column and long-division layouts. No AI call.
-- **Shared cache:** the same problem (same level, method and prompt version) reuses a stored solution for every student. Nothing about the student is stored with it. A solution is only shared after two independent AI answers agree, and a "Something looks wrong?" report removes it from the cache at once.
+- **Shared cache:** the same problem (same level, method and prompt version) reuses a stored solution for every student. Nothing about the student is stored with it. A solution is only shared after an independent check passes: a code check with mathjs (substitute roots back, recompute arithmetic, numeric derivative or integral checks), or, where code cannot check, agreement from an AI model from a different company. Unchecked answers are never shared, and a "Something looks wrong?" report removes a shared answer at once. Answers that pass the code check say so honestly ("Checked by putting the answer back in.").
 - **Free limit:** instant answers and cache hits do not count toward the 5 free problems a day; only AI solves do.
 - **Math only:** text that does not look like math is turned away before the AI; the AI also refuses non-math and ignores instructions inside a problem. The "unsolvable" filter stops rejecting valid problems that mention infinity.
 - **Sign-up abuse:** Cloudflare Turnstile and a list of throwaway email domains. Per-IP limits sized for a classroom on one school network (20 sign-ups and 100 solves per hour).
