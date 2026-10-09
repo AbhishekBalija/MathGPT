@@ -27,6 +27,7 @@ import { runInBackground } from "../lib/background";
 import { handleSolveError } from "../events/solution/handle-solve-error";
 import { trackAnalytics } from "../events/solution/track-analytics";
 import { solutionRepository } from "../modules/solutions/solution.repository";
+import { trySolveArithmetic } from "../modules/solver/instant/arithmetic";
 
 // Daily free limit for users
 const DAILY_FREE_LIMIT = 5;
@@ -105,6 +106,63 @@ export function createSolveRoute(solver: MathSolver) {
           retryAfter: rateLimit.retryAfterSeconds,
         },
       };
+    }
+
+    // INSTANT ANSWER - plain arithmetic is solved here, with no AI and no
+    // Credit, so it works even when the Daily Limit is used up
+    try {
+      const instant = trySolveArithmetic(problem);
+      if (instant) {
+        const solution: Solution = {
+          id: randomUUID(),
+          problem,
+          problemType: "unknown",
+          steps: [],
+          finalAnswer: instant.answer.latex ?? instant.answer.text ?? "",
+          summary: instant.problem.task,
+          content: instant,
+          processingTimeMs: Date.now() - startTime,
+          createdAt: new Date().toISOString(),
+        };
+
+        // Saved like any other solve, so it shows in the sidebar
+        try {
+          await solutionRepository.create(userId, solution, chatId);
+        } catch (saveError) {
+          logger.error("Failed to save instant solution", {
+            solutionId: solution.id,
+            userId,
+            error: saveError instanceof Error ? saveError.message : "Unknown error",
+          });
+          return {
+            status: 500 as const,
+            body: { success: false, error: "Internal server error" },
+          };
+        }
+
+        return {
+          status: 200 as const,
+          body: {
+            success: true,
+            source: "instant" as const,
+            solution: {
+              id: solution.id,
+              createdAt: solution.createdAt,
+              formatVersion: 2,
+              content: instant,
+            },
+          },
+        };
+      }
+    } catch (instantError) {
+      // Only a division by zero gets here. Same answer as an unsolvable problem.
+      if (instantError instanceof UnsolvableProblemError) {
+        return {
+          status: 400 as const,
+          body: { error: instantError.message, code: "UNSOLVABLE" },
+        };
+      }
+      throw instantError;
     }
 
     // DAILY USAGE LIMIT CHECK
@@ -266,6 +324,7 @@ export function createSolveRoute(solver: MathSolver) {
         status: 200 as const,
         body: {
           success: true,
+          source: "ai" as const,
           solution: {
             id: solution.id,
             createdAt: solution.createdAt,

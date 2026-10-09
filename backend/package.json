@@ -25,6 +25,7 @@
     "express": "^5.2.1",
     "google-auth-library": "^10.5.0",
     "jsonwebtoken": "^9.0.3",
+    "mathjs": "^15.2.0",
     "pg": "^8.23.1",
     "resend": "^6.6.0",
     "zod": "^4.1.12"
