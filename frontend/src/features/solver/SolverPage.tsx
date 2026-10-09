@@ -15,7 +15,6 @@ import { SlimComposer } from "./composer/SlimComposer";
 import { HistorySidebar, type HistoryEntry } from "./history/HistorySidebar";
 import { PrevNext } from "./history/PrevNext";
 import { useDeleteWithUndo } from "./history/useDeleteWithUndo";
-import { toSolutionV2 } from "./model/adapter";
 import type { SolutionV2 } from "./model/solution";
 import { SolutionView } from "./SolutionView";
 import { EmptyState } from "./states/EmptyState";
@@ -26,7 +25,7 @@ import { ThinkingState } from "./states/ThinkingState";
 type View = "all" | "one" | "hint";
 
 interface SolveOptions {
-  // Solve again with another method (the backend ignores it until PR 2).
+  // Solve again with another method (an id from the solution's alternatives).
   method?: string;
   // Replace the solution of this chat instead of starting a new one.
   chatId?: string;
@@ -137,9 +136,8 @@ export function SolverPage() {
   const activeChat = chats.find((chat) => chat.id === activeChatId);
   const activeSolution: SolutionV2 | null = useMemo(() => {
     if (!activeChat?.solution) return null;
-    // Every solution goes through the adapter until the backend sends the new format.
-    const converted = toSolutionV2(activeChat.solution);
-    return { ...converted, id: `${converted.id}:${solveCount[activeChat.id] ?? 0}` };
+    const solution = activeChat.solution;
+    return { ...solution, id: `${solution.id}:${solveCount[activeChat.id] ?? 0}` };
   }, [activeChat, solveCount]);
 
   const position = activeChat ? ordered.findIndex((chat) => chat.id === activeChat.id) + 1 : 0;
@@ -292,7 +290,7 @@ export function SolverPage() {
     useChatStore.getState().setView("all");
   }
 
-  // Every solution carries a hint. Without one (old saved ones), show the full solution.
+  // The hint comes with the solution, so no second request. Without one (old saved ones), show the full solution.
   const hint = activeSolution?.hint;
   const showHint = view === "hint" && Boolean(hint) && activeSolution !== null;
   const mode = view === "one" ? "one" : "all";

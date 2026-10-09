@@ -6,29 +6,14 @@
 
 import axios from "axios";
 import api from "./api";
-import type { Solution, ProblemType } from "../stores/chatStore";
+import { resolveSolution, type ApiSolution } from "../features/solver/model/resolve";
+import type { SolutionV2 } from "../features/solver/model/solution";
 import type { SolveFailure } from "../utils/errorMessages";
 
 // Response type from backend
 interface SolveApiResponse {
   success: boolean;
-  solution?: {
-    id: string;
-    problem: string;
-    problemType: ProblemType;
-    steps: Array<{
-      stepNumber: number;
-      expression: string;
-      justification: string;
-      explanation: string;
-      status: "VERIFIED" | "CORRECTED" | "FAILED" | "PENDING";
-      notes?: string;
-    }>;
-    finalAnswer: string;
-    summary: string;
-    processingTimeMs: number;
-    createdAt: string;
-  };
+  solution?: ApiSolution;
   error?: string;
 }
 
@@ -36,7 +21,7 @@ export interface SolveRequest {
   problem: string;
   mode?: "step_by_step" | "hint" | "full";
   chatId?: string;
-  // Another method to solve with. The backend ignores it until PR 2.
+  // Another method to solve with, as an id from the solution's alternatives.
   method?: string;
   // Lets the page cancel the request.
   signal?: AbortSignal;
@@ -44,7 +29,7 @@ export interface SolveRequest {
 
 export interface SolveResult {
   success: boolean;
-  solution?: Solution;
+  solution?: SolutionV2;
   error?: string;
   // Set when the backend refuses because the email is not verified yet
   code?: "EMAIL_NOT_VERIFIED";
@@ -80,20 +65,8 @@ export async function solveProblem(request: SolveRequest): Promise<SolveResult> 
     );
 
     if (response.data.success && response.data.solution) {
-      // Convert API response to frontend Solution type
-      const apiSolution = response.data.solution;
-      const solution: Solution = {
-        id: apiSolution.id,
-        problem: apiSolution.problem,
-        problemType: apiSolution.problemType,
-        steps: apiSolution.steps,
-        finalAnswer: apiSolution.finalAnswer,
-        summary: apiSolution.summary,
-        processingTimeMs: apiSolution.processingTimeMs,
-        createdAt: new Date(apiSolution.createdAt),
-      };
-
-      return { success: true, solution };
+      const solution = resolveSolution(response.data.solution);
+      if (solution) return { success: true, solution };
     }
 
     // A 200 reply that says it failed: treat it as a server problem

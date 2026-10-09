@@ -9,6 +9,10 @@ import * as adapter from "../src/features/solver/model/adapter";
 import { SolverPage } from "../src/features/solver/SolverPage";
 import { useChatStore, type Chat, type Solution } from "../src/stores/chatStore";
 import { SOLVE_ERROR_COPY } from "../src/utils/errorMessages";
+import { division156, quadratic } from "./fixtures/solutions";
+
+// The real fetchSolution, kept before each test swaps in a fake one.
+const realFetchSolution = useChatStore.getState().fetchSolution;
 
 // Old saved solutions have no other methods, so give them one to test "Change".
 vi.mock("../src/features/solver/model/adapter", async (importOriginal) => {
@@ -64,7 +68,9 @@ function savedChat(id: string, problem: string, createdAt: Date): Chat {
 function fakeFetchSolution() {
   return vi.fn(async (chatId: string) => {
     useChatStore.setState((s) => ({
-      chats: s.chats.map((c) => (c.id === chatId ? { ...c, solution: oldSolution(`sol-${chatId}`, c.title) } : c)),
+      chats: s.chats.map((c) =>
+        c.id === chatId ? { ...c, solution: adapter.toSolutionV2(oldSolution(`sol-${chatId}`, c.title)) } : c,
+      ),
     }));
   });
 }
@@ -369,5 +375,103 @@ describe("on a phone", () => {
     await renderPage();
     fireEvent.click(screen.getByText("Class 10").closest("button") as HTMLButtonElement);
     expect(field().value).toBe("x^2 + 5x + 6 = 0");
+  });
+});
+
+// The v2 reply of POST /api/solve: the typed blocks come in `content`.
+function v2Reply(content: Omit<typeof division156, "id" | "createdAt">) {
+  return { data: { success: true, solution: { id: "v2-id", createdAt: new Date().toISOString(), formatVersion: 2, content } } };
+}
+
+describe("typed-block solutions", () => {
+  it("shows a v2 reply's blocks directly, with the long division grid", async () => {
+    post.mockResolvedValue(v2Reply(division156));
+    await renderPage();
+    fireEvent.change(field(), { target: { value: "156 / 4" } });
+    fireEvent.click(btn("Solve"));
+    await waitFor(() => expect(screen.getByRole("img", { name: "156 divided by 4" })).toBeTruthy());
+  });
+
+  it("opens an old (format 1) history item through the adapter", async () => {
+    useChatStore.setState({
+      fetchSolution: realFetchSolution,
+      chats: [{ ...savedChat("old", "x + 1 = 2", new Date()), solutionId: "old-sol" }],
+    });
+    get.mockImplementation(async (url: string) =>
+      url === "/api/solution/old-sol"
+        ? {
+            data: {
+              success: true,
+              solution: { ...oldSolution("old-sol", "x + 1 = 2"), createdAt: new Date().toISOString(), formatVersion: 1, content: null },
+            },
+          }
+        : { data: { dailyCredits: { remaining: 3 } } },
+    );
+    await renderPage();
+    fireEvent.click(btn("x + 1 = 2"));
+    await waitFor(() => expect(screen.getByText("Take 1 from both sides")).toBeTruthy());
+  });
+
+  it("opens a v2 history item from its content", async () => {
+    useChatStore.setState({
+      fetchSolution: realFetchSolution,
+      chats: [{ ...savedChat("new", "156 / 4", new Date()), solutionId: "new-sol" }],
+    });
+    get.mockImplementation(async (url: string) =>
+      url === "/api/solution/new-sol"
+        ? {
+            data: {
+              success: true,
+              solution: {
+                ...oldSolution("new-sol", "156 / 4"),
+                createdAt: new Date().toISOString(),
+                formatVersion: 2,
+                content: division156,
+              },
+            },
+          }
+        : { data: { dailyCredits: { remaining: 3 } } },
+    );
+    await renderPage();
+    fireEvent.click(btn("156 / 4"));
+    await waitFor(() => expect(screen.getByRole("img", { name: "156 divided by 4" })).toBeTruthy());
+  });
+
+  it("Change to Quadratic formula solves again with method quadratic-formula", async () => {
+    const withMethod = {
+      ...quadratic,
+      header: {
+        ...quadratic.header,
+        method: {
+          id: "factorisation",
+          label: "Factorisation",
+          alternatives: [{ id: "quadratic-formula", label: "Quadratic formula" }],
+        },
+      },
+    };
+    post.mockResolvedValueOnce(v2Reply(withMethod));
+    await renderPage();
+    fireEvent.change(field(), { target: { value: "x^2 + 5x + 6 = 0" } });
+    fireEvent.click(btn("Solve"));
+    await waitFor(() => expect(btn("Change")).toBeTruthy());
+
+    post.mockResolvedValueOnce(v2Reply(withMethod));
+    fireEvent.click(btn("Change"));
+    fireEvent.click(btn("Quadratic formula"));
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(2));
+    expect(post.mock.calls[1][1]).toMatchObject({ method: "quadratic-formula" });
+  });
+
+  it("Just a hint shows the hint from the reply and the full solution needs no second request", async () => {
+    post.mockResolvedValueOnce(v2Reply({ ...division156, hint: "Start with how many 4s fit into 15." }));
+    await renderPage();
+    fireEvent.change(field(), { target: { value: "156 / 4" } });
+    fireEvent.click(btn("Just a hint"));
+    await waitFor(() => expect(screen.getByText("Start with how many 4s fit into 15.")).toBeTruthy());
+    expect(screen.queryByRole("img", { name: "156 divided by 4" })).toBeNull();
+
+    fireEvent.click(btn("Show the full solution"));
+    expect(screen.getByRole("img", { name: "156 divided by 4" })).toBeTruthy();
+    expect(post).toHaveBeenCalledTimes(1);
   });
 });

@@ -17,6 +17,7 @@ export interface HistoryItem {
   finalAnswer: string;
   summary: string;
   stepsCount: number;
+  formatVersion?: number;
   createdAt: string;
 }
 
