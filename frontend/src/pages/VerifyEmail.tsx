@@ -1,9 +1,10 @@
-import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import axios from "axios";
 import { useAuthStore } from "../stores/authStore";
 import authService from "../services/auth.service";
-import Logo from "../components/brand/Logo";
+import AuthLayout from "../components/auth/AuthLayout";
+import * as ui from "../components/auth/authStyles";
 
 // Shown after email sign-up, and whenever solving says the email is not verified.
 // Arriving with { sendCode: true } (from login or a refused solve) means there may
@@ -97,52 +98,31 @@ const VerifyEmail = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#fafafa] dark:bg-[#0a0a0a] bg-grid-white px-4 py-8 sm:py-12 sm:px-6 lg:px-8 transition-colors duration-300">
-      <div className="w-full max-w-[500px] space-y-6 sm:space-y-8 bg-white dark:bg-gray-900 p-6 sm:p-10 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800">
-        <div className="text-center">
-          <Link
-            to="/"
-            className="inline-flex items-center mb-6 sm:mb-8 [--logo-h:28px] sm:[--logo-h:34px]"
-          >
-            <Logo height="var(--logo-h)" />
-          </Link>
+    <AuthLayout>
+      <h1 className={ui.heading}>Check your email</h1>
+      <p className={ui.subheading}>
+        {shouldSendCode ? "We're sending a 6-digit code to" : "We sent a 6-digit code to"}{" "}
+        <span className="font-medium text-gray-900 dark:text-white">
+          {user?.email ?? "your email"}
+        </span>
+        . It expires in 15 minutes.
+      </p>
 
-          <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
-            Verify your email
-          </h2>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            {shouldSendCode ? "We're sending a 6-digit code to" : "We sent a 6-digit code to"}{" "}
-            <span className="font-medium text-gray-900 dark:text-white">
-              {user?.email ?? "your email"}
-            </span>
-            . It expires in 15 minutes.
-          </p>
-        </div>
-
+      <div className="mt-7 space-y-4">
         {error && (
-          <div
-            role="alert"
-            className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm font-medium"
-          >
+          <div role="alert" className={ui.errorBox}>
             {error}
           </div>
         )}
-
         {notice && (
-          <div
-            role="status"
-            className="bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 text-green-600 dark:text-green-400 px-4 py-3 rounded-lg text-sm font-medium"
-          >
+          <div role="status" className={ui.noticeBox}>
             {notice}
           </div>
         )}
 
-        <form className="space-y-5" onSubmit={handleVerify}>
+        <form className="space-y-4" onSubmit={handleVerify}>
           <div>
-            <label
-              htmlFor="verification-code"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
-            >
+            <label htmlFor="verification-code" className={ui.label}>
               Verification code
             </label>
             <input
@@ -153,31 +133,27 @@ const VerifyEmail = () => {
               autoComplete="one-time-code"
               maxLength={6}
               required
+              autoFocus
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               disabled={isVerifying}
-              className="block w-full rounded-xl border-gray-200 dark:border-gray-700 py-3 px-4 text-center text-2xl tracking-[0.5em] text-gray-900 dark:text-white shadow-sm placeholder:text-gray-300 focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent bg-gray-50/50 dark:bg-gray-800 transition-all font-medium"
+              className={`${ui.input} text-center text-2xl tracking-[0.5em] placeholder:text-gray-300`}
               placeholder="000000"
             />
           </div>
-
-          <button
-            type="submit"
-            disabled={isVerifying || code.length !== 6}
-            className="group relative flex w-full justify-center rounded-xl bg-black dark:bg-white px-3 py-3.5 text-sm font-semibold text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black transition-all shadow-lg active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
-          >
+          <button type="submit" disabled={isVerifying || code.length !== 6} className={ui.primaryButton}>
             {isVerifying ? "Verifying..." : "Verify email"}
           </button>
         </form>
 
-        <div className="space-y-2 text-center text-sm text-gray-500 dark:text-gray-400">
+        <div className="space-y-2 pt-1 text-center text-sm text-gray-500 dark:text-gray-400">
           <p>
             Didn&apos;t get it?{" "}
             <button
               type="button"
               onClick={handleResend}
               disabled={isResending || cooldown > 0}
-              className="font-semibold text-black dark:text-white hover:underline underline-offset-4 disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed"
+              className={`${ui.textLink} disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed`}
             >
               {cooldown > 0
                 ? `Send a new code in ${cooldown}s`
@@ -187,17 +163,13 @@ const VerifyEmail = () => {
             </button>
           </p>
           <p>
-            <button
-              type="button"
-              onClick={handleUseAnotherAccount}
-              className="hover:underline underline-offset-4"
-            >
+            <button type="button" onClick={handleUseAnotherAccount} className="hover:underline underline-offset-4">
               Use a different account
             </button>
           </p>
         </div>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 
