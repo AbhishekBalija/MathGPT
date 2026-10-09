@@ -285,6 +285,22 @@ describe("solutionV2Schema", () => {
     expect(solutionV2Schema.safeParse({ ...solution, answer: { sentence: "Done" } }).success).toBe(false);
   });
 
+  // Models often send "" for a field that does not apply, like the words
+  // version of a plain equation. That means "not given", not an error.
+  it("treats an empty problem text or latex as not given", () => {
+    const solution = clone();
+    const problem = { ...solution.problem, latex: "x^2+5x+6=0", text: "" };
+    const result = solutionV2Schema.safeParse({ ...solution, problem });
+    expect(result.success).toBe(true);
+    expect(result.data?.problem.text).toBeUndefined();
+  });
+
+  it("still rejects an answer whose latex and text are both empty", () => {
+    const solution = clone();
+    const answer = { latex: "", text: "", sentence: "Done" };
+    expect(solutionV2Schema.safeParse({ ...solution, answer }).success).toBe(false);
+  });
+
   it("rejects more than 30 steps", () => {
     const solution = clone();
     const steps = Array.from({ length: 31 }, () => solution.steps[0]);

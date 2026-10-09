@@ -25,6 +25,8 @@ const MAX_STEPS = 30;
 const MAX_TABLE_ROWS = 50;
 
 const longText = z.string().min(1).max(MAX_LONG_TEXT);
+// Models often send "" for a field that does not apply; treat it as not given
+const optionalLongText = z.preprocess((value) => (value === "" ? undefined : value), longText.optional());
 const safeInt = z.number().refine(Number.isSafeInteger, "Must be a safe integer");
 // The column renderer draws digits only, so no negatives
 const digitsInt = safeInt.refine((n) => n >= 0, "Must not be negative");
@@ -106,8 +108,8 @@ const stepSchema = z.object({
 
 const answerSchema = z
   .object({
-    latex: longText.optional(),
-    text: longText.optional(),
+    latex: optionalLongText,
+    text: optionalLongText,
     sentence: z.string().max(MAX_LONG_TEXT).optional(),
     unit: z.string().max(MAX_SHORT_TEXT).optional(),
     check: z.string().max(MAX_LONG_TEXT).optional(),
@@ -131,8 +133,8 @@ export const solutionV2Schema = z.object({
     }),
   }),
   problem: z.object({
-    latex: longText.optional(),
-    text: longText.optional(),
+    latex: optionalLongText,
+    text: optionalLongText,
     task: z.string().min(1).max(MAX_LONG_TEXT),
   }),
   sections: z
