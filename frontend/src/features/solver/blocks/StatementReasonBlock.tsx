@@ -1,4 +1,4 @@
-import { Math } from "./Math";
+import { InlineText } from "./InlineText";
 
 const CELL = "border border-gray-300 px-3 py-2 text-left align-top dark:border-gray-700";
 
@@ -16,9 +16,11 @@ export function StatementReasonBlock({ rows }: { rows: { statement: string; reas
           {rows.map((row, i) => (
             <tr key={i}>
               <td className={CELL}>
-                <Math latex={row.statement} />
+                <InlineText text={row.statement} />
               </td>
-              <td className={CELL}>{row.reason}</td>
+              <td className={CELL}>
+                <InlineText text={row.reason} />
+              </td>
             </tr>
           ))}
         </tbody>

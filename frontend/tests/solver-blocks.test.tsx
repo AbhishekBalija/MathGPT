@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { BlockView } from "../src/features/solver/blocks/BlockView";
 import type { Block } from "../src/features/solver/model/solution";
 
@@ -59,5 +59,53 @@ describe("BlockView", () => {
     // 3 lends one, 0 receives and lends (10 - 1 = 9), 2 receives (12)
     expect([borrow(0), borrow(1), borrow(2)]).toEqual(["2", "9", "12"]);
     expect(container.querySelector('[data-row="result"][data-col="2"]')?.textContent).toBe("4");
+  });
+
+  it("renders inline math inside table cells and statement rows", () => {
+    const { container } = render(
+      <BlockView block={{ type: "table", headers: ["Item"], rows: [["Total $x+1$ apples"]] }} />,
+    );
+    expect(container.querySelectorAll(".katex")).toHaveLength(1);
+    expect(container.textContent).toContain("Total");
+    expect(container.querySelector("td p")).toBeNull();
+    render(
+      <BlockView
+        block={{ type: "statementReason", rows: [{ statement: "Side $AB$ is equal", reason: "Given" }] }}
+      />,
+    );
+    expect(screen.getByText(/is equal/)).toBeTruthy();
+  });
+  it("shows the fallback for bad numbers instead of crashing", () => {
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    render(<BlockView block={{ type: "longDivision", dividend: 5, divisor: 0 }} />);
+    render(<BlockView block={{ type: "columnArithmetic", op: "-", operands: [3] }} />);
+    expect(screen.getAllByText("This step could not be shown.")).toHaveLength(2);
+    quiet.mockRestore();
+  });
+  it("keeps a long divisor in its own cell", () => {
+    const { container } = render(
+      <BlockView block={{ type: "longDivision", dividend: 1234, divisor: 123 }} />,
+    );
+    expect(container.querySelector('[data-row="n"][data-col="divisor"]')?.textContent).toBe("123");
+  });
+  it("keeps the zero subtract row in 412 ÷ 4", () => {
+    const { container } = render(
+      <BlockView block={{ type: "longDivision", dividend: 412, divisor: 4 }} />,
+    );
+    const zeroCells = [...container.querySelectorAll("[data-row]:not([data-row='q']):not([data-row='n'])")];
+    expect(zeroCells.some((el) => el.textContent === "0")).toBe(true);
+  });
+  it("shows HTML in text literally", () => {
+    const { container } = render(<BlockView block={{ type: "text", text: "<b>hi</b>" }} />);
+    expect(container.querySelector("b")).toBeNull();
+    expect(container.textContent).toBe("<b>hi</b>");
+  });
+  it("labels the grids for screen readers", () => {
+    render(<BlockView block={{ type: "longDivision", dividend: 156, divisor: 4 }} />);
+    render(<BlockView block={{ type: "columnArithmetic", op: "-", operands: [302, 18] }} />);
+    render(<BlockView block={{ type: "columnArithmetic", op: "+", operands: [45, 27] }} />);
+    expect(screen.getByLabelText("156 divided by 4")).toBeTruthy();
+    expect(screen.getByLabelText("302 minus 18")).toBeTruthy();
+    expect(screen.getByLabelText("45 plus 27")).toBeTruthy();
   });
 });

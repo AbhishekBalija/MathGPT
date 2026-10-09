@@ -1,4 +1,4 @@
-import { Math } from "./Math";
+import { InlineText } from "./InlineText";
 
 const CELL = "border border-gray-300 px-3 py-2 text-left dark:border-gray-700";
 
@@ -20,7 +20,7 @@ export function TableBlock({ headers, rows }: { headers: string[]; rows: string[
             <tr key={r}>
               {row.map((cell, c) => (
                 <td key={c} className={CELL}>
-                  <Math latex={cell} />
+                  <InlineText text={cell} />
                 </td>
               ))}
             </tr>

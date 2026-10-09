@@ -11,13 +11,15 @@ function digitAt(value: string, width: number, col: number): string {
 
 interface GridProps {
   width: number;
+  label: string;
   children: React.ReactNode;
 }
 
-function Grid({ width, children }: GridProps) {
+function Grid({ width, label, children }: GridProps) {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" role="img" aria-label={label}>
       <div
+        aria-hidden="true"
         className="inline-grid font-serif text-2xl leading-snug text-gray-900 dark:text-gray-100"
         style={{ gridTemplateColumns: `1.5rem repeat(${width}, 1.5rem)` }}
       >
@@ -33,7 +35,7 @@ function AdditionView({ operands }: { operands: number[] }) {
   const lastRow = layout.rows.length - 1;
 
   return (
-    <Grid width={layout.width}>
+    <Grid width={layout.width} label={operands.join(" plus ")}>
       {/* Carries sit above the column they were carried into */}
       <span />
       {cols.map((c) => (
@@ -81,7 +83,7 @@ function SubtractionView({ a, b }: { a: number; b: number }) {
   }
 
   return (
-    <Grid width={layout.width}>
+    <Grid width={layout.width} label={`${a} minus ${b}`}>
       <span />
       {cols.map((c) => (
         <span key={c} data-row="borrow" data-col={c} className={`text-center ${SMALL}`}>
@@ -119,6 +121,8 @@ function SubtractionView({ a, b }: { a: number; b: number }) {
 }
 
 export function ColumnArithmeticBlock({ op, operands }: { op: "+" | "-"; operands: number[] }) {
+  // The boundary in BlockView turns this into the "could not be shown" text.
+  if (operands.length < 2) throw new RangeError("need at least two numbers");
   if (op === "+") return <AdditionView operands={operands} />;
   return <SubtractionView a={operands[0]} b={operands[1]} />;
 }

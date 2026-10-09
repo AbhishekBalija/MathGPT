@@ -1,9 +1,6 @@
 import { Math } from "./Math";
 
+// Math already scrolls sideways in display mode, so no extra wrapper is needed.
 export function EquationBlock({ latex }: { latex: string }) {
-  return (
-    <div className="overflow-x-auto">
-      <Math latex={latex} display />
-    </div>
-  );
+  return <Math latex={latex} display />;
 }

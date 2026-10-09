@@ -9,10 +9,11 @@ export function LongDivisionBlock({ dividend, divisor }: { dividend: number; div
   const cols = Array.from({ length: count }, (_, c) => c);
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" role="img" aria-label={`${dividend} divided by ${divisor}`}>
       <div
+        aria-hidden="true"
         className="inline-grid font-serif text-2xl leading-snug text-gray-900 dark:text-gray-100"
-        style={{ gridTemplateColumns: `2rem repeat(${count}, 1.5rem)` }}
+        style={{ gridTemplateColumns: `auto repeat(${count}, 1.5rem)` }}
       >
         {/* Quotient row, with the line under it */}
         <span />
@@ -28,7 +29,7 @@ export function LongDivisionBlock({ dividend, divisor }: { dividend: number; div
         ))}
 
         {/* Dividend row: divisor on the left, bracket before the first digit */}
-        <span data-row="n" data-col="divisor" className="pr-2 text-right">
+        <span data-row="n" data-col="divisor" className="min-w-8 pr-2 text-right">
           {divisor}
         </span>
         {cols.map((c) => (
