@@ -558,7 +558,7 @@ describe("🧮 SOLVE API - Brutal Stress Tests", () => {
 
       // Final answers should all be the same
       const answers = results
-        .map((r) => r.solution?.finalAnswer)
+        .map((r) => r.solution?.content?.answer?.latex)
         .filter(Boolean);
       const unique = Array.from(new Set(answers));
       expect(unique.length).toBe(1);

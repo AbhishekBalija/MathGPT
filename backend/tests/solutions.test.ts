@@ -3,8 +3,8 @@ import {
   FAKE_BROKEN_FORMAT,
   FAKE_CONTENT,
   FAKE_FINAL_ANSWER,
-  FAKE_NEW_FORMAT,
 } from "./support/fake-math-solver";
+import { solutionRepository } from "../src/modules/solutions/solution.repository";
 import { authedFetch, registerAdmin, registerVerifiedUser } from "./support/users";
 
 async function solve(accessToken: string, problem = "2x = 4") {
@@ -13,7 +13,7 @@ async function solve(accessToken: string, problem = "2x = 4") {
     body: { problem },
   });
   expect(res.status).toBe(200);
-  return (await res.json()).solution as { id: string; problem: string; createdAt: string };
+  return (await res.json()).solution as { id: string; createdAt: string };
 }
 
 describe("a User's Solutions", () => {
@@ -28,10 +28,10 @@ describe("a User's Solutions", () => {
       id: solution.id,
       problem: "2x = 4",
       finalAnswer: FAKE_FINAL_ANSWER,
+      formatVersion: 2,
       // Same moment the solve response reported
       createdAt: solution.createdAt,
     });
-    expect(body.solution.steps).toHaveLength(2);
 
     const deleted = await authedFetch(accessToken, `/api/solution/${solution.id}`, {
       method: "DELETE",
@@ -43,7 +43,7 @@ describe("a User's Solutions", () => {
 
   it("saved in the new format come back with their content unchanged", async () => {
     const { accessToken } = await registerVerifiedUser();
-    const solution = await solve(accessToken, `2x = 4 ${FAKE_NEW_FORMAT}`);
+    const solution = await solve(accessToken);
 
     const res = await authedFetch(accessToken, `/api/solution/${solution.id}`);
 
@@ -58,9 +58,36 @@ describe("a User's Solutions", () => {
 
   it("saved in the old format come back as version 1 with their steps and no content", async () => {
     const { accessToken } = await registerVerifiedUser();
-    const solution = await solve(accessToken);
+    // The solver no longer makes old-format solutions, so save one the way it used to be
+    const me = await (await authedFetch(accessToken, "/auth/me")).json();
+    const id = crypto.randomUUID();
+    await solutionRepository.create(me.user.id, {
+      id,
+      problem: "2x = 4",
+      problemType: "algebra",
+      steps: [
+        {
+          stepNumber: 1,
+          expression: "x = 2",
+          justification: "Divide both sides by 2",
+          explanation: "Dividing both sides by 2 leaves x on its own.",
+          status: "VERIFIED",
+        },
+        {
+          stepNumber: 2,
+          expression: "x = 2",
+          justification: "State the answer",
+          explanation: "This is the answer.",
+          status: "VERIFIED",
+        },
+      ],
+      finalAnswer: FAKE_FINAL_ANSWER,
+      summary: "Isolate x.",
+      processingTimeMs: 1,
+      createdAt: new Date().toISOString(),
+    });
 
-    const res = await authedFetch(accessToken, `/api/solution/${solution.id}`);
+    const res = await authedFetch(accessToken, `/api/solution/${id}`);
 
     const body = await res.json();
     expect(body.solution.formatVersion).toBe(1);

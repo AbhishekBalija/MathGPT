@@ -1,27 +1,112 @@
 import { describe, expect, it } from "vitest";
-import { FAKE_FINAL_ANSWER } from "./support/fake-math-solver";
-import { apiUrl } from "./support/test-app";
+import { solutionV2Schema } from "../src/modules/solutions/solution-v2.schema";
+import {
+  FAKE_CONTENT,
+  FAKE_INVALID_OUTPUT,
+  FAKE_INVALID_TWICE,
+  FAKE_UNSOLVABLE,
+} from "./support/fake-math-solver";
 import { authedFetch, registerVerifiedUser } from "./support/users";
 
+async function solveAs(accessToken: string, body: Record<string, unknown>) {
+  return authedFetch(accessToken, "/api/solve", { method: "POST", body });
+}
+
 describe("POST /api/solve", () => {
-  it("returns the Solution produced by the AI solver", async () => {
+  it("returns a version 2 solution that matches the schema", async () => {
     const { accessToken } = await registerVerifiedUser();
 
-    const res = await fetch(apiUrl("/api/solve"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ problem: "2x = 4" }),
-    });
+    const res = await solveAs(accessToken, { problem: "2x = 4" });
 
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);
-    expect(body.solution.problem).toBe("2x = 4");
-    expect(body.solution.finalAnswer).toBe(FAKE_FINAL_ANSWER);
-    expect(body.solution.steps).toHaveLength(2);
+    expect(body.solution.formatVersion).toBe(2);
+    expect(body.solution.id).toEqual(expect.any(String));
+    expect(body.solution.createdAt).toEqual(expect.any(String));
+    expect(solutionV2Schema.safeParse(body.solution.content).success).toBe(true);
+    expect(body.solution.content).toEqual(FAKE_CONTENT);
+    // No hard-coded verification on new solutions
+    expect(JSON.stringify(body)).not.toMatch(/verified/i);
+  });
+
+  it("includes a hint in the solution", async () => {
+    const { accessToken } = await registerVerifiedUser();
+
+    const body = await (await solveAs(accessToken, { problem: "2x = 4" })).json();
+
+    expect(body.solution.content.hint).toEqual(expect.any(String));
+  });
+
+  it("passes the chosen method to the solver", async () => {
+    const { accessToken } = await registerVerifiedUser();
+
+    const res = await solveAs(accessToken, { problem: "2x = 4", method: "quadratic-formula" });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.solution.content.header.method.id).toBe("quadratic-formula");
+  });
+
+  it("rejects a method id longer than 50 characters", async () => {
+    const { accessToken } = await registerVerifiedUser();
+
+    const res = await solveAs(accessToken, { problem: "2x = 4", method: "m".repeat(51) });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("succeeds when the AI's first reply is invalid but the retry is fine", async () => {
+    const { accessToken } = await registerVerifiedUser();
+
+    const res = await solveAs(accessToken, { problem: `2x = 4 ${FAKE_INVALID_OUTPUT}` });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(solutionV2Schema.safeParse(body.solution.content).success).toBe(true);
+  });
+
+  it("answers 502 with a friendly message when both replies are invalid", async () => {
+    const { accessToken } = await registerVerifiedUser();
+
+    const res = await solveAs(accessToken, { problem: `2x = 4 ${FAKE_INVALID_TWICE}` });
+
+    expect(res.status).toBe(502);
+    const body = await res.json();
+    expect(body.error).toBe("Neo got confused by this one. Please try again.");
+    expect(body.code).toBe("INVALID_OUTPUT");
+  });
+
+  it("does not spend a credit or save anything when the output stays invalid", async () => {
+    const { accessToken } = await registerVerifiedUser();
+
+    await solveAs(accessToken, { problem: `2x = 4 ${FAKE_INVALID_TWICE}` });
+
+    const profile = await (await authedFetch(accessToken, "/api/profile")).json();
+    expect(profile.dailyCredits).toMatchObject({ used: 0, remaining: 5 });
+    const history = await (await authedFetch(accessToken, "/api/history")).json();
+    expect(history.history).toEqual([]);
+  });
+
+  it("marks an unsolvable problem with the UNSOLVABLE code", async () => {
+    const { accessToken } = await registerVerifiedUser();
+
+    const res = await solveAs(accessToken, { problem: `what is 1/0 ${FAKE_UNSOLVABLE}` });
+
+    expect(res.status).toBe(400);
+    expect((await res.json()).code).toBe("UNSOLVABLE");
+  });
+
+  it("still limits solving to 5 a minute", async () => {
+    const { accessToken } = await registerVerifiedUser();
+
+    for (let i = 0; i < 5; i++) {
+      expect((await solveAs(accessToken, { problem: "2x = 4" })).status).toBe(200);
+    }
+    const res = await solveAs(accessToken, { problem: "2x = 4" });
+
+    expect(res.status).toBe(429);
+    expect((await res.json()).code).toBe("RATE_LIMITED");
   });
 });
 

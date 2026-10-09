@@ -10,13 +10,12 @@
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import {
-  type AISolutionResponse,
-  type SolutionStep,
-  type Solution,
-  type ProblemType,
-} from "../../types/solve.types";
+import type { SolveResult } from "../../modules/ai/math-solver";
+import { generateValidSolution, type ModelOutput } from "./generate-solution";
 import { MATH_TUTOR_SYSTEM_PROMPT, buildSolvePrompt } from "./prompts";
+import { UnsolvableProblemError } from "./solver-errors";
+
+export { UnsolvableProblemError, InvalidSolverOutputError } from "./solver-errors";
 
 // ============================================================================
 // CONFIGURATION
@@ -35,17 +34,6 @@ const BACKUP2_MODEL = "tngtech/deepseek-r1t2-chimera:free"; // OpenRouter free -
 // Initialize Gemini client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_MATH_AI_API || "");
 
-// ============================================================================
-// CUSTOM ERRORS
-// ============================================================================
-
-export class UnsolvableProblemError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "UnsolvableProblemError";
-  }
-}
-
 // Patterns that indicate an unsolvable problem
 const UNSOLVABLE_PATTERNS = [
   /divide\s*by\s*zero/i,
@@ -61,9 +49,13 @@ const UNSOLVABLE_PATTERNS = [
 // ============================================================================
 
 /**
- * Solve a math problem using the staggered AI strategy
+ * Solve a math problem. The model is asked for the new solution format and
+ * the reply is checked (and retried once) before anyone sees it.
  */
-export async function solveMathProblem(problem: string): Promise<Solution> {
+export async function solveMathProblem(
+  problem: string,
+  options: { method?: string } = {}
+): Promise<SolveResult> {
   const startTime = Date.now();
 
   // Check for obviously unsolvable problems
@@ -75,13 +67,15 @@ export async function solveMathProblem(problem: string): Promise<Solution> {
     }
   }
 
-  // Use staggered strategy if multi-model is enabled
-  if (process.env.USE_MULTI_MODEL === "true") {
-    return solveWithStaggeredStrategy(problem, startTime);
-  }
+  const prompt = buildSolvePrompt(problem, options);
+  // Use staggered strategy if multi-model is enabled, otherwise one Gemini call
+  const generate =
+    process.env.USE_MULTI_MODEL === "true"
+      ? (text: string) => askModelsStaggered(text, startTime)
+      : callGemini;
 
-  // Fallback: single Gemini call
-  return solveWithSingleGemini(problem, startTime);
+  const checked = await generateValidSolution(problem, prompt, generate);
+  return { ...checked, processingTimeMs: Date.now() - startTime };
 }
 
 // ============================================================================
@@ -95,10 +89,10 @@ export async function solveMathProblem(problem: string): Promise<Solution> {
  * - Backup 2 (OpenRouter free DeepSeek) starts after 15s if nothing responded
  * - Returns first successful response
  */
-async function solveWithStaggeredStrategy(
-  problem: string,
+async function askModelsStaggered(
+  prompt: string,
   startTime: number
-): Promise<Solution> {
+): Promise<ModelOutput> {
   console.log("\n========== STAGGERED AI STRATEGY (3-TIER) ==========");
   console.log(`Primary: ${PRIMARY_MODEL}`);
   console.log(
@@ -108,8 +102,6 @@ async function solveWithStaggeredStrategy(
     `Backup 2: ${BACKUP2_MODEL} (starts at ${BACKUP2_START_DELAY_MS}ms)`
   );
 
-  const prompt = buildSolvePrompt(problem);
-
   // Track state
   let resolved = false;
   let primaryFailed = false;
@@ -118,7 +110,7 @@ async function solveWithStaggeredStrategy(
   let backup2Started = false;
 
   // Create a promise that resolves when we have a solution
-  return new Promise<Solution>((resolve, reject) => {
+  return new Promise<ModelOutput>((resolve, reject) => {
     // Overall timeout
     const overallTimer = setTimeout(() => {
       if (resolved) return;
@@ -136,7 +128,7 @@ async function solveWithStaggeredStrategy(
       if (backup2Timer) clearTimeout(backup2Timer);
     };
 
-    const handleSuccess = (result: ModelResult, modelName: string) => {
+    const handleSuccess = (result: ModelOutput, modelName: string) => {
       if (resolved) return; // Already resolved
       const elapsed = Date.now() - startTime;
       console.log(`✅ ${modelName} succeeded at ${elapsed}ms`);
@@ -145,14 +137,7 @@ async function solveWithStaggeredStrategy(
       console.log("========== END STAGGERED ==========\n");
 
       cleanup();
-      resolve(
-        transformToSolution(
-          problem,
-          result.response,
-          elapsed,
-          result.tokenUsage
-        )
-      );
+      resolve(result);
     };
 
     const checkAllFailed = () => {
@@ -279,22 +264,13 @@ async function solveWithStaggeredStrategy(
 // MODEL CALLERS
 // ============================================================================
 
-interface ModelResult {
-  response: AISolutionResponse;
-  tokenUsage?: {
-    inputTokens: number;
-    outputTokens: number;
-    totalTokens: number;
-  };
-}
-
 /**
  * Call OpenRouter API (backup models)
  */
 async function callOpenRouter(
   prompt: string,
   model: string
-): Promise<ModelResult> {
+): Promise<ModelOutput> {
   const apiKey = process.env.OPEN_ROUTER_API_KEY;
   if (!apiKey) {
     throw new Error("OPEN_ROUTER_API_KEY not configured");
@@ -317,7 +293,7 @@ async function callOpenRouter(
           { role: "user", content: prompt },
         ],
         temperature: 0.3,
-        max_tokens: 4096,
+        max_tokens: 8192,
       }),
     }
   );
@@ -334,23 +310,23 @@ async function callOpenRouter(
     throw new Error("No content in OpenRouter response");
   }
 
-  return {
-    response: parseAIResponse(content),
-    tokenUsage: undefined, // OpenRouter doesn't provide token usage in free tier
-  };
+  // OpenRouter doesn't provide token usage in free tier
+  return { text: content };
 }
 
 /**
  * Call Gemini API (primary model)
  */
-async function callGemini(prompt: string): Promise<ModelResult> {
+async function callGemini(prompt: string): Promise<ModelOutput> {
   const model = genAI.getGenerativeModel({
     model: PRIMARY_MODEL,
     generationConfig: {
       temperature: 0.3,
       topP: 0.8,
       topK: 40,
-      maxOutputTokens: 4096,
+      maxOutputTokens: 8192,
+      // Ask Gemini for JSON only, so there are no code fences to strip
+      responseMimeType: "application/json",
     },
   });
 
@@ -371,121 +347,7 @@ async function callGemini(prompt: string): Promise<ModelResult> {
       }
     : undefined;
 
-  return {
-    response: parseAIResponse(text),
-    tokenUsage,
-  };
-}
-
-/**
- * Single Gemini call (fallback when USE_MULTI_MODEL is false)
- */
-async function solveWithSingleGemini(
-  problem: string,
-  startTime: number
-): Promise<Solution> {
-  const prompt = buildSolvePrompt(problem);
-  const result = await callGemini(prompt);
-  const elapsed = Date.now() - startTime;
-
-  return transformToSolution(
-    problem,
-    result.response,
-    elapsed,
-    result.tokenUsage
-  );
-}
-
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-/**
- * Parse AI response JSON
- */
-function parseAIResponse(text: string): AISolutionResponse {
-  let cleanedText = text.trim();
-
-  // Remove markdown code blocks
-  if (cleanedText.startsWith("```json")) {
-    cleanedText = cleanedText.slice(7);
-  } else if (cleanedText.startsWith("```")) {
-    cleanedText = cleanedText.slice(3);
-  }
-
-  if (cleanedText.endsWith("```")) {
-    cleanedText = cleanedText.slice(0, -3);
-  }
-
-  cleanedText = cleanedText.trim();
-
-  // Try to extract JSON from anywhere in response
-  const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    cleanedText = jsonMatch[0];
-  }
-
-  try {
-    return JSON.parse(cleanedText) as AISolutionResponse;
-  } catch {
-    console.error("Failed to parse AI response:", cleanedText.slice(0, 500));
-    throw new Error("AI returned invalid JSON response");
-  }
-}
-
-/**
- * Transform AI response to Solution format
- */
-function transformToSolution(
-  problem: string,
-  aiResponse: AISolutionResponse,
-  processingTimeMs: number,
-  tokenUsage?: ModelResult["tokenUsage"]
-): Solution {
-  const steps: SolutionStep[] = aiResponse.steps.map((step, index) => ({
-    stepNumber: index + 1,
-    expression: step.expression,
-    justification: step.justification,
-    explanation: step.explanation,
-    status: "VERIFIED" as const,
-    notes: undefined,
-  }));
-
-  return {
-    id: crypto.randomUUID(),
-    problem,
-    problemType: validateProblemType(aiResponse.problemType),
-    steps,
-    finalAnswer: aiResponse.finalAnswer,
-    summary: aiResponse.summary,
-    processingTimeMs,
-    tokenUsage: tokenUsage || {
-      inputTokens: 0,
-      outputTokens: 0,
-      totalTokens: 0,
-    },
-    createdAt: new Date().toISOString(),
-  };
-}
-
-/**
- * Validate problem type
- */
-function validateProblemType(type: string): ProblemType {
-  const validTypes: ProblemType[] = [
-    "algebra",
-    "calculus_derivative",
-    "calculus_integral",
-    "calculus_limit",
-    "trigonometry",
-    "linear_algebra",
-    "geometry",
-    "statistics",
-    "unknown",
-  ];
-
-  const normalizedType = type.toLowerCase().replace(/\s+/g, "_") as ProblemType;
-  return validTypes.includes(normalizedType) ? normalizedType : "unknown";
+  return { text, tokenUsage };
 }
 
 /**
