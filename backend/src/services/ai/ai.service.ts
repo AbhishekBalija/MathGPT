@@ -186,6 +186,12 @@ async function callGemini(prompt: string): Promise<ModelOutput> {
   const response = result.response;
   const text = response.text();
 
+  // MAX_TOKENS means the reply was cut off, so its JSON will not parse
+  const finishReason = response.candidates?.[0]?.finishReason;
+  if (finishReason && finishReason !== "STOP") {
+    console.log(`Gemini stopped early: ${finishReason}`);
+  }
+
   const usageMetadata = response.usageMetadata;
   const tokenUsage = usageMetadata
     ? {

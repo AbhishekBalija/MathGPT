@@ -76,8 +76,11 @@ function checkOutput(text: string): Checked {
   let raw: unknown;
   try {
     raw = parseModelJson(text);
-  } catch {
-    return { ok: false, reason: "The reply was not valid JSON." };
+  } catch (error) {
+    // The parser's message says whether the reply was cut off or had a bad
+    // character, which is what we need to fix it. Kept short for the logs.
+    const detail = error instanceof Error ? error.message.slice(0, 120) : "unknown";
+    return { ok: false, reason: `The reply was not valid JSON (${detail}).` };
   }
 
   const refusal = refusalSchema.safeParse(raw);
