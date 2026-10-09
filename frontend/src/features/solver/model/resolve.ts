@@ -25,7 +25,7 @@ export interface ApiSolution {
 // use `content` for a v2 solution, otherwise convert the old fields.
 // Returns null when the reply has neither, so the caller can treat it as a failure.
 export function resolveSolution(api: ApiSolution): SolutionV2 | null {
-  if (api.formatVersion === 2 && api.content) {
+  if (api.formatVersion === 2 && hasPageShape(api.content)) {
     return { ...api.content, id: api.id, createdAt: api.createdAt };
   }
   if (api.problem === undefined || !api.steps || api.finalAnswer === undefined) return null;
@@ -39,4 +39,17 @@ export function resolveSolution(api: ApiSolution): SolutionV2 | null {
     processingTimeMs: api.processingTimeMs ?? 0,
     createdAt: new Date(api.createdAt),
   });
+}
+
+// The page reads these top-level fields directly, so a reply missing one would
+// crash it. Blocks inside the steps are checked one by one when they render.
+function hasPageShape(content: SolutionContent | null | undefined): content is SolutionContent {
+  return (
+    !!content &&
+    !!content.header &&
+    !!content.problem &&
+    !!content.answer &&
+    Array.isArray(content.steps) &&
+    content.steps.length > 0
+  );
 }
