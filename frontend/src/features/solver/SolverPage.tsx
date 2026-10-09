@@ -14,6 +14,7 @@ import { Composer } from "./composer/Composer";
 import { SlimComposer } from "./composer/SlimComposer";
 import { HistorySidebar, type HistoryEntry } from "./history/HistorySidebar";
 import { PrevNext } from "./history/PrevNext";
+import { useDeleteWithUndo } from "./history/useDeleteWithUndo";
 import { toSolutionV2 } from "./model/adapter";
 import type { SolutionV2 } from "./model/solution";
 import { SolutionView } from "./SolutionView";
@@ -31,7 +32,6 @@ interface SolveOptions {
   chatId?: string;
 }
 
-const UNDO_MS = 5000;
 const PHONE_QUERY = "(max-width: 639px)";
 
 // True on phones. Used so only one input is on the page at a time.
@@ -78,18 +78,24 @@ export function SolverPage() {
   const [remaining, setRemaining] = useState<number | undefined>(undefined);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [phoneInputOpen, setPhoneInputOpen] = useState(false);
-  // Chats the student just deleted, waiting out the Undo time.
-  const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
-  const [toastId, setToastId] = useState<string | null>(null);
   // Counts the solves of each chat, so a re-solve always gets a new solution id.
   const [solveCount, setSolveCount] = useState<Record<string, number>>({});
 
   const abortRef = useRef<AbortController | null>(null);
   const runRef = useRef(0);
   const lastOptionsRef = useRef<SolveOptions>({});
-  const deleteTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const composerRef = useRef<HTMLDivElement>(null);
   const phoneInputRef = useRef<HTMLDivElement>(null);
+
+  // Delete with Undo. The real delete runs quietly (no full-screen overlay).
+  const { hidden, toast, remove, undo } = useDeleteWithUndo(
+    useCallback(async (id: string) => {
+      const store = useChatStore.getState();
+      const chat = store.chats.find((c) => c.id === id);
+      if (!chat) return true;
+      return store.deleteChat(id, chat.solutionId ?? chat.solution?.id, { silent: true });
+    }, []),
+  );
 
   // Bring the saved history into the chat list once it has loaded.
   useEffect(() => {
@@ -139,7 +145,7 @@ export function SolverPage() {
   const position = activeChat ? ordered.findIndex((chat) => chat.id === activeChat.id) + 1 : 0;
 
   function focusComposer() {
-    if (isPhone && activeSolution) {
+    if (isPhone) {
       setPhoneInputOpen(true);
       return;
     }
@@ -271,31 +277,9 @@ export function SolverPage() {
     void solve(problemOf(activeChat), view, { method: methodId, chatId: activeChat.id });
   }
 
-  // Delete with Undo: hide it now, tell the server only after the Undo time is over.
   function removeChat(id: string) {
-    const chat = useChatStore.getState().chats.find((c) => c.id === id);
-    if (!chat) return;
-    setHidden((ids) => new Set(ids).add(id));
+    remove(id);
     if (id === activeChatId) newProblem();
-    setToastId(id);
-    const timer = setTimeout(() => {
-      deleteTimers.current.delete(id);
-      setToastId((current) => (current === id ? null : current));
-      void useChatStore.getState().deleteChat(id, chat.solutionId ?? chat.solution?.id);
-    }, UNDO_MS);
-    deleteTimers.current.set(id, timer);
-  }
-
-  function undoRemove() {
-    if (!toastId) return;
-    clearTimeout(deleteTimers.current.get(toastId));
-    deleteTimers.current.delete(toastId);
-    setHidden((ids) => {
-      const next = new Set(ids);
-      next.delete(toastId);
-      return next;
-    });
-    setToastId(null);
   }
 
   function clearAll() {
@@ -312,7 +296,6 @@ export function SolverPage() {
   const hint = activeSolution?.hint;
   const showHint = view === "hint" && Boolean(hint) && activeSolution !== null;
   const mode = view === "one" ? "one" : "all";
-  const hasToast = toastId !== null;
 
   const composer = (
     <Composer
@@ -417,8 +400,12 @@ export function SolverPage() {
         </div>
 
         <div ref={composerRef} className="shrink-0">
-          {isPhone && activeSolution ? (
-            <SlimComposer onOpen={() => setPhoneInputOpen(true)} onNew={newProblem} />
+          {isPhone ? (
+            <SlimComposer
+              label={input.trim() || (activeSolution ? "Ask another problem" : "Type a problem")}
+              onOpen={() => setPhoneInputOpen(true)}
+              onNew={activeSolution ? newProblem : undefined}
+            />
           ) : (
             composer
           )}
@@ -447,15 +434,21 @@ export function SolverPage() {
         </div>
       ) : null}
 
-      {hasToast ? (
+      {toast ? (
         <div
           role="status"
           className="fixed bottom-24 left-1/2 z-50 flex min-h-11 -translate-x-1/2 items-center gap-3 rounded-xl bg-gray-900 pl-4 pr-1 text-sm text-white dark:bg-gray-50 dark:text-gray-900"
         >
-          <span>Problem deleted ·</span>
-          <button type="button" onClick={undoRemove} className="min-h-11 px-3 font-semibold underline underline-offset-4">
-            Undo
-          </button>
+          {toast.kind === "undo" ? (
+            <>
+              <span>Problem deleted ·</span>
+              <button type="button" onClick={undo} className="min-h-11 px-3 font-semibold underline underline-offset-4">
+                Undo
+              </button>
+            </>
+          ) : (
+            <span className="pr-3">Could not delete that. Try again.</span>
+          )}
         </div>
       ) : null}
     </div>
