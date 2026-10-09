@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { SolutionView } from "../src/features/solver/SolutionView";
 import { division156, quadratic, trainProblem } from "./fixtures/solutions";
 
@@ -103,5 +103,51 @@ describe("SolutionView", () => {
     render(<SolutionView solution={quadratic} mode="all" onModeChange={noop} />);
     expect(screen.getByRole("link", { name: "Jump to answer" }).getAttribute("href")).toBe("#answer");
     expect(document.getElementById("answer")).toBeTruthy();
+  });
+  it("draws the long division layout step", () => {
+    render(<SolutionView solution={division156} mode="all" onModeChange={noop} />);
+    expect(screen.getByLabelText("156 divided by 4")).toBeTruthy();
+  });
+  it("copies the answer and shows Copied", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    render(<SolutionView solution={trainProblem} mode="all" onModeChange={noop} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+    });
+    expect(writeText).toHaveBeenCalledWith("Speed of the train = 40 km/h");
+    expect(screen.getByRole("button", { name: "Copied" })).toBeTruthy();
+  });
+  it("says so when copying fails", async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error("blocked"));
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    render(<SolutionView solution={trainProblem} mode="all" onModeChange={noop} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+    });
+    expect(screen.getByText("Could not copy")).toBeTruthy();
+  });
+  it("starts again at one step when a new solution arrives", () => {
+    const { rerender } = render(<SolutionView solution={quadratic} mode="one" onModeChange={noop} />);
+    fireEvent.click(screen.getByRole("button", { name: "Next step" }));
+    expect(screen.getAllByTestId("step")).toHaveLength(2);
+    rerender(<SolutionView solution={trainProblem} mode="one" onModeChange={noop} />);
+    expect(screen.getAllByTestId("step")).toHaveLength(1);
+  });
+  it("hides Edit and New problem when there are no handlers", () => {
+    const { unmount } = render(<SolutionView solution={quadratic} mode="all" onModeChange={noop} />);
+    expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "New problem" })).toBeNull();
+    unmount();
+    render(<SolutionView solution={quadratic} mode="all" onModeChange={noop} onEdit={noop} onNew={noop} />);
+    expect(screen.getByRole("button", { name: "Edit" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "New problem" })).toBeTruthy();
+  });
+  it("tells the parent which method was picked", () => {
+    const onMethodChange = vi.fn();
+    render(<SolutionView solution={quadratic} mode="all" onModeChange={noop} onMethodChange={onMethodChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    fireEvent.click(screen.getByRole("button", { name: "Quadratic formula" }));
+    expect(onMethodChange).toHaveBeenCalledWith("formula");
   });
 });

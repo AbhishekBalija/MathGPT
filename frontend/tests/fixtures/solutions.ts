@@ -150,6 +150,13 @@ export const division156: SolutionV2 = {
   problem: { latex: L`156 \div 4`, task: "Divide 156 by 4" },
   steps: [
     {
+      kind: "layout",
+      reason: "The working, written out",
+      why: "This is the whole sum written the way it is taught, so you can follow each line.",
+      earnsMarks: false,
+      block: { type: "longDivision", dividend: 156, divisor: 4 },
+    },
+    {
       kind: "calculation",
       reason: "How many 4s are in 15?",
       why: "1 is smaller than 4, so start with the first two digits, 15.",

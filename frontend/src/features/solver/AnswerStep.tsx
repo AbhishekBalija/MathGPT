@@ -1,21 +1,27 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { InlineText } from "./blocks/InlineText";
 import { Math } from "./blocks/Math";
 import type { SolutionV2 } from "./model/solution";
 
 // The last step: a boxed conclusion with Copy. The check line only shows when the solution has one.
 export function AnswerStep({ answer }: { answer: SolutionV2["answer"] }) {
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // Stop the pending reset if the answer goes away.
+  useEffect(() => () => clearTimeout(timer.current), []);
 
   async function copy() {
     const value = answer.text ?? answer.latex ?? "";
     try {
       await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      setCopyState("copied");
     } catch {
-      // Copy can be blocked by the browser. Nothing else to do.
+      // Copy can be blocked by the browser, so tell the student.
+      setCopyState("failed");
     }
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setCopyState("idle"), 1500);
   }
 
   return (
@@ -43,13 +49,20 @@ export function AnswerStep({ answer }: { answer: SolutionV2["answer"] }) {
           </p>
         ) : null}
       </div>
-      <button
-        type="button"
-        onClick={copy}
-        className="min-h-11 shrink-0 rounded-xl border border-gray-300 px-4 text-sm font-semibold dark:border-gray-600"
-      >
-        {copied ? "Copied" : "Copy"}
-      </button>
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <button
+          type="button"
+          onClick={copy}
+          className="min-h-11 rounded-xl border border-gray-300 px-4 text-sm font-semibold dark:border-gray-600"
+        >
+          {copyState === "copied" ? "Copied" : "Copy"}
+        </button>
+        {copyState === "failed" ? (
+          <p role="status" className="text-sm text-gray-600 dark:text-gray-400">
+            Could not copy
+          </p>
+        ) : null}
+      </div>
     </section>
   );
 }

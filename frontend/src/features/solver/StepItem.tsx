@@ -16,11 +16,12 @@ const KIND_LABELS: Record<StepKind, string> = {
 interface StepItemProps {
   step: SolutionStep;
   number: number; // starts at 1
+  id: string; // changes with the solution so the block remounts
   showMarks: boolean; // false when the marks key is hidden, so every number is grey
 }
 
 // One step: number, kind, reason, the block, and a "Why?" toggle for the longer explanation.
-export function StepItem({ step, number, showMarks }: StepItemProps) {
+export function StepItem({ step, number, id, showMarks }: StepItemProps) {
   const [open, setOpen] = useState(false);
   const pink = showMarks && step.earnsMarks;
 
@@ -48,11 +49,12 @@ export function StepItem({ step, number, showMarks }: StepItemProps) {
         </div>
       </div>
       <div className="mt-3 sm:ml-9">
-        <BlockView block={step.block} />
+        <BlockView key={id} block={step.block} />
       </div>
       <button
         type="button"
         aria-expanded={open}
+        aria-label={open ? "Why? Hide the reason" : "Why? Show the reason"}
         onClick={() => setOpen(!open)}
         className="mt-1 min-h-11 text-sm text-gray-600 sm:ml-9 dark:text-gray-400"
       >

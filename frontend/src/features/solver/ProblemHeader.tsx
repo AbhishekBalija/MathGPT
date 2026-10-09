@@ -13,8 +13,8 @@ const LEVEL_LABELS: Record<Level, string> = {
 
 interface ProblemHeaderProps {
   solution: SolutionV2;
-  onEdit: () => void;
-  onNew: () => void;
+  onEdit?: () => void;
+  onNew?: () => void;
 }
 
 const SMALL_BUTTON =
@@ -30,12 +30,16 @@ export function ProblemHeader({ solution, onEdit, onNew }: ProblemHeaderProps) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400">{label}</p>
         <div className="flex">
-          <button type="button" onClick={onEdit} className={SMALL_BUTTON}>
-            Edit
-          </button>
-          <button type="button" onClick={onNew} className={SMALL_BUTTON}>
-            New problem
-          </button>
+          {onEdit ? (
+            <button type="button" onClick={onEdit} className={SMALL_BUTTON}>
+              Edit
+            </button>
+          ) : null}
+          {onNew ? (
+            <button type="button" onClick={onNew} className={SMALL_BUTTON}>
+              New problem
+            </button>
+          ) : null}
         </div>
       </div>
       <div className="mt-2 text-2xl">

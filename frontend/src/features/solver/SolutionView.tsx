@@ -19,7 +19,6 @@ interface SolutionViewProps {
   renderNextStep?: (next: () => void, shown: number, total: number) => ReactNode;
 }
 
-const noop = () => {};
 const BUTTON = "min-h-11 rounded-xl px-4 text-sm font-semibold";
 
 export function SolutionView(props: SolutionViewProps) {
@@ -31,8 +30,8 @@ function SolutionBody({
   solution,
   mode,
   onModeChange,
-  onEdit = noop,
-  onNew = noop,
+  onEdit,
+  onNew,
   onMethodChange,
   renderNextStep,
 }: SolutionViewProps) {
@@ -77,7 +76,7 @@ function SolutionBody({
         ) : null}
       </div>
       {pickingMethod ? (
-        <ul className="flex flex-wrap gap-2">
+        <ul className="mt-2 flex flex-wrap gap-2">
           {method.alternatives.map((alt) => (
             <li key={alt.id}>
               <button
@@ -117,7 +116,7 @@ function SolutionBody({
 
       <ol className="mt-3 flex flex-col gap-2.5">
         {solution.steps.slice(0, shown).map((step, index) => (
-          <StepItem key={index} step={step} number={index + 1} showMarks={showMarksKey} />
+          <StepItem key={`${solution.id}-${index}`} id={`${solution.id}-${index}`} step={step} number={index + 1} showMarks={showMarksKey} />
         ))}
       </ol>
 
