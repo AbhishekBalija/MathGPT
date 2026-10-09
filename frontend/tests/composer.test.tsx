@@ -20,6 +20,21 @@ describe("Composer", () => {
     expect(screen.getByText("Read as")).toBeTruthy();
     expect(container.querySelector(".katex")).toBeTruthy();
   });
+  it("shows symbols like plus-minus, alpha and infinity through KaTeX", () => {
+    const { container } = render(<Harness initial="a±b" />);
+    expect(container.querySelector(".katex")?.textContent).toContain("±");
+    const outside = container.cloneNode(true) as HTMLElement;
+    outside.querySelectorAll(".katex").forEach((n) => n.remove());
+    expect(outside.querySelector("p")?.textContent).not.toContain("±");
+    fireEvent.change(field(), { target: { value: "α+∞" } });
+    const text = container.querySelector(".katex")?.textContent ?? "";
+    expect(text).toContain("α");
+    expect(text).toContain("∞");
+  });
+  it("shows no Read as for plain words", () => {
+    render(<Harness initial="hello" />);
+    expect(screen.queryByText("Read as")).toBeNull();
+  });
   it("solves on Enter and adds a line on Shift+Enter", () => {
     const onSolve = vi.fn();
     render(<Harness initial="  x^2+5x+6=0 " onSolve={onSolve} />);
@@ -51,7 +66,7 @@ describe("Composer", () => {
   });
   it("inserts a keypad symbol at the cursor and keeps focus in the field", async () => {
     render(<Harness initial="2ab" />);
-    const toggle = screen.getByRole("button", { name: "Math keypad" });
+    const toggle = screen.getByRole("button", { name: "Show math keypad" });
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
@@ -60,8 +75,9 @@ describe("Composer", () => {
     fireEvent.click(screen.getByRole("button", { name: "√" }));
     expect(field().value).toBe("2√ab");
     await vi.waitFor(() => expect(document.activeElement).toBe(field()));
+    field().setSelectionRange(4, 4);
     fireEvent.click(screen.getByRole("button", { name: "x²" }));
-    expect(field().value).toContain("^2");
+    expect(field().value).toBe("2√ab^2");
   });
   it("keeps the camera button disabled", () => {
     render(<Harness />);

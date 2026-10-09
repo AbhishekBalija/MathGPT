@@ -6,7 +6,7 @@ interface KeypadProps {
 
 export function Keypad({ onInsert }: KeypadProps) {
   return (
-    <div className="mt-2 grid grid-cols-6 gap-1.5 sm:grid-cols-11" role="group" aria-label="Math keypad">
+    <div className="mt-2 grid grid-cols-6 gap-1.5 sm:grid-cols-11" role="group" aria-label="Math symbols">
       {KEYPAD_SYMBOLS.map((symbol) => (
         <button
           key={symbol}

@@ -1,33 +1,14 @@
-import { cleanExpression } from "../../../utils/latexUtils";
+import { containsMath, toLatex } from "../../../utils/latexUtils";
 import { Math } from "../blocks/Math";
-
-// Keypad and common typed symbols, turned into LaTeX so KaTeX can draw them.
-const SYMBOLS: Record<string, string> = {
-  "²": "^{2}",
-  "³": "^{3}",
-  "√": "\\sqrt{}",
-  "π": "\\pi ",
-  "θ": "\\theta ",
-  "÷": "\\div ",
-  "×": "\\times ",
-  "∫": "\\int ",
-  "≤": "\\leq ",
-  "≥": "\\geq ",
-};
-
-function toLatex(text: string): string {
-  return Array.from(cleanExpression(text))
-    .map((char) => SYMBOLS[char] ?? char)
-    .join("");
-}
 
 interface ReadAsProps {
   value: string;
 }
 
-// Shows how Neo understood the typed problem. Hidden while the field is empty.
+// Shows how Neo understood the typed problem. Hidden when the field is empty
+// or the text does not look like math.
 export function ReadAs({ value }: ReadAsProps) {
-  if (!value.trim()) return null;
+  if (!value.trim() || !containsMath(value)) return null;
   return (
     <p className="mb-2 flex items-center gap-2 px-1 text-sm text-gray-600 dark:text-gray-400">
       <span>Read as</span>
