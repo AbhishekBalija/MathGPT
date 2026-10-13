@@ -2,7 +2,9 @@
  * Checks an AI answer with code, so only a confirmed answer is ever shared
  * between students (see the shared solution cache).
  *
- * - Equation in one variable: put each root back in, both sides must match.
+ * - Polynomial equation in one variable: put each root back in, both sides
+ *   must match, and there must be as many different roots as the degree (so
+ *   an answer with a root missing is never "passed").
  * - Plain arithmetic: work it out again.
  * - Derivative: differentiate the problem and compare with the answer at 12
  *   random points.
@@ -18,11 +20,18 @@
  * run, with a scope that holds just the one variable.
  */
 
-import { derivative, isConstantNode, isFunctionNode, isOperatorNode, isParenthesisNode, isSymbolNode, parse } from "mathjs";
+import { derivative, rationalize, isConstantNode, isFunctionNode, isOperatorNode, isParenthesisNode, isSymbolNode, parse } from "mathjs";
 import type { MathNode } from "mathjs";
 import type { SolutionV2Content } from "../../solutions/solution-v2.schema";
 
 export type VerifyResult = "passed" | "failed" | "unchecked";
+export type CheckKind = "equation" | "arithmetic" | "derivative" | "indefinite-integral" | "definite-integral";
+
+// What a check found, and which kind of problem it was
+interface Verdict {
+  result: VerifyResult;
+  kind?: CheckKind;
+}
 
 const MAX_NODES = 200;
 const MAX_DEPTH = 30;
@@ -338,6 +347,24 @@ function readRoots(answer: string): number[] {
 // The checks, one per kind of problem
 // ---------------------------------------------------------------------------
 
+// The degree of a polynomial. Anything else (sin x, 1/x, no variable) cannot
+// be checked, because we could not tell whether a root is missing.
+function polynomialDegree(node: MathNode): number {
+  let result: { coefficients: number[]; denominator: MathNode | null };
+  try {
+    result = rationalize(node, {}, true) as unknown as typeof result;
+  } catch {
+    throw new CannotCheck();
+  }
+  if (result.denominator || result.coefficients.length < 2) throw new CannotCheck();
+  return result.coefficients.length - 1;
+}
+
+// Roots that are the same number count once
+function distinctRoots(roots: number[]): number[] {
+  return roots.filter((root, index) => roots.findIndex((other) => close(root, other, EQUATION_TOLERANCE)) === index);
+}
+
 function checkEquation(equation: string, content: SolutionV2Content): VerifyResult {
   const sides = equation.split("=");
   if (sides.length !== 2) throw new CannotCheck();
@@ -345,15 +372,20 @@ function checkEquation(equation: string, content: SolutionV2Content): VerifyResu
   const variable = onlyVariable(`(${left}) - (${right})`);
   if (!variable) throw new CannotCheck();
 
+  const degree = polynomialDegree(safeExpression(`(${left}) - (${right})`, variable));
+  const roots = distinctRoots(readRoots(answerText(content)));
+
   const leftValue = compileFunction(safeExpression(left, variable), variable);
   const rightValue = compileFunction(safeExpression(right, variable), variable);
-  for (const root of readRoots(answerText(content))) {
+  for (const root of roots) {
     const l = leftValue(root);
     const r = rightValue(root);
     if (l === null || r === null) throw new CannotCheck();
     if (!close(l, r, EQUATION_TOLERANCE)) return "failed";
   }
-  return "passed";
+  // Every listed root works. Fewer roots than the degree means one may be
+  // missing (or repeated, or not real), so we do not call it checked.
+  return roots.length >= degree ? "passed" : "unchecked";
 }
 
 function checkArithmetic(expression: string, content: SolutionV2Content): VerifyResult {
@@ -418,35 +450,96 @@ const FUNCTION_PREFIX = /^(?:y|f\s*\(\s*[a-z]\s*\))\s*=\s*/;
 const SOLVE_START = /^(?:solve(?:\s+for\s+[a-z])?|find\s+[a-z](?:\s+if)?)\s*:?\s*/;
 const ARITHMETIC_START = /^(?:what is|calculate|compute|evaluate|simplify|find(?: the value of)?)\s*:?\s*/;
 
-function check(problem: string, content: SolutionV2Content): VerifyResult {
+function check(problem: string, content: SolutionV2Content): Verdict {
   const text = tidyProblem(problem);
-  if (/[<>≤≥]/.test(text)) return "unchecked"; // inequalities are not checked
+  if (/[<>≤≥]/.test(text)) return { result: "unchecked" }; // inequalities are not checked
 
   const integral = text.match(INTEGRAL_START);
   if (integral || text.includes("∫")) {
     const body = text.replace(INTEGRAL_START, "").replace(/∫/g, "").trim();
     const bounds = body.match(/^(.+?)\s*(?:d[a-z])?\s+from\s+(\S+)\s+to\s+(\S+)$/);
     if (bounds) {
-      return checkDefiniteIntegral(bounds[1] as string, bounds[2] as string, bounds[3] as string, content);
+      return {
+        result: checkDefiniteIntegral(bounds[1] as string, bounds[2] as string, bounds[3] as string, content),
+        kind: "definite-integral",
+      };
     }
-    return checkIndefiniteIntegral(body.replace(/\s*d\s?[a-z]$/, ""), content);
+    return { result: checkIndefiniteIntegral(body.replace(/\s*d\s?[a-z]$/, ""), content), kind: "indefinite-integral" };
   }
 
   const derivativeMatch = text.match(DERIVATIVE_START);
   if (derivativeMatch) {
     const body = text.replace(DERIVATIVE_START, "").replace(FUNCTION_PREFIX, "");
-    return checkDerivative(body, derivativeMatch[1], content);
+    return { result: checkDerivative(body, derivativeMatch[1], content), kind: "derivative" };
   }
 
   if (text.includes("=")) {
-    return checkEquation(text.replace(SOLVE_START, ""), content);
+    return { result: checkEquation(text.replace(SOLVE_START, ""), content), kind: "equation" };
   }
 
   const expression = text.replace(ARITHMETIC_START, "");
   if (onlyVariable(expression) === undefined) {
-    return checkArithmetic(expression, content);
+    return { result: checkArithmetic(expression, content), kind: "arithmetic" };
   }
-  return "unchecked"; // an expression with no task
+  return { result: "unchecked" }; // an expression with no task
+}
+
+// ---------------------------------------------------------------------------
+// Comparing two answers (for the second-model check)
+// ---------------------------------------------------------------------------
+
+// "x = -2 or x = -3" style: a list of roots
+const ROOT_LIST = /^\s*[a-z]\s*(?:=|\\in)/i;
+
+function sameRoots(a: string, b: string): boolean {
+  const sort = (roots: number[]) => distinctRoots(roots).sort((x, y) => x - y);
+  const first = sort(readRoots(a));
+  const second = sort(readRoots(b));
+  return first.length === second.length && first.every((root, i) => close(root, second[i] as number, COMPARE_TOLERANCE));
+}
+
+function sameExpression(a: string, b: string): boolean {
+  const left = withoutConstant(afterLastEquals(a));
+  const right = withoutConstant(afterLastEquals(b));
+  const symbols = new Set([...freeSymbols(parseText(toMathText(left))), ...freeSymbols(parseText(toMathText(right)))]);
+  if (symbols.size > 1) throw new CannotCheck();
+  const [variable] = [...symbols];
+  const first = compileFunction(safeExpression(left, variable), variable);
+  const second = compileFunction(safeExpression(right, variable), variable);
+  if (!variable) {
+    const x = first(0);
+    const y = second(0);
+    if (x === null || y === null) throw new CannotCheck();
+    return close(x, y, COMPARE_TOLERANCE);
+  }
+  return compareAtRandomPoints(first, second) === "passed";
+}
+
+/**
+ * True when two final answers have the same value: the same roots, the same
+ * number, or the same expression at random points. False when they differ
+ * or when either cannot be read, so a doubt never counts as a match.
+ */
+export function sameAnswerValue(a: string, b: string): boolean {
+  try {
+    if (ROOT_LIST.test(a) && ROOT_LIST.test(b)) return sameRoots(a, b);
+    return sameExpression(a, b);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Like verifyAnswer, and also says which kind of check ran, for the label
+ * shown to the student.
+ */
+export function verifyAnswerWithKind(problem: string, content: SolutionV2Content): Verdict {
+  try {
+    return check(problem, content);
+  } catch {
+    // CannotCheck, or mathjs failing on odd input: either way, not checked
+    return { result: "unchecked" };
+  }
 }
 
 /**
@@ -454,10 +547,5 @@ function check(problem: string, content: SolutionV2Content): VerifyResult {
  * wrong, and "unchecked" for anything we cannot check safely.
  */
 export function verifyAnswer(problem: string, content: SolutionV2Content): VerifyResult {
-  try {
-    return check(problem, content);
-  } catch {
-    // CannotCheck, or mathjs failing on odd input: either way, not checked
-    return "unchecked";
-  }
+  return verifyAnswerWithKind(problem, content).result;
 }

@@ -18,6 +18,8 @@ import { InvalidSolverOutputError, NotMathError, UnsolvableProblemError } from "
 export interface ModelOutput {
   text: string;
   tokenUsage?: TokenUsage;
+  /** Which model answered */
+  model?: string;
 }
 
 const MAX_REFUSAL_LOG = 200;
@@ -141,7 +143,7 @@ export async function generateValidSolution(
 
     const checked = checkOutput(output.text);
     if (checked.ok) {
-      return { ...checked.result, tokenUsage: usage };
+      return { ...checked.result, tokenUsage: usage, model: output.model };
     }
 
     logger.warn("AI output did not match the solution format", {

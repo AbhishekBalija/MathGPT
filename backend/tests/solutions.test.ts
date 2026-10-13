@@ -6,8 +6,9 @@ import {
 } from "./support/fake-math-solver";
 import { solutionRepository } from "../src/modules/solutions/solution.repository";
 import { authedFetch, registerAdmin, registerVerifiedUser } from "./support/users";
+import { uniqueProblem } from "./support/problems";
 
-async function solve(accessToken: string, problem = "2x = 4") {
+async function solve(accessToken: string, problem = uniqueProblem()) {
   const res = await authedFetch(accessToken, "/api/solve", {
     method: "POST",
     body: { problem },
@@ -19,14 +20,15 @@ async function solve(accessToken: string, problem = "2x = 4") {
 describe("a User's Solutions", () => {
   it("can be opened and deleted with the ID that solving returned", async () => {
     const { accessToken } = await registerVerifiedUser();
-    const solution = await solve(accessToken);
+    const problem = uniqueProblem();
+    const solution = await solve(accessToken, problem);
 
     const opened = await authedFetch(accessToken, `/api/solution/${solution.id}`);
     expect(opened.status).toBe(200);
     const body = await opened.json();
     expect(body.solution).toMatchObject({
       id: solution.id,
-      problem: "2x = 4",
+      problem,
       finalAnswer: FAKE_FINAL_ANSWER,
       formatVersion: 2,
       // Same moment the solve response reported

@@ -8,6 +8,13 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Shared solution cache (`solution_cache`, migration `0006`): a student asking
+  a problem someone already solved gets that solution with no AI call and no
+  Credit. Only answers that passed a check are shared: a code check
+  (`verifyAnswer`) first, otherwise a second model from a different maker
+  must give the same answer. A code-checked answer shows "Checked by putting
+  the answer back in." (#52)
+
 - Backend error alerts with Sentry (`@sentry/bun`, `backend/src/lib/sentry.ts`).
   Every failed solve and every unhandled error is reported, without problem
   text, request bodies, headers or cookies. Off unless `SENTRY_DSN` is set.
@@ -104,6 +111,9 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - Package manager for the backend is now Bun (`bun.lock`).
 
 ### Fixed
+
+- `verifyAnswer` no longer passes an equation answer with a root missing
+  (for example only `x = -2` for `x^2 + 5x + 6 = 0`).
 
 - The solver only answers math: text with no math in it gets a 422
   `NOT_MATH` without an AI call, and the AI can also reply "not math". A bare

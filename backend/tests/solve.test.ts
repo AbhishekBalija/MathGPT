@@ -9,6 +9,7 @@ import {
 } from "./support/fake-math-solver";
 import { fakeMathSolver } from "./support/test-app";
 import { authedFetch, registerVerifiedUser } from "./support/users";
+import { uniqueProblem } from "./support/problems";
 
 const NOT_MATH_MESSAGE =
   "That doesn't look like a math problem. Try something like x^2 + 5x + 6 = 0.";
@@ -21,7 +22,7 @@ describe("POST /api/solve", () => {
   it("returns a version 2 solution that matches the schema", async () => {
     const { accessToken } = await registerVerifiedUser();
 
-    const res = await solveAs(accessToken, { problem: "2x = 4" });
+    const res = await solveAs(accessToken, { problem: uniqueProblem() });
 
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -159,7 +160,7 @@ describe("Credits", () => {
 
     await authedFetch(accessToken, "/api/solve", {
       method: "POST",
-      body: { problem: "2x = 4" },
+      body: { problem: uniqueProblem() },
     });
 
     const res = await authedFetch(accessToken, "/api/profile");
@@ -180,7 +181,7 @@ describe("Credits", () => {
 
     const res = await authedFetch(accessToken, "/api/solve", {
       method: "POST",
-      body: { problem: "2x = 4" },
+      body: { problem: uniqueProblem() },
     });
 
     expect(res.status).toBe(429);
@@ -225,7 +226,7 @@ describe("Instant answers", () => {
   it("still sends other problems to the AI", async () => {
     const { accessToken } = await registerVerifiedUser();
 
-    const body = await (await solveAs(accessToken, { problem: "2x = 4" })).json();
+    const body = await (await solveAs(accessToken, { problem: uniqueProblem() })).json();
 
     expect(body.source).toBe("ai");
     expect(body.solution.content).toEqual(FAKE_CONTENT);

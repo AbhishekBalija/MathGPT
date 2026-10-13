@@ -10,10 +10,15 @@
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import type { SolveResult } from "../../modules/ai/math-solver";
-import { runWithFailover } from "./failover";
-import { generateValidSolution, type ModelOutput } from "./generate-solution";
-import { MATH_TUTOR_SYSTEM_PROMPT, buildSolvePrompt } from "./prompts";
+import type { SecondOpinion, SolveResult } from "../../modules/ai/math-solver";
+import { runWithFailover, withTimeout } from "./failover";
+import { generateValidSolution, stripCodeFences, type ModelOutput } from "./generate-solution";
+import {
+  ANSWER_ONLY_SYSTEM_PROMPT,
+  MATH_TUTOR_SYSTEM_PROMPT,
+  buildAnswerOnlyPrompt,
+  buildSolvePrompt,
+} from "./prompts";
 import { UnsolvableProblemError } from "./solver-errors";
 
 // ============================================================================
@@ -98,7 +103,7 @@ async function askModelsWithFailover(prompt: string): Promise<ModelOutput> {
     }
   );
   console.log(`Answered by ${usedBackup ? BACKUP_MODEL : PRIMARY_MODEL}`);
-  return value;
+  return { ...value, model: usedBackup ? BACKUP_MODEL : PRIMARY_MODEL };
 }
 
 // ============================================================================
@@ -110,7 +115,8 @@ async function askModelsWithFailover(prompt: string): Promise<ModelOutput> {
  */
 async function callOpenRouter(
   prompt: string,
-  model: string
+  model: string,
+  systemPrompt: string = MATH_TUTOR_SYSTEM_PROMPT
 ): Promise<ModelOutput> {
   const apiKey = process.env.OPEN_ROUTER_API_KEY;
   if (!apiKey) {
@@ -130,7 +136,7 @@ async function callOpenRouter(
       body: JSON.stringify({
         model: model,
         messages: [
-          { role: "system", content: MATH_TUTOR_SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           { role: "user", content: prompt },
         ],
         temperature: 0.3,
@@ -171,13 +177,17 @@ async function callOpenRouter(
       }
     : undefined;
 
-  return { text: content, tokenUsage };
+  return { text: content, tokenUsage, model };
 }
 
 /**
  * Call Gemini API (primary model)
  */
-async function callGemini(prompt: string): Promise<ModelOutput> {
+async function callGemini(
+  prompt: string,
+  systemPrompt: string = MATH_TUTOR_SYSTEM_PROMPT,
+  jsonOnly = true
+): Promise<ModelOutput> {
   const model = genAI.getGenerativeModel({
     model: PRIMARY_MODEL,
     generationConfig: {
@@ -186,12 +196,12 @@ async function callGemini(prompt: string): Promise<ModelOutput> {
       topK: 40,
       maxOutputTokens: 8192,
       // Ask Gemini for JSON only, so there are no code fences to strip
-      responseMimeType: "application/json",
+      responseMimeType: jsonOnly ? "application/json" : "text/plain",
     },
   }, { timeout: PRIMARY_TIMEOUT_MS });
 
   const result = await model.generateContent([
-    { text: MATH_TUTOR_SYSTEM_PROMPT },
+    { text: systemPrompt },
     { text: prompt },
   ]);
 
@@ -213,7 +223,61 @@ async function callGemini(prompt: string): Promise<ModelOutput> {
       }
     : undefined;
 
-  return { text, tokenUsage };
+  return { text, tokenUsage, model: PRIMARY_MODEL };
+}
+
+// ============================================================================
+// SECOND OPINION
+// ============================================================================
+
+const MAX_SECOND_ANSWER = 500;
+
+/**
+ * The second model's reply as an answer, or null. Plain text, not JSON:
+ * models often write LaTeX in JSON with single backslashes, and "\frac"
+ * then breaks (or silently turns into a control character).
+ */
+export function readSecondAnswer(reply: string): string | null {
+  const lines = stripCodeFences(reply)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const last = lines[lines.length - 1];
+  if (!last) return null;
+  const answer = last
+    .replace(/^(?:final\s+)?answer\s*:\s*/i, "")
+    .replace(/^\$+|\$+$/g, "")
+    .trim();
+  if (!answer || answer.toUpperCase() === "UNKNOWN" || answer.length > MAX_SECOND_ANSWER) return null;
+  return answer;
+}
+
+/**
+ * Asks a model from a different maker than the one that solved the problem
+ * for the final answer only. DeepSeek checks Gemini's answers, and Gemini
+ * checks DeepSeek's, so a maker never checks itself.
+ */
+export async function askSecondOpinion(
+  problem: string,
+  primaryModel: string | undefined
+): Promise<SecondOpinion | null> {
+  const prompt = buildAnswerOnlyPrompt(problem);
+  const output =
+    primaryModel === BACKUP_MODEL
+      ? await withTimeout(callGemini(prompt, ANSWER_ONLY_SYSTEM_PROMPT, false), PRIMARY_TIMEOUT_MS, PRIMARY_MODEL)
+      : await withTimeout(
+          callOpenRouter(prompt, BACKUP_MODEL, ANSWER_ONLY_SYSTEM_PROMPT),
+          BACKUP_TIMEOUT_MS,
+          BACKUP_MODEL
+        );
+
+  const answer = readSecondAnswer(output.text);
+  if (!answer) {
+    // The reply is only math, so a short piece is safe to log
+    console.log(`Second opinion not usable from ${output.model}: ${output.text.slice(0, 200)}`);
+    return null;
+  }
+  return { answer, model: output.model ?? "unknown" };
 }
 
 /**

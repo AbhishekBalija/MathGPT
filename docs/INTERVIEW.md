@@ -275,3 +275,24 @@ unexpected is refused by default.
 A fixed list of points can be gamed: an answer can be wrong everywhere except
 at those points. Fresh points each time make that impossible to rely on.
 
+### Intermediate: How do you share AI answers between users without spreading a wrong one?
+
+Only share an answer after an independent check. First code: put the roots
+back in, or differentiate an integral. If code cannot check it, ask a model
+from a different company for just the final answer and share only if the two
+agree. Two models from one company can make the same mistake. Until then the
+answer stays private to the student who asked, and a report blocks it for good.
+
+### Intermediate: Why does the second model answer in plain text instead of JSON?
+
+LaTeX is full of backslashes, and models often forget to escape them in JSON.
+`"\frac{1}{3}"` written with one backslash is still valid JSON, because `\f` is
+the form-feed escape, so the answer silently turns into a control character
+plus "rac{1}{3}". For a one-line answer, plain text avoids the problem completely.
+
+### Basic: Why is a cache entry keyed on the prompt version?
+
+When the prompt changes, solutions written under the old prompt may not follow
+the new rules. Putting the version in the key means old entries are simply
+never found again, with no clean-up job.
+
