@@ -18,6 +18,7 @@
   "keywords": [],
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@sentry/bun": "^11.7.0",
     "@vercel/functions": "^3.9.11",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",

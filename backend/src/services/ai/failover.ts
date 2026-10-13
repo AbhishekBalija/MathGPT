@@ -11,6 +11,23 @@ export class ModelTimeoutError extends Error {
   }
 }
 
+// Each reason is cut to this length so one huge provider error cannot fill the log
+const MAX_REASON_LENGTH = 300;
+
+/**
+ * Both models failed. The message stays generic because the student sees it;
+ * `reasons` holds what each model actually said, for the admin error log.
+ */
+export class AllModelsFailedError extends Error {
+  readonly reasons: string;
+
+  constructor(reasons: string) {
+    super("All models failed");
+    this.name = "AllModelsFailedError";
+    this.reasons = reasons;
+  }
+}
+
 // Rejects if the work does not finish in time. The timer is always cleared.
 export async function withTimeout<T>(
   work: Promise<T>,
@@ -43,22 +60,28 @@ export async function runWithFailover<T>(
   primary: FailoverStep<T>,
   backup: FailoverStep<T>
 ): Promise<FailoverResult<T>> {
+  let primaryReason: string;
   try {
     const value = await withTimeout(primary.run(), primary.timeoutMs, primary.label);
     return { value, usedBackup: false };
   } catch (error) {
-    console.log(`${primary.label} failed, trying ${backup.label}: ${errorMessage(error)}`);
+    primaryReason = errorMessage(error);
+    console.log(`${primary.label} failed, trying ${backup.label}: ${primaryReason}`);
   }
 
   try {
     const value = await withTimeout(backup.run(), backup.timeoutMs, backup.label);
     return { value, usedBackup: true };
   } catch (error) {
-    console.log(`${backup.label} failed too: ${errorMessage(error)}`);
-    throw new Error("All models failed");
+    const backupReason = errorMessage(error);
+    console.log(`${backup.label} failed too: ${backupReason}`);
+    throw new AllModelsFailedError(
+      `${primary.label}: ${primaryReason} | ${backup.label}: ${backupReason}`
+    );
   }
 }
 
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Unknown error";
+  const message = error instanceof Error ? error.message : "Unknown error";
+  return message.slice(0, MAX_REASON_LENGTH);
 }

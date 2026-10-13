@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { runWithFailover } from "../../src/services/ai/failover";
+import { AllModelsFailedError, runWithFailover } from "../../src/services/ai/failover";
 
 const never = () => new Promise<string>(() => {});
 const fail = (message: string) => () => Promise.reject(new Error(message));
@@ -49,6 +49,30 @@ describe("runWithFailover", () => {
         { label: "backup", run: fail("404"), timeoutMs: 1000 }
       )
     ).rejects.toThrow("All models failed");
+  });
+
+  it("keeps each model's reason when both fail", async () => {
+    const error = await runWithFailover(
+      { label: "primary", run: fail("503 overloaded"), timeoutMs: 1000 },
+      { label: "backup", run: fail("404 no endpoints"), timeoutMs: 1000 }
+    ).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(AllModelsFailedError);
+    // The message stays generic because it is shown to the student
+    expect((error as AllModelsFailedError).message).toBe("All models failed");
+    expect((error as AllModelsFailedError).reasons).toBe(
+      "primary: 503 overloaded | backup: 404 no endpoints"
+    );
+  });
+
+  it("cuts very long reasons short", async () => {
+    const error = (await runWithFailover(
+      { label: "primary", run: fail("x".repeat(2000)), timeoutMs: 1000 },
+      { label: "backup", run: fail("404"), timeoutMs: 1000 }
+    ).catch((caught: unknown) => caught)) as AllModelsFailedError;
+
+    expect(error.reasons.length).toBeLessThan(700);
+    expect(error.reasons).toContain("backup: 404");
   });
 
   it("fails when the backup also takes too long", async () => {

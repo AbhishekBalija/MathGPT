@@ -17,6 +17,7 @@ import {
 } from "../services/ai/solver-errors";
 import { METHOD_ID_PATTERN } from "../services/ai/prompts";
 import type { Solution } from "../types/solve.types";
+import { AllModelsFailedError } from "../services/ai/failover";
 import type { MathSolver } from "../modules/ai/math-solver";
 import { getCurrentUser } from "../modules/auth/auth.middleware";
 import { userRepository } from "../modules/users/user.repository";
@@ -323,9 +324,14 @@ export function createSolveRoute(solver: MathSolver) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error occurred";
       const errorCode = error instanceof Error ? error.name : "UNKNOWN_ERROR";
+      // What each model really said goes to the admin log, never to the student
+      const loggedMessage =
+        error instanceof AllModelsFailedError
+          ? `${errorMessage}: ${error.reasons}`
+          : errorMessage;
 
       logger.error("Failed to solve problem", {
-        error: errorMessage,
+        error: loggedMessage,
         errorCode,
         processingTimeMs: Date.now() - startTime,
         userId,
@@ -338,7 +344,7 @@ export function createSolveRoute(solver: MathSolver) {
           userId,
           problem: problem.slice(0, 200),
           errorCode,
-          errorMessage,
+          errorMessage: loggedMessage,
           processingTimeMs: Date.now() - startTime,
           timestamp: new Date().toISOString(),
         })

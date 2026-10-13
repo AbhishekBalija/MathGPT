@@ -226,3 +226,27 @@ Contrast. WCAG asks for at least 4.5:1 for normal text. The logo pink is about
 3.2:1 on white, so light mode uses a darker pink (4.9:1), and dark mode uses a
 lighter one (7.1:1 on near-black). The bright logo pink is kept for shapes,
 where the rule does not apply.
+
+## Operations
+
+### Intermediate: Production failed every long solve, but the same code worked locally. Why?
+
+Production was not running that code. A Vercel "Redeploy" rebuilds the commit
+of the deployment you click, so redeploying an old one put code from before a
+fix back live. The old code gave up after about 8 seconds, so any problem that
+took the AI longer failed. Lesson: after any deploy, check which commit is
+live (`vercel inspect <domain>`), and keep the real error reason in your logs,
+not just a generic "all models failed".
+
+### Intermediate: Why call `Sentry.flush()` after reporting an error on Vercel?
+
+A serverless function can be paused as soon as the response is sent. Sentry
+sends events in the background, so without waiting for `flush()` (inside
+`waitUntil`) the alert might never leave the server.
+
+### Advanced: What should an error tracker never collect in an app used by children?
+
+Request bodies (passwords, the problems students type), headers (login tokens),
+cookies and user details. Sentry collects several of these by default, so we
+turn each one off and send only an opaque user id and an error code.
+

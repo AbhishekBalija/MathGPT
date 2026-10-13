@@ -8,7 +8,7 @@ Files: `backend/src/services/ai/ai.service.ts` and `prompts.ts`.
 
 How it works today:
 - Primary is `gemini-2.5-flash` through the direct Gemini API (`callGemini`).
-- If `USE_MULTI_MODEL=true`, a staggered race adds two OpenRouter models: `google/gemini-2.0-flash-001` after 8s and `tngtech/deepseek-r1t2-chimera:free` after 15s. The first valid answer wins.
+- If `USE_MULTI_MODEL=true`, sequential failover: Gemini gets 20s; if it fails or runs out of time, `deepseek/deepseek-v4-flash` on OpenRouter gets one try with 20s (fastest host via `provider.sort = throughput`). (The old staggered race used two OpenRouter models that no longer exist, so it was replaced.)
 - Output is plain text that is cleaned with a regex and `JSON.parse` (`parseAIResponse`). No JSON mode or schema is used.
 
 Weaknesses found in the code:
