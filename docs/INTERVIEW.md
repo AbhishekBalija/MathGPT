@@ -250,3 +250,28 @@ Request bodies (passwords, the problems students type), headers (login tokens),
 cookies and user details. Sentry collects several of these by default, so we
 turn each one off and send only an opaque user id and an error code.
 
+## Checking AI answers
+
+### Intermediate: How do you check an AI's integral without solving it yourself?
+
+Differentiate the AI's answer and compare it with the integrand. Antiderivatives
+are hard to find but easy to check, and the "+ C" disappears when you
+differentiate. We compare at 12 random points instead of proving the two are
+equal symbolically, which is simpler and good enough: two different
+expressions almost never agree at 12 random points.
+
+### Advanced: The AI's answer is untrusted text. How do you run it as math safely?
+
+Never `eval` it and never call `mathjs.evaluate` on the string. Parse it into a
+tree first, then walk the tree and refuse it unless every node is on an
+allowlist (numbers, the one variable, `pi`, `e`, `+ - * / ^`, and a short list
+of functions like `sin` and `log`), it has at most 200 nodes and it is at most
+30 deep. Only then compile it and run it with a scope that holds just the
+variable. An allowlist is safer than a blocklist because anything new or
+unexpected is refused by default.
+
+### Intermediate: Why draw fresh random points on every check?
+
+A fixed list of points can be gamed: an answer can be wrong everywhere except
+at those points. Fresh points each time make that impossible to rely on.
+
