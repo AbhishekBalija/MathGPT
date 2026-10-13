@@ -29,13 +29,19 @@ export interface SecondOpinion {
   model: string;
 }
 
+export interface SolveOptions {
+  method?: string;
+  /** An earlier answer our code check proved wrong, so the AI tries again */
+  wrongAnswer?: string;
+}
+
 export interface MathSolver {
   /**
    * Throws `UnsolvableProblemError` when the Problem cannot be solved and
    * `InvalidSolverOutputError` when the AI keeps returning a broken format.
    * `method` is the id of the method the student asked for.
    */
-  solve(problem: string, options?: { method?: string }): Promise<SolveResult>;
+  solve(problem: string, options?: SolveOptions): Promise<SolveResult>;
 
   /**
    * Asks a model from a different maker than `primaryModel` for the final

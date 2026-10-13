@@ -40,6 +40,7 @@ export interface SolutionV2 {
   problem: { latex?: string; text?: string; task: string };
   sections?: { given?: string; toFind?: string; toProve?: string };
   steps: SolutionStep[];
-  answer: { latex?: string; text?: string; sentence?: string; unit?: string; check?: string };
+  // "check" and "warning" come only from the server's code check, never the AI
+  answer: { latex?: string; text?: string; sentence?: string; unit?: string; check?: string; warning?: string };
   hint?: string;
 }

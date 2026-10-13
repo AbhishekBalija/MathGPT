@@ -19,7 +19,7 @@ import {
 } from "../services/ai/solver-errors";
 import { looksLikeMath } from "../modules/solver/guard/looks-like-math";
 import { cacheKey, solutionCache } from "../modules/solver/cache/solution-cache";
-import { codeCheck, putInCache, secondModelCheck } from "../modules/solver/cache/share-checked";
+import { putInCache, secondModelCheck, solveWithCodeCheck } from "../modules/solver/cache/share-checked";
 import { METHOD_ID_PATTERN } from "../services/ai/prompts";
 import type { Solution } from "../types/solve.types";
 import { AllModelsFailedError } from "../services/ai/failover";
@@ -311,9 +311,9 @@ export function createSolveRoute(solver: MathSolver) {
       }
 
       // Solve the problem using AI
-      const result = await solver.solve(problem, { method });
-      // Code check first: adds the "Checked by ..." label only when it passed
-      const { content, check } = codeCheck(problem, result.content);
+      // Solve, then the code check: the "Checked by ..." label only when it
+      // passed, one retry when it failed, and a warning if it failed again
+      const { result, content, check } = await solveWithCodeCheck(solver, problem, method);
 
       // The new format keeps its steps in `content`. The old columns still
       // need a value, so they get the answer as text and no steps.
@@ -417,7 +417,7 @@ export function createSolveRoute(solver: MathSolver) {
             userId,
             problem: problem.slice(0, 200),
             errorCode: "ANSWER_CHECK_FAILED",
-            errorMessage: `Code check failed for answer: ${(content.answer.latex ?? content.answer.text ?? "").slice(0, 200)}`,
+            errorMessage: `Code check failed twice for answer: ${(content.answer.latex ?? content.answer.text ?? "").slice(0, 200)}`,
             processingTimeMs: Date.now() - startTime,
             timestamp: new Date().toISOString(),
           })

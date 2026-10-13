@@ -1,9 +1,11 @@
+import { CircleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { InlineText } from "./blocks/InlineText";
 import { Math } from "./blocks/Math";
 import type { SolutionV2 } from "./model/solution";
 
-// The last step: a boxed conclusion with Copy. The check line only shows when the solution has one.
+// The last step: a boxed conclusion with Copy. The check line only shows when the
+// solution has one, and the warning only when the server's check found it wrong.
 export function AnswerStep({ answer }: { answer: SolutionV2["answer"] }) {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -46,6 +48,12 @@ export function AnswerStep({ answer }: { answer: SolutionV2["answer"] }) {
         {answer.check ? (
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             <InlineText text={answer.check} />
+          </p>
+        ) : null}
+        {answer.warning ? (
+          <p className="mt-2 flex items-start gap-1.5 text-sm text-amber-800 dark:text-amber-300">
+            <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+            <span>{answer.warning}</span>
           </p>
         ) : null}
       </div>

@@ -114,7 +114,8 @@ describe("shared solution cache", () => {
     const solveSpy = vi.spyOn(fakeMathSolver, "solve");
     const body = await (await solveAs(second.accessToken, { problem })).json();
     expect(body.source).toBe("ai");
-    expect(solveSpy).toHaveBeenCalledOnce();
+    // A fresh solve: the first try and the retry after the failed check
+    expect(solveSpy).toHaveBeenCalledTimes(2);
     solveSpy.mockRestore();
   });
 

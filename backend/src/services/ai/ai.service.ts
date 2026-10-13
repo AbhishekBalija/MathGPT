@@ -10,7 +10,7 @@
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import type { SecondOpinion, SolveResult } from "../../modules/ai/math-solver";
+import type { SecondOpinion, SolveOptions, SolveResult } from "../../modules/ai/math-solver";
 import { runWithFailover, withTimeout } from "./failover";
 import { generateValidSolution, stripCodeFences, type ModelOutput } from "./generate-solution";
 import {
@@ -69,7 +69,7 @@ export function rejectObviouslyUnsolvable(problem: string): void {
  */
 export async function solveMathProblem(
   problem: string,
-  options: { method?: string } = {}
+  options: SolveOptions = {}
 ): Promise<SolveResult> {
   const startTime = Date.now();
 
