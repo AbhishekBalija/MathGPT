@@ -104,6 +104,11 @@ export const solutionCache = {
       .onConflictDoNothing({ target: cacheTable.key });
   },
 
+  /** A student reported it: never serve it again, and never re-share it. */
+  async block(key: string): Promise<void> {
+    await db.update(cacheTable).set({ status: "blocked" }).where(eq(cacheTable.key, key));
+  },
+
   /** A second model agreed: start serving an unchecked entry. */
   async shareAfterSecondCheck(key: string, checkedBy: { primary?: string; second: string }): Promise<void> {
     await db

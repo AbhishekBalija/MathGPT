@@ -150,6 +150,28 @@ export const solutionCache = pgTable(
   ]
 );
 
+// A student saying a Solution looks wrong. Blocks its shared-cache entry.
+export const solutionReports = pgTable(
+  "solution_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    solutionId: uuid("solution_id")
+      .notNull()
+      .references(() => solutions.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    reason: text("reason"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("solution_reports_solution_id_idx").on(table.solutionId),
+    index("solution_reports_user_id_idx").on(table.userId),
+  ]
+);
+
 export type CacheStatus = "unchecked" | "shared" | "blocked";
 export type CheckMethod = "code" | "second-model";
 
