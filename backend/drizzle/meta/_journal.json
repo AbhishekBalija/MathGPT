@@ -50,6 +50,13 @@
       "when": 1791920103352,
       "tag": "0006_solution_cache",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791921606803,
+      "tag": "0007_solution_reports",
+      "breakpoints": true
     }
   ]
 }

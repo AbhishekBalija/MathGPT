@@ -237,6 +237,21 @@ Logout user. **Requires auth.**
 
 ---
 
+## Reports
+
+### POST /api/solutions/:id/report
+
+The current User says one of their Solutions looks wrong. **Requires auth.**
+Body (optional): `{ "reason": "..." }`, at most 500 characters (longer gets
+**400**). The report is saved for the admin. If the Solution came from or went
+into the shared cache, that entry is blocked: no other student gets it again.
+Someone else's Solution, or an id that is not a Solution, gets **404**
+`{ "error": "Solution not found" }`.
+
+**Response (200):** `{ "success": true }`
+
+---
+
 ## Solve Endpoints
 
 ### POST /api/solve

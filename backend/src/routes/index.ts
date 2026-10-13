@@ -27,6 +27,7 @@ import { profileRoute } from "./profile.route";
 import { publicStatsRoute } from "./public-stats.route";
 import { getSolutionRoute } from "./solution.route";
 import { createSolveRoute } from "./solve.route";
+import { reportSolutionRoute } from "./report-solution.route";
 
 
 export function createRouter(services: AppServices) {
@@ -66,6 +67,7 @@ export function createRouter(services: AppServices) {
   router.delete("/api/clear-history", requireUser, clearHistoryRoute);
   router.get("/api/solution/:id", requireUser, getSolutionRoute);
   router.delete("/api/solution/:id", requireUser, deleteSolutionRoute);
+  router.post("/api/solutions/:id/report", requireUser, reportSolutionRoute);
   router.get("/api/profile", requireUser, profileRoute);
 
   // Public

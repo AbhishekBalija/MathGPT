@@ -8,6 +8,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- "Something looks wrong? Tell us" under every answer: it reports the
+  solution (`POST /api/solutions/:id/report`, new `solution_reports` table,
+  migration `0007`) and blocks its shared-cache entry, so no other student
+  gets it (#53).
+
 - Shared solution cache (`solution_cache`, migration `0006`): a student asking
   a problem someone already solved gets that solution with no AI call and no
   Credit. Only answers that passed a check are shared: a code check
