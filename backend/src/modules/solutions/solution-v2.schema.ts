@@ -112,7 +112,10 @@ const answerSchema = z
     text: optionalLongText,
     sentence: z.string().max(MAX_LONG_TEXT).optional(),
     unit: z.string().max(MAX_SHORT_TEXT).optional(),
+    // Set only by our code: "check" when code confirmed the answer,
+    // "warning" when code showed it is wrong. Never written by the AI.
     check: z.string().max(MAX_LONG_TEXT).optional(),
+    warning: z.string().max(MAX_LONG_TEXT).optional(),
   })
   .refine((a) => a.latex !== undefined || a.text !== undefined, {
     message: "Answer needs latex or text",

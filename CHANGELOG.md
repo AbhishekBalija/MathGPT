@@ -117,6 +117,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- When code proves an AI answer wrong, the AI gets one more try with that
+  answer marked wrong. If the second answer is wrong too, the student sees
+  "This answer didn't pass our check. Please double-check it." instead of
+  a normal-looking answer. Only our code may write the answer's check line;
+  the AI's own "check" text is dropped.
+
 - `verifyAnswer` no longer passes an equation answer with a root missing
   (for example only `x = -2` for `x^2 + 5x + 6 = 0`).
 

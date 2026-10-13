@@ -269,7 +269,10 @@ The response has `source`: `"instant"` (plain arithmetic, no AI), `"cache"` (a
 solution another student already got, whose answer passed a check; no AI call
 and no Credit) or `"ai"`. `solution.content.answer.check` is set only when code
 confirmed the answer ("Checked by putting the answer back in." or "Checked by
-recomputing.").
+recomputing."). When code proves the answer wrong, the AI gets one more try
+(no extra Credit); if that is wrong too, `solution.content.answer.warning` is
+"This answer didn't pass our check. Please double-check it." Both fields are
+only ever set by the server, never by the AI.
 
 **Request Body:**
 

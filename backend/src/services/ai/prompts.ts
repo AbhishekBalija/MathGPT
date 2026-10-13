@@ -45,11 +45,11 @@ Reply with this envelope:
         "block": { "type": "<block type>" }
       }
     ],
-    "answer": { "latex": "<answer in LaTeX>", "text": "<answer in words, if not a formula>", "sentence": "<conclusion sentence with units>", "unit": "<unit, if any>", "check": "<optional quick check>" },
+    "answer": { "latex": "<answer in LaTeX>", "text": "<answer in words, if not a formula>", "sentence": "<conclusion sentence with units>", "unit": "<unit, if any>" },
     "hint": "<one sentence nudging the student toward the first move, without giving the answer>"
   }
 }
-"board", "sections", "text" (in problem), "sentence", "unit" and "check" are optional: leave them out when they do not apply. "problem" needs "latex" or "text". "answer" needs "latex" or "text".
+"board", "sections", "text" (in problem), "sentence" and "unit" are optional: leave them out when they do not apply. "problem" needs "latex" or "text". "answer" needs "latex" or "text".
 
 BLOCK TYPES (put exactly one in each step's "block"):
 - {"type": "equation", "latex": "<LaTeX, may use \\\\begin{aligned} ... \\\\end{aligned}>"} for algebra, calculus and most steps.
@@ -86,7 +86,7 @@ HOW TO WRITE THE SOLUTION:
  * Part of every shared-cache key. Change it whenever the prompt changes, so
  * solutions written under an old prompt are never served again.
  */
-export const PROMPT_VERSION = "2026-10-14.1";
+export const PROMPT_VERSION = "2026-10-14.2";
 
 /**
  * For the second, independent check: a different model gives only the final
@@ -117,19 +117,30 @@ export function escapeProblem(problem: string): string {
   return problem.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+const MAX_WRONG_ANSWER = 300;
+
 /**
  * Builds the user message for one problem. The problem goes between tags so
  * the AI treats it as data. A method id that does not look like an id is left out.
+ * `wrongAnswer` is an earlier answer that our code check proved wrong.
  */
-export function buildSolvePrompt(problem: string, options: { method?: string } = {}): string {
+export function buildSolvePrompt(
+  problem: string,
+  options: { method?: string; wrongAnswer?: string } = {}
+): string {
   const method = options.method;
   const validMethod =
     method !== undefined && method.length <= MAX_METHOD_LENGTH && METHOD_ID_PATTERN.test(method)
       ? method
       : undefined;
   const methodLine = validMethod ? `\nMethod id: ${validMethod}\n` : "";
+  const wrongLine = options.wrongAnswer
+    ? `\nAn earlier answer to this problem was put back into it and it is wrong: ${escapeProblem(
+        options.wrongAnswer.slice(0, MAX_WRONG_ANSWER)
+      )}\nSolve it again carefully, checking each step.\n`
+    : "";
   return `Solve this math problem and reply with the JSON envelope from your instructions.
-${methodLine}
+${methodLine}${wrongLine}
 <problem>
 ${escapeProblem(problem)}
 </problem>`;
