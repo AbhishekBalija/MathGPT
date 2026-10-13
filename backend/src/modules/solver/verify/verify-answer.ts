@@ -2,7 +2,9 @@
  * Checks an AI answer with code, so only a confirmed answer is ever shared
  * between students (see the shared solution cache).
  *
- * - Equation in one variable: put each root back in, both sides must match.
+ * - Polynomial equation in one variable: put each root back in, both sides
+ *   must match, and there must be as many different roots as the degree (so
+ *   an answer with a root missing is never "passed").
  * - Plain arithmetic: work it out again.
  * - Derivative: differentiate the problem and compare with the answer at 12
  *   random points.
@@ -18,7 +20,7 @@
  * run, with a scope that holds just the one variable.
  */
 
-import { derivative, isConstantNode, isFunctionNode, isOperatorNode, isParenthesisNode, isSymbolNode, parse } from "mathjs";
+import { derivative, rationalize, isConstantNode, isFunctionNode, isOperatorNode, isParenthesisNode, isSymbolNode, parse } from "mathjs";
 import type { MathNode } from "mathjs";
 import type { SolutionV2Content } from "../../solutions/solution-v2.schema";
 
@@ -338,6 +340,24 @@ function readRoots(answer: string): number[] {
 // The checks, one per kind of problem
 // ---------------------------------------------------------------------------
 
+// The degree of a polynomial. Anything else (sin x, 1/x, no variable) cannot
+// be checked, because we could not tell whether a root is missing.
+function polynomialDegree(node: MathNode): number {
+  let result: { coefficients: number[]; denominator: MathNode | null };
+  try {
+    result = rationalize(node, {}, true) as unknown as typeof result;
+  } catch {
+    throw new CannotCheck();
+  }
+  if (result.denominator || result.coefficients.length < 2) throw new CannotCheck();
+  return result.coefficients.length - 1;
+}
+
+// Roots that are the same number count once
+function distinctRoots(roots: number[]): number[] {
+  return roots.filter((root, index) => roots.findIndex((other) => close(root, other, EQUATION_TOLERANCE)) === index);
+}
+
 function checkEquation(equation: string, content: SolutionV2Content): VerifyResult {
   const sides = equation.split("=");
   if (sides.length !== 2) throw new CannotCheck();
@@ -345,15 +365,20 @@ function checkEquation(equation: string, content: SolutionV2Content): VerifyResu
   const variable = onlyVariable(`(${left}) - (${right})`);
   if (!variable) throw new CannotCheck();
 
+  const degree = polynomialDegree(safeExpression(`(${left}) - (${right})`, variable));
+  const roots = distinctRoots(readRoots(answerText(content)));
+
   const leftValue = compileFunction(safeExpression(left, variable), variable);
   const rightValue = compileFunction(safeExpression(right, variable), variable);
-  for (const root of readRoots(answerText(content))) {
+  for (const root of roots) {
     const l = leftValue(root);
     const r = rightValue(root);
     if (l === null || r === null) throw new CannotCheck();
     if (!close(l, r, EQUATION_TOLERANCE)) return "failed";
   }
-  return "passed";
+  // Every listed root works. Fewer roots than the degree means one may be
+  // missing (or repeated, or not real), so we do not call it checked.
+  return roots.length >= degree ? "passed" : "unchecked";
 }
 
 function checkArithmetic(expression: string, content: SolutionV2Content): VerifyResult {

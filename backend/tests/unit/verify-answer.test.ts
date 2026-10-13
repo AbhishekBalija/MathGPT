@@ -24,6 +24,20 @@ describe("verifyAnswer: equations in one variable", () => {
     expect(verifyAnswer("Solve x² - 1 = 0", withAnswer("x = 1, x = -1"))).toBe("passed");
   });
 
+  it("does not pass an answer with a root missing", () => {
+    // x = -3 is also a root, so "x = -2" alone must not count as checked
+    expect(verifyAnswer("x^2 + 5x + 6 = 0", withAnswer("x = -2"))).toBe("unchecked");
+  });
+
+  it("does not pass equations that have more roots than can be listed", () => {
+    // sin x = 0 has infinitely many solutions
+    expect(verifyAnswer("sin(x) = 0", withAnswer("x = 0"))).toBe("unchecked");
+  });
+
+  it("leaves a repeated root unchecked rather than guessing", () => {
+    expect(verifyAnswer("x^2 - 2x + 1 = 0", withAnswer("x = 1"))).toBe("unchecked");
+  });
+
   it("checks fractions written in LaTeX", () => {
     expect(verifyAnswer("3x = 1", withAnswer("x = \\frac{1}{3}"))).toBe("passed");
   });
