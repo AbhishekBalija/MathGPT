@@ -6,6 +6,8 @@ import { runInBackground } from "../../lib/background";
 import { sendVerificationCode } from "../../events/auth/send-verification-code";
 import type { EmailSender } from "../../modules/email/email-sender";
 import { passwordSchema } from "../../modules/auth/password";
+import { isDisposableEmail } from "../../modules/auth/disposable-email";
+import type { HumanCheck } from "../../modules/auth/turnstile";
 
 // Defining body schema
 
@@ -13,6 +15,8 @@ const RegisterSchema = z.object({
   email: z.string().email(),
   password: passwordSchema,
   name: z.string().min(1, "Name is required").max(100, "Name too long"),
+  // From the Turnstile widget on the sign-up form
+  turnstileToken: z.string().max(2048).optional(),
   // No isAdmin here: admin rights are never set by the person signing up.
   // Unknown fields (including isAdmin) are dropped by zod.
 });
@@ -20,9 +24,20 @@ const RegisterSchema = z.object({
 // Step 1: Define the route config
 
 // POST /auth/register
-export function createRegisterRoute(emailSender: EmailSender) {
-  return routeWithBody(RegisterSchema, async (_req, data) => {
+export function createRegisterRoute(emailSender: EmailSender, humanCheck: HumanCheck) {
+  return routeWithBody(RegisterSchema, async (req, { turnstileToken, ...data }) => {
     logger.info("Register attempt for ", { email: data.email });
+
+    // Cheap check first: throwaway addresses are a common way to farm accounts
+    if (isDisposableEmail(data.email)) {
+      logger.warn("Register refused: disposable email");
+      return { status: 400, body: { error: "Please use a school or personal email address." } };
+    }
+
+    if (!(await humanCheck(turnstileToken, req.ip ?? ""))) {
+      logger.warn("Register refused: robot check failed");
+      return { status: 400, body: { error: "Please confirm you're not a robot and try again." } };
+    }
 
     // Step 3: Call the service to handle business logic
 

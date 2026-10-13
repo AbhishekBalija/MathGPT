@@ -147,6 +147,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Security
 
+- Sign-up abuse guards: disposable email domains are refused (CC0 list from
+  `disposable-email-domains`), a Cloudflare Turnstile check runs on the
+  sign-up form, sign-ups are limited to 20 per IP per hour (was 5, so a
+  school lab can sign up a class) and solves to 100 per IP per hour (#55).
+
 - Frontend Sentry no longer sends personal data (`sendDefaultPii: false`, so
   no IP addresses), records a screen replay only for visits that hit an error
   (text and images masked), and traces 10% of page loads instead of all.

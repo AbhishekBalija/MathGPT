@@ -48,12 +48,15 @@ export const authService = {
   register: async (
     email: string,
     password: string,
-    name: string
+    name: string,
+    // From the Turnstile widget; left out when the widget is not shown
+    turnstileToken?: string
   ): Promise<AuthResponse> => {
     const response = await api.post<AuthResponse>("/auth/register", {
       email,
       password,
       name,
+      turnstileToken,
     });
     return response.data;
   },

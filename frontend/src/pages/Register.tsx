@@ -1,11 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { useAuthStore } from "../stores/authStore";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import axios from "axios";
 import AuthLayout from "../components/auth/AuthLayout";
 import * as ui from "../components/auth/authStyles";
 import { useGoogleButtonWidth } from "../components/auth/useGoogleButtonWidth";
+import { useThemeStore } from "../stores/themeStore";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -15,6 +17,12 @@ const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // Cloudflare Turnstile: shown only when a site key is set, so local
+  // development works without one (the server skips the check there too)
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstile = useRef<TurnstileInstance | undefined>(undefined);
+  const isDark = useThemeStore((state) => state.isDark);
 
   const handleGoogleSuccess = async (
     credentialResponse: CredentialResponse,
@@ -52,8 +60,13 @@ const Register = () => {
       return;
     }
 
+    if (turnstileSiteKey && !turnstileToken) {
+      setError("Please confirm you're not a robot first.");
+      return;
+    }
+
     try {
-      await registerWithEmail(email, password, name);
+      await registerWithEmail(email, password, name, turnstileToken ?? undefined);
       // Email sign-ups confirm their address before they can solve
       navigate("/verify-email", { replace: true });
     } catch (err) {
@@ -62,6 +75,9 @@ const Register = () => {
       } else {
         setError("Registration failed. Please try again.");
       }
+      // A token works once, so get a fresh one for the next try
+      setTurnstileToken(null);
+      turnstile.current?.reset();
     }
   };
 
@@ -151,6 +167,17 @@ const Register = () => {
               placeholder="At least 8 characters"
             />
           </div>
+          {turnstileSiteKey ? (
+            <Turnstile
+              ref={turnstile}
+              siteKey={turnstileSiteKey}
+              onSuccess={setTurnstileToken}
+              onExpire={() => setTurnstileToken(null)}
+              onError={() => setTurnstileToken(null)}
+              options={{ theme: isDark ? "dark" : "light", size: "flexible" }}
+              className="!mt-4"
+            />
+          ) : null}
           <button
             type="submit"
             disabled={isLoading}

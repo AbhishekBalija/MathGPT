@@ -14,7 +14,8 @@ interface AuthState {
   registerWithEmail: (
     email: string,
     password: string,
-    name: string
+    name: string,
+    turnstileToken?: string
   ) => Promise<void>;
   loginWithGoogle: (credential: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -63,12 +64,13 @@ export const useAuthStore = create<AuthState>()(
       registerWithEmail: async (
         email: string,
         password: string,
-        name: string
+        name: string,
+        turnstileToken?: string
       ) => {
         set({ isLoading: true });
 
         try {
-          const response = await authService.register(email, password, name);
+          const response = await authService.register(email, password, name, turnstileToken);
 
           set({
             isAuthenticated: true,

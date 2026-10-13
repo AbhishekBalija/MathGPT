@@ -296,3 +296,24 @@ When the prompt changes, solutions written under the old prompt may not follow
 the new rules. Putting the version in the key means old entries are simply
 never found again, with no clean-up job.
 
+## Abuse guards
+
+### Intermediate: Your robot check needs a secret. What happens if it is missing?
+
+It depends on where. Locally and in tests we skip the check, so nobody needs
+Cloudflare keys to work on the app. In production a missing secret refuses
+every sign-up ("fail closed"). Letting everyone through would quietly switch
+off the protection; refusing sign-ups is loud and gets fixed fast.
+
+### Basic: Why limit by IP address as well as by account?
+
+A per-account limit stops one account from overusing the AI, but one person
+can make many accounts. A per-IP limit caps what one machine can do across all
+its accounts. It has to be generous, because a whole school can share one IP.
+
+### Intermediate: How do you block "a@x.mailinator.com" as well as "a@mailinator.com"?
+
+Check the domain and every parent domain: x.mailinator.com, then
+mailinator.com. Comparing with `endsWith` would be wrong, because
+"schoolmailinator.com" ends with "mailinator.com" too.
+
