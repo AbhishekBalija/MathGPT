@@ -39,9 +39,10 @@ async function expectRateLimited(res: Response) {
 }
 
 describe("sign-up limit per IP", () => {
-  it("refuses the 6th sign-up from one IP within an hour", async () => {
+  it("refuses the 21st sign-up from one IP within an hour", async () => {
     const ip = randomIp();
-    for (let signUp = 0; signUp < 5; signUp++) {
+    // 20, so a school computer lab can sign up a whole class
+    for (let signUp = 0; signUp < 20; signUp++) {
       expect((await signUpFrom(ip)).status).toBe(200);
     }
 

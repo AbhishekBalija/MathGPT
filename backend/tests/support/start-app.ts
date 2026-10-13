@@ -8,10 +8,12 @@ import { afterAll } from "vitest";
 import { createApp } from "../../src/create-app";
 import { randomIp } from "./network";
 import { fakeEmailSender, fakeMathSolver } from "./test-app";
+import { fakeHumanCheck } from "./fake-human-check";
 
 const server = createApp({
   solver: fakeMathSolver,
   emailSender: fakeEmailSender,
+  humanCheck: fakeHumanCheck,
 }).listen(0, "127.0.0.1");
 await once(server, "listening");
 

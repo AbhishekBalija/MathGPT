@@ -15,6 +15,7 @@ import { runInBackground } from "./lib/background";
 import { reportUnhandledError } from "./lib/sentry";
 import type { MathSolver } from "./modules/ai/math-solver";
 import type { EmailSender } from "./modules/email/email-sender";
+import type { HumanCheck } from "./modules/auth/turnstile";
 import { createRouter } from "./routes";
 
 const DEFAULT_ALLOWED_ORIGINS = [
@@ -66,6 +67,8 @@ const handleError: ErrorRequestHandler = (error, _req, res, _next) => {
 export interface AppServices {
   solver: MathSolver;
   emailSender: EmailSender;
+  // The "are you a person?" check on sign-up (Cloudflare Turnstile)
+  humanCheck: HumanCheck;
 }
 
 export function createApp(services: AppServices) {
