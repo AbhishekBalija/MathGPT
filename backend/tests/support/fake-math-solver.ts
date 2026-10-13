@@ -21,6 +21,10 @@ export const FAKE_INVALID_OUTPUT = "FAKE_INVALID_OUTPUT";
 export const FAKE_UNSOLVABLE = "FAKE_UNSOLVABLE";
 // The fake AI replies {"notMath": true}, like the real one for a non-math problem
 export const FAKE_NOT_MATH = "FAKE_NOT_MATH";
+// The fake second model agrees with the fake answer. Without this marker it disagrees.
+export const FAKE_SECOND_AGREES = "FAKE_SECOND_AGREES";
+export const FAKE_MODEL = "fake-model";
+export const FAKE_SECOND_MODEL = "fake-second-model";
 // Both replies are invalid, so solving fails with the friendly 502
 export const FAKE_INVALID_TWICE = "FAKE_INVALID_TWICE";
 // The content is broken, to check it is never saved
@@ -91,7 +95,12 @@ export function createFakeMathSolver(): MathSolver {
               : JSON.stringify({ problemType: "algebra", solution: content });
         return { text, tokenUsage: FAKE_TOKEN_USAGE };
       });
-      return { ...checked, processingTimeMs: 1 };
+      return { ...checked, processingTimeMs: 1, model: FAKE_MODEL };
+    },
+
+    async secondOpinion(problem) {
+      const answer = problem.includes(FAKE_SECOND_AGREES) ? (FAKE_CONTENT.answer.latex ?? "") : "x = 999";
+      return { answer, model: FAKE_SECOND_MODEL };
     },
   };
 }

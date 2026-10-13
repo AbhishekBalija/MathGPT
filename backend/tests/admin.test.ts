@@ -7,6 +7,7 @@ import {
   registerUser,
   registerVerifiedUser,
 } from "./support/users";
+import { uniqueProblem } from "./support/problems";
 
 let adminToken: string;
 
@@ -126,7 +127,7 @@ describe("statistics", () => {
     const before = await (await authedFetch(adminToken, "/admin/token-stats")).json();
     const { accessToken } = await registerVerifiedUser();
 
-    expect((await solve(accessToken, "2x = 4")).status).toBe(200);
+    expect((await solve(accessToken, uniqueProblem())).status).toBe(200);
 
     const tokens = await (await authedFetch(adminToken, "/admin/token-stats")).json();
     // The fake solver reports 10 input and 20 output tokens. Other test files

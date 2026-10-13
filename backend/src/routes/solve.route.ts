@@ -18,6 +18,8 @@ import {
   UnsolvableProblemError,
 } from "../services/ai/solver-errors";
 import { looksLikeMath } from "../modules/solver/guard/looks-like-math";
+import { cacheKey, solutionCache } from "../modules/solver/cache/solution-cache";
+import { codeCheck, putInCache, secondModelCheck } from "../modules/solver/cache/share-checked";
 import { METHOD_ID_PATTERN } from "../services/ai/prompts";
 import type { Solution } from "../types/solve.types";
 import { AllModelsFailedError } from "../services/ai/failover";
@@ -176,6 +178,65 @@ export function createSolveRoute(solver: MathSolver) {
       throw instantError;
     }
 
+    // SHARED CACHE - a solution another student already got, and whose
+    // answer passed a check. No AI call and no Credit.
+    // The student's level is not known yet (onboarding, #39), so it is left out.
+    const key = cacheKey(problem, undefined, method);
+    let cached: Awaited<ReturnType<typeof solutionCache.get>> = null;
+    try {
+      cached = await solutionCache.get(key);
+    } catch (cacheError) {
+      // The cache is a shortcut; if it fails, solve as normal
+      logger.warn("Failed to read the solution cache", {
+        error: cacheError instanceof Error ? cacheError.message : "Unknown",
+      });
+    }
+
+    if (cached) {
+      const solution: Solution = {
+        id: randomUUID(),
+        cacheKey: key,
+        problem,
+        problemType: cached.problemType,
+        steps: [],
+        finalAnswer: cached.content.answer.latex ?? cached.content.answer.text ?? "",
+        summary: cached.content.problem.task,
+        content: cached.content,
+        processingTimeMs: Date.now() - startTime,
+        createdAt: new Date().toISOString(),
+      };
+
+      // Saved for this student too, so it shows in their History
+      try {
+        await solutionRepository.create(userId, solution, chatId);
+      } catch (saveError) {
+        logger.error("Failed to save cached solution", {
+          solutionId: solution.id,
+          userId,
+          error: saveError instanceof Error ? saveError.message : "Unknown error",
+        });
+        return {
+          status: 500 as const,
+          body: { success: false, error: "Internal server error" },
+        };
+      }
+
+      logger.info("Served a shared solution", { userId });
+      return {
+        status: 200 as const,
+        body: {
+          success: true,
+          source: "cache" as const,
+          solution: {
+            id: solution.id,
+            createdAt: solution.createdAt,
+            formatVersion: 2,
+            content: cached.content,
+          },
+        },
+      };
+    }
+
     // DAILY USAGE LIMIT CHECK
     try {
       const fullUser = await userRepository.findById(userId);
@@ -251,12 +312,15 @@ export function createSolveRoute(solver: MathSolver) {
 
       // Solve the problem using AI
       const result = await solver.solve(problem, { method });
-      const { content } = result;
+      // Code check first: adds the "Checked by ..." label only when it passed
+      const { content, check } = codeCheck(problem, result.content);
 
       // The new format keeps its steps in `content`. The old columns still
       // need a value, so they get the answer as text and no steps.
       const solution: Solution = {
         id: randomUUID(),
+        // A failed answer never goes into the cache, so it has no key
+        cacheKey: check === "failed" ? undefined : key,
         problem,
         problemType: result.problemType,
         steps: [],
@@ -329,6 +393,35 @@ export function createSolveRoute(solver: MathSolver) {
           userId,
           error: updateError instanceof Error ? updateError.message : "Unknown",
         });
+      }
+
+      // SHARE ONLY CHECKED ANSWERS
+      try {
+        await putInCache(key, result, content, check);
+      } catch (cacheError) {
+        logger.warn("Failed to write the solution cache", {
+          error: cacheError instanceof Error ? cacheError.message : "Unknown",
+        });
+      }
+      if (check === "unchecked") {
+        // A second model, after the response, so the student never waits for it
+        runInBackground("second-model-check", () =>
+          secondModelCheck(solver, key, problem, { ...result, content })
+        );
+      }
+      if (check === "failed") {
+        // Code showed the AI's answer is wrong: not shared, and flagged for the admin
+        runInBackground("problem-error", () =>
+          handleSolveError({
+            chatId,
+            userId,
+            problem: problem.slice(0, 200),
+            errorCode: "ANSWER_CHECK_FAILED",
+            errorMessage: `Code check failed for answer: ${(content.answer.latex ?? content.answer.text ?? "").slice(0, 200)}`,
+            processingTimeMs: Date.now() - startTime,
+            timestamp: new Date().toISOString(),
+          })
+        );
       }
 
       return {

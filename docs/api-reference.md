@@ -250,6 +250,12 @@ Text that is not a math problem gets **422**
 If the text has no math in it at all, the AI is never called and no Credit is
 spent; if the AI decides it is not math, the Credit is spent.
 
+The response has `source`: `"instant"` (plain arithmetic, no AI), `"cache"` (a
+solution another student already got, whose answer passed a check; no AI call
+and no Credit) or `"ai"`. `solution.content.answer.check` is set only when code
+confirmed the answer ("Checked by putting the answer back in." or "Checked by
+recomputing.").
+
 **Request Body:**
 
 ```json

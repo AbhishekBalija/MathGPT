@@ -56,6 +56,7 @@ export const solutionRepository = {
         summary: solution.summary,
         content,
         formatVersion: content ? 2 : 1,
+        cacheKey: solution.cacheKey ?? null,
         processingTimeMs: solution.processingTimeMs,
         inputTokens: solution.tokenUsage?.inputTokens ?? 0,
         outputTokens: solution.tokenUsage?.outputTokens ?? 0,
