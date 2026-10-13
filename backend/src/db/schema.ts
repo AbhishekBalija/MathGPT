@@ -151,13 +151,16 @@ export const solutionCache = pgTable(
 );
 
 // A student saying a Solution looks wrong. Blocks its shared-cache entry.
+// Kept when the student deletes the Solution (the link just goes null), so
+// the problem and answer are copied in. Deleting the account removes it.
 export const solutionReports = pgTable(
   "solution_reports",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    solutionId: uuid("solution_id")
-      .notNull()
-      .references(() => solutions.id, { onDelete: "cascade" }),
+    solutionId: uuid("solution_id").references(() => solutions.id, { onDelete: "set null" }),
+    problemText: text("problem_text"),
+    answerText: text("answer_text"),
+    cacheKey: text("cache_key"),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),

@@ -243,7 +243,9 @@ Logout user. **Requires auth.**
 
 The current User says one of their Solutions looks wrong. **Requires auth.**
 Body (optional): `{ "reason": "..." }`, at most 500 characters (longer gets
-**400**). The report is saved for the admin. If the Solution came from or went
+**400**). The report is saved for the admin, with a copy of the
+problem and answer, and it is kept even if the student later deletes the
+Solution or clears their History (deleting the account removes it). If the Solution came from or went
 into the shared cache, that entry is blocked: no other student gets it again.
 Someone else's Solution, or an id that is not a Solution, gets **404**
 `{ "error": "Solution not found" }`.

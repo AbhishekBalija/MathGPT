@@ -77,6 +77,50 @@ describe("POST /api/solutions/:id/report", () => {
     expect(rows[0]).toMatchObject({ userId: me.user.id, reason: "The answer should be 3" });
   });
 
+  it("keeps the report, with the problem and answer, after the student deletes the solution", async () => {
+    const student = await registerVerifiedUser();
+    const problem = uniqueProblem();
+    const solved = await solveAs(student.accessToken, problem);
+    await report(student.accessToken, solved.solution.id, { reason: "Wrong sign" });
+
+    const deleted = await authedFetch(student.accessToken, `/api/solution/${solved.solution.id}`, {
+      method: "DELETE",
+    });
+    expect(deleted.status).toBe(200);
+
+    const rows = await db.select().from(solutionReports).where(eq(solutionReports.problemText, problem));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      solutionId: null,
+      reason: "Wrong sign",
+      problemText: problem,
+      answerText: solved.solution.content.answer.latex,
+    });
+  });
+
+  it("keeps reports when the student clears all history", async () => {
+    const student = await registerVerifiedUser();
+    const problem = uniqueProblem();
+    const solved = await solveAs(student.accessToken, problem);
+    await report(student.accessToken, solved.solution.id);
+
+    await authedFetch(student.accessToken, "/api/history", { method: "DELETE" });
+
+    const rows = await db.select().from(solutionReports).where(eq(solutionReports.problemText, problem));
+    expect(rows).toHaveLength(1);
+  });
+
+  it("saves which cache entry it blocked", async () => {
+    const problem = sharedProblem();
+    const student = await registerVerifiedUser();
+    const solved = await solveAs(student.accessToken, problem);
+
+    await report(student.accessToken, solved.solution.id);
+
+    const [row] = await db.select().from(solutionReports).where(eq(solutionReports.problemText, problem));
+    expect(row?.cacheKey).toBe(cacheKey(problem, undefined, undefined));
+  });
+
   it("works without a reason", async () => {
     const student = await registerVerifiedUser();
     const solved = await solveAs(student.accessToken, uniqueProblem());

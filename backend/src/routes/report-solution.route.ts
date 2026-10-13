@@ -29,7 +29,14 @@ export const reportSolutionRoute = routeWithBody(reportSchema, async (req, body)
     return { status: 404, body: { error: "Solution not found" } };
   }
 
-  await solutionReportRepository.create(solution.id, user.id, body.reason || undefined);
+  await solutionReportRepository.create({
+    solutionId: solution.id,
+    userId: user.id,
+    reason: body.reason || undefined,
+    problemText: solution.problem,
+    answerText: solution.finalAnswer,
+    cacheKey: solution.cacheKey,
+  });
   if (solution.cacheKey) {
     await solutionCache.block(solution.cacheKey);
   }
