@@ -69,9 +69,16 @@ describe("login limit per IP", () => {
       expect(res.status).toBe(401);
     }
 
-    await expectRateLimited(
-      await postFrom(ip, "/auth/login", { email: uniqueEmail(), password: TEST_PASSWORD })
-    );
+    const res = await postFrom(ip, "/auth/login", {
+      email: uniqueEmail(),
+      password: TEST_PASSWORD,
+    });
+    expect(res.status).toBe(429);
+    const body = await res.json();
+    expect(body.code).toBe("RATE_LIMITED");
+    expect(body.retryAfter).toBeGreaterThan(0);
+    expect(body.error).toMatch(/Too many attempts\. Please wait about \d+ minutes and try again$/);
+    expect(body.error).not.toMatch(/\d{3,} seconds/);
   });
 });
 
