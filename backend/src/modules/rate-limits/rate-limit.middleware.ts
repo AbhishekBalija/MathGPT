@@ -12,6 +12,7 @@
  */
 
 import type { RequestHandler } from "express";
+import { tooManyAttemptsMessage } from "../../lib/format-wait";
 import { rateLimitRepository } from "./rate-limit.repository";
 
 export function limitByIp(
@@ -26,7 +27,7 @@ export function limitByIp(
     if (!result.allowed) {
       res.setHeader("Retry-After", String(result.retryAfterSeconds));
       res.status(429).json({
-        error: `Too many attempts. Please wait ${result.retryAfterSeconds} seconds and try again.`,
+        error: tooManyAttemptsMessage(result.retryAfterSeconds),
         code: "RATE_LIMITED",
         retryAfter: result.retryAfterSeconds,
       });

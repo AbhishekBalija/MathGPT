@@ -5,3 +5,7 @@ Business and plan docs/
 
 # Brainstorming mockups
 .superpowers/
+
+# Local logs and caches
+*.log
+.vite/
