@@ -112,16 +112,16 @@ describe("a User's Solutions", () => {
 
   it("show in History newest first", async () => {
     const { accessToken } = await registerVerifiedUser();
-    await solve(accessToken, "first problem");
-    await solve(accessToken, "second problem");
+    await solve(accessToken, "first problem: 2x = 4");
+    await solve(accessToken, "second problem: 3x = 9");
 
     const res = await authedFetch(accessToken, "/api/history");
 
     expect(res.status).toBe(200);
     const { history } = await res.json();
     expect(history.map((item: { problem: string }) => item.problem)).toEqual([
-      "second problem",
-      "first problem",
+      "second problem: 3x = 9",
+      "first problem: 2x = 4",
     ]);
   });
 

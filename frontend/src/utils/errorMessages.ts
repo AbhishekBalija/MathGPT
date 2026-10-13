@@ -145,6 +145,7 @@ export const SOLVE_ERROR_COPY = {
   rateLimit: "That's 5 problems in a minute.",
   dailyLimit: "You've used today's 5 free problems. Come back tomorrow.",
   unsolvable: "I couldn't read that problem. Try writing it like x^2 + 5x + 6 = 0.",
+  notMath: "That doesn't look like a math problem. Try something like x^2 + 5x + 6 = 0.",
   login: "Please log in again.",
   verifyEmail: "Please check your email and verify your account first.",
   serverTrouble: "Something went wrong on our side. Try again.",
@@ -161,6 +162,9 @@ export function toSolveError(failure: SolveFailure): SolveError {
     if (isDaily) return { message: SOLVE_ERROR_COPY.dailyLimit };
     return { message: SOLVE_ERROR_COPY.rateLimit, retryAfter };
   }
+
+  // 422 or a NOT_MATH code: the text is not a math problem
+  if (status === 422 || code === "NOT_MATH") return { message: SOLVE_ERROR_COPY.notMath };
 
   // 400 or an UNSOLVABLE code: the problem itself could not be read
   if (status === 400 || code === "UNSOLVABLE") return { message: SOLVE_ERROR_COPY.unsolvable };

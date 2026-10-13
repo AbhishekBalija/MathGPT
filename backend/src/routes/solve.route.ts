@@ -13,8 +13,11 @@ import { z, ZodError } from "zod";
 import { randomUUID } from "node:crypto";
 import {
   InvalidSolverOutputError,
+  NOT_MATH_MESSAGE,
+  NotMathError,
   UnsolvableProblemError,
 } from "../services/ai/solver-errors";
+import { looksLikeMath } from "../modules/solver/guard/looks-like-math";
 import { METHOD_ID_PATTERN } from "../services/ai/prompts";
 import type { Solution } from "../types/solve.types";
 import { AllModelsFailedError } from "../services/ai/failover";
@@ -107,6 +110,13 @@ export function createSolveRoute(solver: MathSolver) {
           retryAfter: rateLimit.retryAfterSeconds,
         },
       };
+    }
+
+    // MATH-ONLY GUARD - text with no math in it never reaches the AI and
+    // costs no Credit
+    if (!looksLikeMath(problem)) {
+      logger.info("Problem does not look like math", { userId });
+      return notMathResponse();
     }
 
     // INSTANT ANSWER - plain arithmetic is solved here, with no AI and no
@@ -335,6 +345,19 @@ export function createSolveRoute(solver: MathSolver) {
         },
       };
     } catch (error) {
+      // The AI says it is not math. The AI was called, so the Credit is used.
+      if (error instanceof NotMathError) {
+        try {
+          await userRepository.incrementCredits(userId);
+        } catch (updateError) {
+          logger.warn("Failed to increment usage counter", {
+            userId,
+            error: updateError instanceof Error ? updateError.message : "Unknown",
+          });
+        }
+        return notMathResponse();
+      }
+
       // Handle unsolvable problems with 400, not 500
       if (error instanceof UnsolvableProblemError) {
         logger.warn("Unsolvable problem", {
@@ -418,4 +441,12 @@ export function createSolveRoute(solver: MathSolver) {
       };
     }
   });
+}
+
+// Same reply for the guard and for the AI saying "not math"
+function notMathResponse() {
+  return {
+    status: 422 as const,
+    body: { error: NOT_MATH_MESSAGE, code: "NOT_MATH" },
+  };
 }
