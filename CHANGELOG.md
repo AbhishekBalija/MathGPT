@@ -8,6 +8,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Backend error alerts with Sentry (`@sentry/bun`, `backend/src/lib/sentry.ts`).
+  Every failed solve and every unhandled error is reported, without problem
+  text, request bodies, headers or cookies. Off unless `SENTRY_DSN` is set.
+
 - Deploys of the backend stop at build time when the database is missing a
   migration (`bun run db:check`, run as `vercel-build`), so the live site
   never runs code ahead of its schema.
@@ -79,6 +83,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - Package manager for the backend is now Bun (`bun.lock`).
 
 ### Fixed
+
+- When both AI models fail, the admin error log now records what each model
+  said (for example a 503 or a 404), instead of only "All models failed".
+  Students still see the same generic message.
+- `*.log` files and Vite's `.vite/` cache are git-ignored.
 
 - Error Logs store the actual Problem text (they stored "Unknown problem").
 - Admin dashboard `totalSolutions` counts Solutions (it was always 0).

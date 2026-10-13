@@ -11,6 +11,8 @@ import express, {
   type RequestHandler,
 } from "express";
 import { logger } from "./lib/logger";
+import { runInBackground } from "./lib/background";
+import { reportUnhandledError } from "./lib/sentry";
 import type { MathSolver } from "./modules/ai/math-solver";
 import type { EmailSender } from "./modules/email/email-sender";
 import { createRouter } from "./routes";
@@ -53,6 +55,7 @@ const handleError: ErrorRequestHandler = (error, _req, res, _next) => {
   logger.error("Unhandled error", {
     error: error instanceof Error ? error.message : "Unknown error",
   });
+  runInBackground("sentry-unhandled-error", () => reportUnhandledError(error));
   res.status(500).json({ error: "Internal server error" });
 };
 
