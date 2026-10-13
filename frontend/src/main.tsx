@@ -13,21 +13,23 @@ if (GA_MEASUREMENT_ID && GA_MEASUREMENT_ID !== "PLACEHOLDER") {
   ReactGA.initialize(GA_MEASUREMENT_ID);
 }
 
-// Initialize Sentry
+// Initialize Sentry. Some students are children, so send no personal data
+// (no IP address) and record a replay only when an error happens.
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
 if (SENTRY_DSN && SENTRY_DSN !== "PLACEHOLDER") {
   Sentry.init({
     dsn: SENTRY_DSN,
     integrations: [
       Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration(),
+      // Hide all text and images in replays
+      Sentry.replayIntegration({ maskAllText: true, blockAllMedia: true }),
     ],
-    // Tracing
-    tracesSampleRate: 1.0,
-    // Session Replay
-    replaysSessionSampleRate: 0.1,
+    // Tracing: a sample is enough to spot slow pages
+    tracesSampleRate: 0.1,
+    // Session Replay: never for normal visits, always for a visit with an error
+    replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 1.0,
-    sendDefaultPii: true,
+    sendDefaultPii: false,
   });
 }
 

@@ -100,6 +100,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Security
 
+- Frontend Sentry no longer sends personal data (`sendDefaultPii: false`, so
+  no IP addresses), records a screen replay only for visits that hit an error
+  (text and images masked), and traces 10% of page loads instead of all.
+
 - `POST /auth/register` no longer accepts `isAdmin`. Before, anyone could
   sign up as an Admin (present since 2025-12-17).
 - Google sign-in requires Google to have verified the email, and never
