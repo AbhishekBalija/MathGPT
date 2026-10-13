@@ -50,6 +50,7 @@ detection needs. `src/server.ts` only listens, for local development.
 | `GEMINI_MATH_AI_API`   | Gemini API key                                                        |
 | `OPEN_ROUTER_API_KEY`  | OpenRouter key (backup model when Gemini fails)                       |
 | `USE_MULTI_MODEL`      | `false` or `true`                                                     |
+| `SENTRY_DSN`           | Optional. DSN of the Sentry backend project, for error alerts          |
 | `RESEND_API`           | Resend API key                                                        |
 | `FROM_EMAIL`           | Verified sender, e.g. `NeoMath <hello@your-domain>`                   |
 | `APP_URL`              | Frontend URL used in email links                                      |

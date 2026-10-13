@@ -10,12 +10,16 @@ import express from "express";
 import { createApp } from "./create-app";
 import { logger } from "./lib/logger";
 import { requireEnv } from "./lib/env";
+import { initSentry } from "./lib/sentry";
 import { geminiMathSolver } from "./modules/ai/math-solver";
 import {
   createConsoleEmailSender,
   createResendEmailSender,
   type EmailSender,
 } from "./modules/email/email-sender";
+
+// Turn on error alerts as the app starts (does nothing without SENTRY_DSN)
+initSentry(process.env.SENTRY_DSN);
 
 // EMAIL_TRANSPORT=console prints emails to this log instead of sending them
 function chooseEmailSender(): EmailSender {
