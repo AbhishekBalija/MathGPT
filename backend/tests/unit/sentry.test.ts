@@ -1,7 +1,11 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const sentry = vi.hoisted(() => ({
-  init: vi.fn(),
+  initWithoutDefaultIntegrations: vi.fn(),
+  eventFiltersIntegration: vi.fn(() => ({ name: "EventFilters" })),
+  functionToStringIntegration: vi.fn(() => ({ name: "FunctionToString" })),
+  linkedErrorsIntegration: vi.fn(() => ({ name: "LinkedErrors" })),
+  dedupeIntegration: vi.fn(() => ({ name: "Dedupe" })),
   captureException: vi.fn(),
   flush: vi.fn(() => Promise.resolve(true)),
 }));
@@ -31,7 +35,7 @@ describe("backend Sentry", () => {
     sentryModule.initSentry(undefined);
     await sentryModule.reportSolveError(failedSolve);
 
-    expect(sentry.init).not.toHaveBeenCalled();
+    expect(sentry.initWithoutDefaultIntegrations).not.toHaveBeenCalled();
     expect(sentry.captureException).not.toHaveBeenCalled();
   });
 
@@ -39,9 +43,16 @@ describe("backend Sentry", () => {
     sentryModule.initSentry("https://key@sentry.example/1");
     await sentryModule.reportSolveError(failedSolve);
 
-    expect(sentry.init).toHaveBeenCalledWith(
+    // Default integrations crashed the app on Vercel, so only these four are used
+    expect(sentry.initWithoutDefaultIntegrations).toHaveBeenCalledWith(
       expect.objectContaining({
         dsn: "https://key@sentry.example/1",
+        integrations: [
+          { name: "EventFilters" },
+          { name: "FunctionToString" },
+          { name: "LinkedErrors" },
+          { name: "Dedupe" },
+        ],
         dataCollection: expect.objectContaining({ httpBodies: [], httpHeaders: false, cookies: false }),
       })
     );

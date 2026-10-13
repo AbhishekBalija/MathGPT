@@ -16,8 +16,18 @@ export function initSentry(dsn: string | undefined): void {
     return;
   }
 
-  Sentry.init({
+  // Without Sentry's default integrations: they hook into module loading and
+  // pull in extra packages at startup, which crashed the app on Vercel ("bun
+  // is unable to write files"). We only report errors by hand, so these few
+  // basic ones are all we need.
+  Sentry.initWithoutDefaultIntegrations({
     dsn,
+    integrations: [
+      Sentry.eventFiltersIntegration(),
+      Sentry.functionToStringIntegration(),
+      Sentry.linkedErrorsIntegration(),
+      Sentry.dedupeIntegration(),
+    ],
     environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? "development",
     // Sentry collects request data by default. Turn all of it off: bodies hold
     // passwords and problems, headers hold login tokens.
