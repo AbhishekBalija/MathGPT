@@ -105,6 +105,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- The solver only answers math: text with no math in it gets a 422
+  `NOT_MATH` without an AI call, and the AI can also reply "not math". A bare
+  expression such as `(log x)^2/x` is solved with its likely task instead of
+  being refused, and limits with "infinity" are no longer rejected (#54).
+
 - When both AI models fail, the admin error log now records what each model
   said (for example a 503 or a 404), instead of only "All models failed".
   Students still see the same generic message.

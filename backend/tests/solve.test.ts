@@ -4,10 +4,14 @@ import {
   FAKE_CONTENT,
   FAKE_INVALID_OUTPUT,
   FAKE_INVALID_TWICE,
+  FAKE_NOT_MATH,
   FAKE_UNSOLVABLE,
 } from "./support/fake-math-solver";
 import { fakeMathSolver } from "./support/test-app";
 import { authedFetch, registerVerifiedUser } from "./support/users";
+
+const NOT_MATH_MESSAGE =
+  "That doesn't look like a math problem. Try something like x^2 + 5x + 6 = 0.";
 
 async function solveAs(accessToken: string, body: Record<string, unknown>) {
   return authedFetch(accessToken, "/api/solve", { method: "POST", body });
@@ -106,6 +110,34 @@ describe("POST /api/solve", () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.code).toBe("UNSOLVABLE");
+  });
+
+  it("turns away text that is not math without calling the AI or spending a credit", async () => {
+    const { accessToken } = await registerVerifiedUser();
+    const solveSpy = vi.spyOn(fakeMathSolver, "solve");
+
+    const res = await solveAs(accessToken, { problem: "write my essay about dogs" });
+
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error).toBe(NOT_MATH_MESSAGE);
+    expect(body.code).toBe("NOT_MATH");
+    expect(solveSpy).not.toHaveBeenCalled();
+    const profile = await (await authedFetch(accessToken, "/api/profile")).json();
+    expect(profile.dailyCredits).toMatchObject({ used: 0 });
+    solveSpy.mockRestore();
+  });
+
+  it("returns the same 422 when the AI says it is not math, and spends the credit", async () => {
+    const { accessToken } = await registerVerifiedUser();
+
+    const res = await solveAs(accessToken, { problem: `2 ${FAKE_NOT_MATH}` });
+
+    expect(res.status).toBe(422);
+    expect(await res.json()).toMatchObject({ error: NOT_MATH_MESSAGE, code: "NOT_MATH" });
+    // The AI was called, so the credit is used
+    const profile = await (await authedFetch(accessToken, "/api/profile")).json();
+    expect(profile.dailyCredits).toMatchObject({ used: 1 });
   });
 
   it("still limits solving to 5 a minute", async () => {

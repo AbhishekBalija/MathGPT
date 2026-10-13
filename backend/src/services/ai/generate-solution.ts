@@ -13,7 +13,7 @@ import { solutionV2Schema } from "../../modules/solutions/solution-v2.schema";
 import type { SolveResult, TokenUsage } from "../../modules/ai/math-solver";
 import { PROBLEM_TYPES, type ProblemType } from "../../types/solve.types";
 import { buildRetryPrompt } from "./prompts";
-import { InvalidSolverOutputError, UnsolvableProblemError } from "./solver-errors";
+import { InvalidSolverOutputError, NotMathError, UnsolvableProblemError } from "./solver-errors";
 
 export interface ModelOutput {
   text: string;
@@ -26,6 +26,7 @@ export const MAX_ERROR_SUMMARY = 500;
 const MAX_ERROR_ISSUES = 5;
 
 const refusalSchema = z.object({ refused: z.literal(true), reason: z.string().optional() });
+const notMathSchema = z.object({ notMath: z.literal(true) });
 
 /** Removes ```json fences the model sometimes wraps around its answer. */
 export function stripCodeFences(text: string): string {
@@ -81,6 +82,12 @@ function checkOutput(text: string): Checked {
     // character, which is what we need to fix it. Kept short for the logs.
     const detail = error instanceof Error ? error.message.slice(0, 120) : "unknown";
     return { ok: false, reason: `The reply was not valid JSON (${detail}).` };
+  }
+
+  // Not a math problem at all: no retry, the route turns it away
+  if (notMathSchema.safeParse(raw).success) {
+    logger.info("AI says the problem is not math");
+    throw new NotMathError();
   }
 
   const refusal = refusalSchema.safeParse(raw);

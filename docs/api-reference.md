@@ -245,6 +245,10 @@ Solve a math problem. **Requires auth and a verified email.** Limited to 5
 per minute per User (429 `RATE_LIMITED` with `retryAfter`), separate from the
 Daily Limit of 5 per day. An unverified
 User gets **403** `{ "error": "...", "code": "EMAIL_NOT_VERIFIED" }`.
+Text that is not a math problem gets **422**
+`{ "error": "That doesn't look like a math problem. ...", "code": "NOT_MATH" }`.
+If the text has no math in it at all, the AI is never called and no Credit is
+spent; if the AI decides it is not math, the Credit is spent.
 
 **Request Body:**
 

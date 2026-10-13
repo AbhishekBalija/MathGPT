@@ -35,14 +35,24 @@ const BACKUP_HOSTS = ["deepinfra", "relace", "parasail", "azure", "cloudflare", 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_MATH_AI_API || "");
 
 // Patterns that indicate an unsolvable problem
+// Only literal division by zero. Words like "infinity", "undefined" or "no
+// solution" appear in real problems (limits, proofs), so the AI decides those.
 const UNSOLVABLE_PATTERNS = [
   /divide\s*by\s*zero/i,
-  /1\s*\/\s*0\b/,
-  /\b0\s*\/\s*0\b/,
-  /\binfinity\b/i,
-  /\bundefined\b/i,
-  /\bno\s*solution\b/i,
+  // "1/0" or "0/0", but not "10/0.5"
+  /\b\d+\s*\/\s*0(?![.\d])/,
 ];
+
+/** Throws UnsolvableProblemError for a problem that divides by zero. */
+export function rejectObviouslyUnsolvable(problem: string): void {
+  for (const pattern of UNSOLVABLE_PATTERNS) {
+    if (pattern.test(problem)) {
+      throw new UnsolvableProblemError(
+        "This problem involves undefined or unsolvable mathematical operations."
+      );
+    }
+  }
+}
 
 // ============================================================================
 // MAIN SOLVE FUNCTION
@@ -59,13 +69,7 @@ export async function solveMathProblem(
   const startTime = Date.now();
 
   // Check for obviously unsolvable problems
-  for (const pattern of UNSOLVABLE_PATTERNS) {
-    if (pattern.test(problem)) {
-      throw new UnsolvableProblemError(
-        "This problem involves undefined or unsolvable mathematical operations."
-      );
-    }
-  }
+  rejectObviouslyUnsolvable(problem);
 
   const prompt = buildSolvePrompt(problem, options);
   // Use the backup model too if multi-model is enabled, otherwise one Gemini call
