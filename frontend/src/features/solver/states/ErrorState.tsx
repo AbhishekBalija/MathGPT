@@ -5,6 +5,8 @@ interface ErrorStateProps {
   message: string;
   retryAfter?: number;
   onRetry: () => void;
+  // When set, the problem needs changing, so the button edits instead of retrying
+  onEdit?: () => void;
 }
 
 // 40 seconds -> "0:40"
@@ -19,7 +21,7 @@ export function ErrorState(props: ErrorStateProps) {
   return <ErrorBody key={props.retryAfter} {...props} />;
 }
 
-function ErrorBody({ message, retryAfter, onRetry }: ErrorStateProps) {
+function ErrorBody({ message, retryAfter, onRetry, onEdit }: ErrorStateProps) {
   const [left, setLeft] = useState(retryAfter ?? 0);
 
   const waiting = left > 0;
@@ -53,11 +55,11 @@ function ErrorBody({ message, retryAfter, onRetry }: ErrorStateProps) {
       </div>
       <button
         type="button"
-        onClick={onRetry}
+        onClick={onEdit ?? onRetry}
         disabled={waiting}
         className="min-h-11 rounded-xl border border-gray-200 px-4 text-sm font-semibold text-gray-900 disabled:opacity-50 dark:border-white/10 dark:text-gray-50"
       >
-        Try again
+        {onEdit ? "Edit problem" : "Try again"}
       </button>
     </div>
   );

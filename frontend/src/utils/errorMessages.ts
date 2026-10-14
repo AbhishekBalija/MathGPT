@@ -129,6 +129,9 @@ export const getUserFriendlyError = (error: unknown): string => {
 export interface SolveError {
   message: string;
   retryAfter?: number;
+  // Sending the same text again cannot work (it is not math), so the page
+  // offers "Edit problem" instead of "Try again"
+  needsEdit?: true;
 }
 
 // What we know about a failed /api/solve call. No `status` means no reply at all.
@@ -164,7 +167,7 @@ export function toSolveError(failure: SolveFailure): SolveError {
   }
 
   // 422 or a NOT_MATH code: the text is not a math problem
-  if (status === 422 || code === "NOT_MATH") return { message: SOLVE_ERROR_COPY.notMath };
+  if (status === 422 || code === "NOT_MATH") return { message: SOLVE_ERROR_COPY.notMath, needsEdit: true };
 
   // 400 or an UNSOLVABLE code: the problem itself could not be read
   if (status === 400 || code === "UNSOLVABLE") return { message: SOLVE_ERROR_COPY.unsolvable };
