@@ -333,14 +333,36 @@ function withoutConstant(text: string): string {
 }
 
 // Roots written as "x = -2 or x = -3", "x = 1, x = -1" or "x \in \{-2, -3\}"
-function readRoots(answer: string): number[] {
+// The pieces of a root list, each with the variable it names (if any)
+function rootPieces(answer: string): { variable: string | undefined; value: string }[] {
   const pieces = answer
     .replace(/\\text\{([^}]*)\}/g, " $1 ")
     .split(/\s+or\s+|\s+and\s+|,|;/i)
-    .map((piece) => piece.replace(/^\s*[a-z]\s*(?:=|\\in)\s*/i, "").trim())
-    .filter((piece) => piece.length > 0);
+    .map((piece) => {
+      const named = piece.match(/^\s*([a-z])\s*(?:=|\\in)\s*(.*)$/i);
+      return named ? { variable: named[1], value: (named[2] ?? "").trim() } : { variable: undefined, value: piece.trim() };
+    })
+    .filter((piece) => piece.value.length > 0);
   if (pieces.length === 0) throw new CannotCheck();
-  return pieces.map((piece) => constantValue(safeExpression(piece, undefined)));
+  return pieces;
+}
+
+// The variables a root list names: "x = 2, y = 1" gives ["x", "y"]
+function rootVariables(answer: string): string[] {
+  return [...new Set(rootPieces(answer).flatMap((piece) => (piece.variable ? [piece.variable] : [])))];
+}
+
+/**
+ * Roots written as "x = -2 or x = -3", "x = 1, x = -1" or "x \\in \\{-2, -3\\}".
+ * With `variable`, a root named after any other letter cannot be checked
+ * ("y = 2" is no answer to 2x = 4).
+ */
+function readRoots(answer: string, variable?: string): number[] {
+  const pieces = rootPieces(answer);
+  if (variable && pieces.some((piece) => piece.variable !== undefined && piece.variable !== variable)) {
+    throw new CannotCheck();
+  }
+  return pieces.map((piece) => constantValue(safeExpression(piece.value, undefined)));
 }
 
 // ---------------------------------------------------------------------------
@@ -373,7 +395,7 @@ function checkEquation(equation: string, content: SolutionV2Content): VerifyResu
   if (!variable) throw new CannotCheck();
 
   const degree = polynomialDegree(safeExpression(`(${left}) - (${right})`, variable));
-  const roots = distinctRoots(readRoots(answerText(content)));
+  const roots = distinctRoots(readRoots(answerText(content), variable));
 
   const leftValue = compileFunction(safeExpression(left, variable), variable);
   const rightValue = compileFunction(safeExpression(right, variable), variable);
@@ -388,7 +410,12 @@ function checkEquation(equation: string, content: SolutionV2Content): VerifyResu
   return roots.length >= degree ? "passed" : "unchecked";
 }
 
+// In school problems "sin 30" means degrees and "log 100" means base 10, but
+// mathjs reads radians and the natural log, so these are not checked
+const SCHOOL_MEANING_DIFFERS = /\b(a?(sin|cos|tan)h?|sec|csc|cot|log|ln)\b/i;
+
 function checkArithmetic(expression: string, content: SolutionV2Content): VerifyResult {
+  if (SCHOOL_MEANING_DIFFERS.test(expression)) throw new CannotCheck();
   const expected = constantValue(safeExpression(expression, undefined));
   const given = constantValue(safeExpression(afterLastEquals(answerText(content)), undefined));
   return close(expected, given, COMPARE_TOLERANCE) ? "passed" : "failed";
@@ -522,7 +549,13 @@ function sameExpression(a: string, b: string): boolean {
  */
 export function sameAnswerValue(a: string, b: string): boolean {
   try {
-    if (ROOT_LIST.test(a) && ROOT_LIST.test(b)) return sameRoots(a, b);
+    if (ROOT_LIST.test(a) || ROOT_LIST.test(b)) {
+      // Only one shared variable can be compared as numbers. "x = 2, y = 1"
+      // and "x = 1, y = 2" have the same numbers but are different answers.
+      const [first, second] = [rootVariables(a), rootVariables(b)];
+      if (first.length !== 1 || second.length !== 1 || first[0] !== second[0]) return false;
+      return sameRoots(a, b);
+    }
     return sameExpression(a, b);
   } catch {
     return false;

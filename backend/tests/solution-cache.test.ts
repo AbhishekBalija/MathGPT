@@ -59,6 +59,8 @@ describe("answersMatch", () => {
     ).toBe(true);
     expect(answersMatch("x = -3 \\text{ or } x = -2", "x = -2, x = -3")).toBe(true);
     expect(answersMatch("\\frac{1}{3}", "0.333333333333")).toBe(true);
+    // The same system written in another order still matches
+    expect(answersMatch("x = 1, y = 2", "y = 2, x = 1")).toBe(true);
   });
 
   it("never matches answers that differ or cannot be read", () => {
@@ -67,6 +69,8 @@ describe("answersMatch", () => {
     expect(answersMatch("\\sin(x)", "\\cos(x)")).toBe(false);
     expect(answersMatch("some words", "other words")).toBe(false);
     expect(answersMatch("\\frac{1}{23}", "\\frac{12}{3}")).toBe(false);
+    // A system of equations with the values swapped is a different answer
+    expect(answersMatch("x = 2, y = 1", "x = 1, y = 2")).toBe(false);
   });
 });
 
@@ -175,6 +179,26 @@ describe("shared solution cache", () => {
 
     const third = await (await solveAs((await registerVerifiedUser()).accessToken, { problem })).json();
     expect(third.source).toBe("ai");
+  });
+
+  it("shares a later answer that passes the code check, even after an unchecked one", async () => {
+    const problem = checkableProblem();
+    const original = fakeMathSolver.solve.bind(fakeMathSolver);
+    // The first answer is words the code cannot check; later ones are "x = 2"
+    const solveSpy = vi.spyOn(fakeMathSolver, "solve").mockImplementationOnce(async (p, options) => {
+      const result = await original(p, options);
+      return { ...result, content: { ...result.content, answer: { text: "two" } } };
+    });
+    await solveAs((await registerVerifiedUser()).accessToken, { problem });
+    expect(await cacheRow(problem)).toMatchObject({ status: "unchecked" });
+
+    await solveAs((await registerVerifiedUser()).accessToken, { problem });
+    solveSpy.mockRestore();
+
+    expect(await cacheRow(problem)).toMatchObject({ status: "shared", checkMethod: "code" });
+    const third = await (await solveAs((await registerVerifiedUser()).accessToken, { problem })).json();
+    expect(third.source).toBe("cache");
+    expect(third.solution.content.answer.latex).toBe("x = 2");
   });
 
   it("asks the AI again for the same problem with a different method", async () => {
