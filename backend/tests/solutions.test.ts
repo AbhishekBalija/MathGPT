@@ -110,6 +110,33 @@ describe("a User's Solutions", () => {
     expect(res.status).toBe(500);
     const history = await (await authedFetch(accessToken, "/api/history")).json();
     expect(history.history).toEqual([]);
+    // Nothing saved, so no Credit spent either
+    const profile = await (await authedFetch(accessToken, "/api/profile")).json();
+    expect(profile.dailyCredits).toMatchObject({ used: 0 });
+  });
+
+  it("explain broken content in a short message, at most 3 problems", async () => {
+    const broken = { ...FAKE_CONTENT, steps: [], hint: 5, answer: {}, header: {} } as never;
+
+    const error = await solutionRepository
+      .create("00000000-0000-0000-0000-000000000000", {
+        id: "00000000-0000-0000-0000-000000000001",
+        problem: "2x = 4",
+        problemType: "algebra",
+        steps: [],
+        finalAnswer: "",
+        summary: "",
+        content: broken,
+        processingTimeMs: 1,
+        createdAt: new Date().toISOString(),
+      })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(Error);
+    const message = (error as Error).message;
+    expect(message).toMatch(/^Solution content is not valid: /);
+    expect(message.split("; ").length).toBeLessThanOrEqual(3);
+    expect(message.length).toBeLessThan(400);
   });
 
   it("show in History newest first", async () => {
