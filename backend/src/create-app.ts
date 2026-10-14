@@ -5,6 +5,7 @@
  * the platform imports this app directly, so it must not listen itself.
  */
 
+import type { HealthProbes } from "./modules/admin/health/probes";
 import cors from "cors";
 import express, {
   type ErrorRequestHandler,
@@ -69,6 +70,8 @@ export interface AppServices {
   emailSender: EmailSender;
   // The "are you a person?" check on sign-up (Cloudflare Turnstile)
   humanCheck: HumanCheck;
+  // Live checks of Gemini and Resend for the admin Health screen
+  healthProbes: HealthProbes;
 }
 
 export function createApp(services: AppServices) {

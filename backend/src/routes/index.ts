@@ -90,7 +90,7 @@ export function createRouter(services: AppServices) {
   router.get("/api/public-stats", publicStatsRoute);
 
   // Admin: one module, behind requireUser and requireAdmin
-  router.use("/admin", createAdminRouter());
+  router.use("/admin", createAdminRouter(services.healthProbes));
 
   return router;
 }

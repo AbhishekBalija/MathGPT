@@ -103,6 +103,14 @@ export const adminService = {
   },
 
   /**
+   * Every service checked live, solving this week, speed and what is live
+   */
+  getHealth: async (): Promise<AdminHealth> => {
+    const response = await api.get<AdminHealth>("/admin/health");
+    return response.data;
+  },
+
+  /**
    * The numbers next to Failed solves, Reports and Feedback in the nav
    */
   getCounts: async (): Promise<AdminCounts> => {
@@ -191,6 +199,26 @@ export const adminService = {
     return response.data;
   },
 };
+
+// The admin Health screen
+export type HealthServiceId = "api" | "database" | "gemini" | "backup" | "email" | "turnstile" | "sentry";
+
+export interface AdminHealth {
+  checkedAt: string;
+  services: Array<{ id: HealthServiceId; status: "up" | "down" | "key_set" | "key_missing"; ms: number | null; detail: string | null }>;
+  solving: {
+    tries24h: number;
+    failed24h: number;
+    days: Array<{ day: string; tries: number; failed: number }>;
+    byCode: Array<{ errorCode: string; count: number }>;
+  };
+  speed: { avgMs: number; p90Ms: number };
+  live: {
+    backendCommit: string;
+    migrations: { applied: number; latest: string; pending: string[] };
+    env: Array<{ name: string; set: boolean }>;
+  };
+}
 
 // Nav counts. Failed solves count problems, not tries.
 export interface AdminCounts {

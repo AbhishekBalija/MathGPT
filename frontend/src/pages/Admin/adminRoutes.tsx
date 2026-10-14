@@ -2,6 +2,7 @@ import { Navigate, Route } from "react-router-dom";
 import ProtectedRoute from "../../components/ProtectedRoute";
 import Admin from "../Admin";
 import AdminShell from "./AdminShell";
+import Health from "./Health";
 import { Analytics, Dashboard, Errors, Feedback, Reports, Users } from "./index";
 
 /**
@@ -21,6 +22,7 @@ export function adminRoutes() {
     >
       <Route element={<AdminShell />}>
         <Route index element={<Dashboard />} />
+        <Route path="health" element={<Health />} />
         <Route path="events" element={<Analytics />} />
         <Route path="failed/:id?" element={<Errors />} />
         <Route path="reports/:id?" element={<Reports />} />
