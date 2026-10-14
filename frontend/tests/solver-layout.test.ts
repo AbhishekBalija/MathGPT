@@ -92,3 +92,65 @@ describe("whole-number checks", () => {
     expect(() => layoutColumnAddition([Number.MAX_SAFE_INTEGER - 1, 1])).not.toThrow();
   });
 });
+
+// Rows worked out by hand, the way a student writes them
+describe("long division rows", () => {
+  it("157 ÷ 4: 12 under 15, bring down 37, 36 under it, remainder 1", () => {
+    expect(layoutLongDivision(157, 4).rows).toEqual([
+      { value: "12", endColumn: 1, kind: "subtract" },
+      { value: "37", endColumn: 2, kind: "bringDown" },
+      { value: "36", endColumn: 2, kind: "subtract" },
+      { value: "1", endColumn: 2, kind: "remainder" },
+    ]);
+  });
+
+  it("412 ÷ 4: the zero subtraction under 1 is its own row, apart from the final remainder", () => {
+    expect(layoutLongDivision(412, 4).rows).toEqual([
+      { value: "4", endColumn: 0, kind: "subtract" },
+      { value: "1", endColumn: 1, kind: "bringDown" },
+      // 4 goes into 1 zero times: subtract 0 under the 1
+      { value: "0", endColumn: 1, kind: "subtract" },
+      { value: "12", endColumn: 2, kind: "bringDown" },
+      { value: "12", endColumn: 2, kind: "subtract" },
+      { value: "0", endColumn: 2, kind: "remainder" },
+    ]);
+  });
+
+  it("0 ÷ 7 is 0 remainder 0", () => {
+    const l = layoutLongDivision(0, 7);
+    expect(l.quotient).toEqual(["0"]);
+    expect(l.rows).toEqual([
+      { value: "0", endColumn: 0, kind: "subtract" },
+      { value: "0", endColumn: 0, kind: "remainder" },
+    ]);
+  });
+});
+
+describe("column arithmetic with more numbers", () => {
+  it("123 + 456 + 789 carries 1 into every column", () => {
+    expect(layoutColumnAddition([123, 456, 789])).toEqual({
+      width: 4,
+      carries: [1, 1, 1, null],
+      rows: ["123", "456", "789"],
+      result: "1368",
+    });
+  });
+
+  it("99 + 99 + 99 carries 2, not just 1", () => {
+    expect(layoutColumnAddition([99, 99, 99])).toEqual({
+      width: 3,
+      carries: [2, 2, null],
+      rows: ["99", "99", "99"],
+      result: "297",
+    });
+  });
+
+  it("302 − 18 borrows through the zero", () => {
+    expect(layoutColumnSubtraction(302, 18)).toEqual({
+      width: 3,
+      borrows: [true, true, false],
+      rows: ["302", "18"],
+      result: "284",
+    });
+  });
+});
