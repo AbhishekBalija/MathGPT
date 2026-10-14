@@ -1,0 +1,35 @@
+import { Navigate, Route } from "react-router-dom";
+import ProtectedRoute from "../../components/ProtectedRoute";
+import Admin from "../Admin";
+import AdminShell from "./AdminShell";
+import { Analytics, Dashboard, Errors, Feedback, Reports, Users } from "./index";
+
+/**
+ * Every admin address. Each list page also takes an item id
+ * (for example /admin/failed/2b91...), so a link can open one item.
+ * Old addresses send you to the new ones.
+ */
+export function adminRoutes() {
+  return (
+    <Route
+      path="/admin"
+      element={
+        <ProtectedRoute adminOnly>
+          <Admin />
+        </ProtectedRoute>
+      }
+    >
+      <Route element={<AdminShell />}>
+        <Route index element={<Dashboard />} />
+        <Route path="events" element={<Analytics />} />
+        <Route path="failed/:id?" element={<Errors />} />
+        <Route path="reports/:id?" element={<Reports />} />
+        <Route path="feedback/:id?" element={<Feedback />} />
+        <Route path="students/:id?" element={<Users />} />
+        <Route path="errors" element={<Navigate to="/admin/failed" replace />} />
+        <Route path="users" element={<Navigate to="/admin/students" replace />} />
+        <Route path="analytics" element={<Navigate to="/admin/events" replace />} />
+      </Route>
+    </Route>
+  );
+}

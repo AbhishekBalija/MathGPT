@@ -103,6 +103,14 @@ export const adminService = {
   },
 
   /**
+   * The numbers next to Failed solves, Reports and Feedback in the nav
+   */
+  getCounts: async (): Promise<AdminCounts> => {
+    const response = await api.get<AdminCounts>("/admin/counts");
+    return response.data;
+  },
+
+  /**
    * Get errors with stats
    */
   getErrors: async (params?: {
@@ -183,6 +191,13 @@ export const adminService = {
     return response.data;
   },
 };
+
+// Nav counts. Failed solves count problems, not tries.
+export interface AdminCounts {
+  failedOpen: number;
+  reportsBlocked: number;
+  feedbackOpen: number;
+}
 
 // Error types
 export interface ErrorItem {

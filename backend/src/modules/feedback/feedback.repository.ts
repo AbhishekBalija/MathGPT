@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 import { db } from "../../db/client";
 import { isUuid } from "../../lib/ids";
 import { feedback, users, type FeedbackKind } from "../../db/schema";
@@ -56,5 +56,11 @@ export const feedbackRepository = {
       .where(eq(feedback.id, id))
       .returning({ id: feedback.id });
     return rows.length > 0;
+  },
+
+  /** Feedback an Admin has not marked done yet. */
+  async countOpen(): Promise<number> {
+    const [row] = await db.select({ total: count() }).from(feedback).where(eq(feedback.done, false));
+    return row?.total ?? 0;
   },
 };
