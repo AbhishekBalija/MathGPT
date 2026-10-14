@@ -27,7 +27,7 @@ import Register from "../src/pages/Register";
 function fillForm() {
   fireEvent.change(screen.getByLabelText(/name/i), { target: { value: "Asha" } });
   fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "asha@example.com" } });
-  fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "a-long-password-1" } });
+  fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "Long-password-1!" } });
 }
 
 function renderPage() {
@@ -52,7 +52,7 @@ describe("sign-up robot check", () => {
       fireEvent.click(screen.getByRole("button", { name: "Create account" }));
     });
 
-    expect(registerWithEmail).toHaveBeenCalledWith("asha@example.com", "a-long-password-1", "Asha", "turnstile-token");
+    expect(registerWithEmail).toHaveBeenCalledWith("asha@example.com", "Long-password-1!", "Asha", "turnstile-token");
   });
 
   it("asks the student to finish the check before sending", async () => {
@@ -77,6 +77,6 @@ describe("sign-up robot check", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Create account" }));
     });
-    expect(registerWithEmail).toHaveBeenCalledWith("asha@example.com", "a-long-password-1", "Asha", undefined);
+    expect(registerWithEmail).toHaveBeenCalledWith("asha@example.com", "Long-password-1!", "Asha", undefined);
   });
 });

@@ -9,6 +9,8 @@ import * as ui from "../components/auth/authStyles";
 import { useGoogleButtonWidth } from "../components/auth/useGoogleButtonWidth";
 import { useThemeStore } from "../stores/themeStore";
 import { isGoogleSignInEnabled } from "../utils/googleSignIn";
+import { PASSWORD_RULES, unmetPasswordRules } from "../utils/passwordRules";
+import { Check, Circle } from "lucide-react";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -56,8 +58,10 @@ const Register = () => {
       return;
     }
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters long.");
+    // Same rules as the server, so a weak password never makes the trip
+    const unmet = unmetPasswordRules(password);
+    if (unmet.length > 0) {
+      setError(`Your password needs ${joinWithAnd(unmet.map((rule) => rule.short))}.`);
       return;
     }
 
@@ -170,8 +174,31 @@ const Register = () => {
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}
               className={ui.input}
-              placeholder="At least 8 characters"
+              aria-describedby="password-rules"
             />
+            {/* The rules show before the first try, and tick off while typing */}
+            <ul id="password-rules" className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
+              {PASSWORD_RULES.map((rule) => {
+                const done = rule.test(password);
+                return (
+                  <li
+                    key={rule.id}
+                    data-done={done}
+                    className={`flex items-center gap-1.5 text-xs ${
+                      done ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"
+                    }`}
+                  >
+                    {done ? (
+                      <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} aria-hidden="true" />
+                    ) : (
+                      <Circle className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+                    )}
+                    <span>{rule.label}</span>
+                    <span className="sr-only">{done ? "(done)" : "(not yet)"}</span>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
           {turnstileSiteKey ? (
             <Turnstile
@@ -208,5 +235,11 @@ const Register = () => {
     </AuthLayout>
   );
 };
+
+// "a, b and c", for the error message
+function joinWithAnd(parts: string[]): string {
+  if (parts.length <= 1) return parts.join("");
+  return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+}
 
 export default Register;
