@@ -61,6 +61,25 @@ detection needs. `src/server.ts` only listens, for local development.
 Never set `EMAIL_TRANSPORT=console` here; the server refuses to start with it
 in production.
 
+### The AI models
+
+- **Primary:** Gemini 2.5 Flash on the Gemini API (`GEMINI_MATH_AI_API`),
+  with a 20 second limit.
+- **Backup:** DeepSeek V4 Flash on OpenRouter (`OPEN_ROUTER_API_KEY`), also
+  20 seconds. It runs **only** when `USE_MULTI_MODEL=true`, and only after
+  Gemini has failed or timed out (sequential, never a race). With
+  `USE_MULTI_MODEL=false` a Gemini failure is an error for the student.
+  Production should run with `true`.
+- **Backup hosts:** OpenRouter may only send students' problems to the hosts
+  in `BACKUP_HOSTS` in `backend/src/services/ai/ai.service.ts` (US and EU
+  hosts: deepinfra, relace, parasail, azure, cloudflare, digitalocean), with
+  `data_collection: "deny"`, so no host keeps or trains on them. Read a host's
+  privacy policy before adding it.
+- **Second check:** when the code cannot check an answer and the same problem
+  is asked again, a model from the other maker gives its final answer after
+  the response. The answer is only shared through the cache if the two match.
+  This uses the same two keys.
+
 ### Must sit behind a proxy
 
 Per-IP Rate Limits (sign-up, login, Google sign-in) read the client address
@@ -109,6 +128,18 @@ Write migrations **additive first**: add tables and columns before code uses
 them, and drop old ones only in a later release, so old and new code both
 work while a deploy rolls out.
 
+**Migration history for the solver redesign** (all additive):
+
+| File | Adds | Preview | Production |
+|---|---|---|---|
+| `0005_solution_content` | `solutions.content` (jsonb), `solutions.format_version` (default 1) | applied | applied 2026-10-14 |
+| `0006_solution_cache` | `solution_cache` table, `solutions.cache_key` | applied | applied 2026-10-14 |
+| `0007_solution_reports` | `solution_reports` table | applied | applied 2026-10-14 |
+| `0008_keep_reports` | copies of the problem and answer on reports; a report survives the solution being deleted | applied | applied 2026-10-14 |
+
+Because they only add, they were applied to production before the redesign
+merged, while the old code was still live.
+
 ---
 
 ## Frontend on Vercel
@@ -116,6 +147,11 @@ work while a deploy rolls out.
 - **Root Directory:** `frontend`, **Framework Preset:** Vite
 - `VITE_API_URL_PROD`: the backend's production URL
 - `VITE_GOOGLE_CLIENT_ID`: the Google OAuth client id
+- `VITE_TURNSTILE_SITE_KEY`: the Cloudflare Turnstile site key, the pair of
+  the backend's `TURNSTILE_SECRET_KEY`. Preview can use Cloudflare's test key
+  `1x00000000000000000000AA` (it always passes and says "For testing only")
+- `VITE_SENTRY_DSN` and `VITE_GA_MEASUREMENT_ID`: optional, error alerts and
+  analytics
 
 ## Google OAuth
 
@@ -139,13 +175,16 @@ Existing Admins grant admin rights to others from the dashboard.
 
 - [ ] Neon project created and connected to the backend project
 - [ ] Migrations reviewed and applied to Neon
-- [ ] Backend environment variables set
+- [ ] Backend environment variables set, including `USE_MULTI_MODEL=true`,
+      `OPEN_ROUTER_API_KEY` and `TURNSTILE_SECRET_KEY`
+- [ ] Frontend `VITE_TURNSTILE_SITE_KEY` set (the pair of the backend secret)
 - [ ] Backend preview deployment passes the health check and a sign-up
 - [ ] Frontend `VITE_API_URL_PROD` points at the backend
 - [ ] Backend `CORS_ORIGINS` includes the frontend URL
 - [ ] Google OAuth origins include the frontend URL
 - [ ] First Admin created
 - [ ] Sign up, verify email, solve, History, admin dashboard all work
+- [ ] One real solve each of a quadratic, a long division and a proof
 
 ## Health Check
 
@@ -158,5 +197,8 @@ Expected: `{"status":"healthy","timestamp":"..."}`
 ## Rollback
 
 Both projects: Vercel dashboard, **Deployments**, pick the last good
-deployment, **Instant Rollback**. Database migrations are not rolled back
+deployment, **Instant Rollback**. Do not use **Redeploy** to roll back or to
+pick up new env vars on an old deployment: it rebuilds that deployment's old
+commit. Redeploy the deployment of the latest `main` commit instead, then
+check `vercel inspect <backend-url>`. Database migrations are not rolled back
 automatically; write a new migration to undo a schema change.

@@ -248,7 +248,9 @@ problem and answer, and it is kept even if the student later deletes the
 Solution or clears their History (deleting the account removes it). If the Solution came from or went
 into the shared cache, that entry is blocked: no other student gets it again.
 Someone else's Solution, or an id that is not a Solution, gets **404**
-`{ "error": "Solution not found" }`.
+`{ "error": "Solution not found" }`. Limited to 10 reports an hour per
+account (**429** `RATE_LIMITED` with a `Retry-After` header), because a
+report blocks a shared answer for everyone.
 
 **Response (200):** `{ "success": true }`
 
@@ -276,41 +278,56 @@ recomputing."). When code proves the answer wrong, the AI gets one more try
 "This answer didn't pass our check. Please double-check it." Both fields are
 only ever set by the server, never by the AI.
 
+Also limited to 100 an hour per IP address, sized for a classroom on one
+school network. The order of the checks is drawn in
+[architecture.md](architecture.md#solve-flow).
+
 **Request Body:**
 
 ```json
 {
   "problem": "Solve x² + 5x + 6 = 0",
-  "mode": "step_by_step",
+  "method": "quadratic-formula",
   "chatId": "optional_chat_id"
 }
 ```
+
+- `problem`: 1 to 2000 characters.
+- `method`: optional. A method id from `header.method.alternatives` of an
+  earlier solution, to solve again that way. Letters, digits and dashes.
+- `mode`: still accepted for old clients, but ignored. Every solution
+  includes a `hint`.
 
 **Response (200):**
 
 ```json
 {
   "success": true,
+  "source": "ai",
   "solution": {
-    "id": "solution_id",
-    "problem": "Solve x² + 5x + 6 = 0",
-    "problemType": "quadratic_equation",
-    "steps": [
-      {
-        "stepNumber": 1,
-        "expression": "x^2 + 5x + 6 = 0",
-        "justification": "Given equation",
-        "explanation": "We start with the quadratic equation...",
-        "status": "VERIFIED"
-      }
-    ],
-    "finalAnswer": "x = -2 or x = -3",
-    "summary": "Solved using factoring method",
-    "processingTimeMs": 1234,
-    "createdAt": "2025-12-21T00:00:00.000Z"
+    "id": "8f14e45f-ceea-4e7a-9b1c-2f6c1d0e5a11",
+    "createdAt": "2026-10-14T10:00:00.000Z",
+    "formatVersion": 2,
+    "content": { "formatVersion": 2, "header": { }, "problem": { }, "steps": [ ], "answer": { } }
   }
 }
 ```
+
+`content` is a `SolutionV2`, described with an example for every block type
+in [solution-format.md](solution-format.md).
+
+**Errors:**
+
+| Status | Body | When |
+|---|---|---|
+| 400 | `{ "error": "..." }` | Invalid body |
+| 400 | `{ "error": "...", "code": "UNSOLVABLE" }` | A literal division by zero |
+| 403 | `{ "error": "...", "code": "EMAIL_NOT_VERIFIED" }` | Email not confirmed yet |
+| 422 | `{ "error": "...", "code": "NOT_MATH" }` | Not a math problem |
+| 429 | `{ "error": "...", "code": "RATE_LIMITED", "retryAfter": 42 }` | Per-minute or per-IP limit |
+| 429 | `{ "error": "...", "resetAt": "...", "dailyLimit": 5 }` | Daily Limit used up |
+| 502 | `{ "success": false, "error": "...", "code": "INVALID_OUTPUT" }` | The AI answered twice in a broken format. No Credit spent |
+| 500 | `{ "success": false, "error": "..." }` | Both models failed, or saving failed. No Credit spent |
 
 ---
 
@@ -327,10 +344,11 @@ Get user's solution history. **Requires auth.**
   "success": true,
   "history": [
     {
-      "solutionId": "solution_id",
+      "id": "8f14e45f-ceea-4e7a-9b1c-2f6c1d0e5a11",
       "problem": "Solve x² + 5x + 6 = 0",
-      "problemType": "quadratic_equation",
-      "finalAnswer": "x = -2 or x = -3",
+      "problemType": "algebra",
+      "finalAnswer": "x = -2 \\text{ or } x = -3",
+      "formatVersion": 2,
       "createdAt": "2025-12-21T00:00:00.000Z"
     }
   ],
@@ -354,14 +372,20 @@ Get one of your Solutions in full. **Requires auth.** The `id` is the one
     "id": "8f14e45f-ceea-4e7a-9b1c-2f6c1d0e5a11",
     "problem": "2x = 4",
     "problemType": "algebra",
-    "steps": [ /* Steps */ ],
+    "steps": [ /* Steps, format 1 only */ ],
     "finalAnswer": "x = 2",
     "summary": "...",
+    "formatVersion": 2,
+    "content": { /* SolutionV2, or null for format 1 */ },
     "processingTimeMs": 1200,
     "createdAt": "2026-10-07T10:00:00.000Z"
   }
 }
 ```
+
+New solutions have `formatVersion: 2` and their steps in `content`
+([solution-format.md](solution-format.md)). Old ones have
+`formatVersion: 1`, `content: null` and the old `steps`.
 
 **404** for an id that is not a UUID, does not exist, or belongs to another
 User (the response never confirms someone else's id exists).
@@ -428,9 +452,18 @@ Get user profile and usage statistics. **Requires auth.**
       "calculus": 7
     },
     "lastSolvedAt": "2025-12-22T00:00:00.000Z"
+  },
+  "dailyCredits": {
+    "used": 2,
+    "limit": 5,
+    "remaining": 3,
+    "resetsAt": "2025-12-23T00:00:00.000Z"
   }
 }
 ```
+
+`dailyCredits` drives the "3 of 5 free problems left today" line. Instant
+answers and cache hits do not use a Credit.
 
 ---
 
