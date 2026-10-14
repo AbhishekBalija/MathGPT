@@ -159,6 +159,23 @@ export const adminService = {
   },
 
   /**
+   * Get Feedback from Users, newest first. Done items only when asked for.
+   */
+  getFeedback: async (params: { includeDone: boolean }): Promise<FeedbackResponse> => {
+    const query = params.includeDone ? "?includeDone=true" : "";
+    const response = await api.get<FeedbackResponse>(`/admin/feedback${query}`);
+    return response.data;
+  },
+
+  /**
+   * Mark Feedback as read and handled
+   */
+  markFeedbackDone: async (feedbackId: string): Promise<{ done: boolean }> => {
+    const response = await api.patch<{ done: boolean }>(`/admin/feedback/${feedbackId}/done`);
+    return response.data;
+  },
+
+  /**
    * The report was a mistake: serve its answer from the shared cache again
    */
   unblockReport: async (reportId: string): Promise<{ cacheStatus: "shared" | "unchecked" }> => {
@@ -205,6 +222,22 @@ export interface ReportItem {
 
 export interface ReportsResponse {
   reports: ReportItem[];
+}
+
+// Feedback types
+export interface FeedbackItem {
+  id: string;
+  kind: "bug" | "idea" | "other";
+  message: string;
+  page: string | null;
+  solutionId: string | null;
+  email: string;
+  done: boolean;
+  createdAt: string;
+}
+
+export interface FeedbackResponse {
+  feedback: FeedbackItem[];
 }
 
 // Analytics types

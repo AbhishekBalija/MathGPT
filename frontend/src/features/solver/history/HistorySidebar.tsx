@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { LogOut, Moon, Plus, Search, Sun, Trash2, X } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { LogOut, MessageSquare, Moon, Plus, Search, Sun, Trash2, X } from "lucide-react";
 import Logo from "../../../components/brand/Logo";
+import { FeedbackDialog } from "../../feedback/FeedbackDialog";
 import { useAuthStore } from "../../../stores/authStore";
 import { useChatStore } from "../../../stores/chatStore";
 import { useThemeStore } from "../../../stores/themeStore";
@@ -42,6 +43,7 @@ export function HistorySidebar({
   onClearAll,
 }: HistorySidebarProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const toggleProfileModal = useChatStore((state) => state.toggleProfileModal);
@@ -49,6 +51,7 @@ export function HistorySidebar({
 
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState("");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // Set the light or dark class once when the page opens.
   useEffect(() => {
@@ -178,6 +181,19 @@ export function HistorySidebar({
           ) : null}
         </nav>
 
+        <button
+          type="button"
+          onClick={() => {
+            // On a phone the drawer closes, so the form sits over the page, not the list
+            onClose();
+            setFeedbackOpen(true);
+          }}
+          className="mx-2 mb-1 flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10"
+        >
+          <MessageSquare className="size-4" aria-hidden="true" />
+          Send feedback
+        </button>
+
         <div className="flex items-center gap-1 border-t border-gray-200 p-2 dark:border-white/10">
           <button
             type="button"
@@ -207,6 +223,13 @@ export function HistorySidebar({
           </button>
         </div>
       </aside>
+      {feedbackOpen ? (
+        <FeedbackDialog
+          onClose={() => setFeedbackOpen(false)}
+          page={location.pathname}
+          solutionId={activeId ?? undefined}
+        />
+      ) : null}
     </>
   );
 }

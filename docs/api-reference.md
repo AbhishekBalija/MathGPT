@@ -256,6 +256,37 @@ report blocks a shared answer for everyone.
 
 ---
 
+### POST /api/feedback
+
+Feedback about the app itself (not about one Solution, that is a Report).
+**Requires login.** 5 per hour per User; the 6th gets 429 `RATE_LIMITED`.
+
+**Body:**
+
+```json
+{
+  "kind": "idea",
+  "message": "Add a graph of the answer",
+  "page": "/app",
+  "solutionId": "solution_id"
+}
+```
+
+- `kind`: `bug`, `idea` or `other`
+- `message`: 1 to 1000 characters
+- `page` (optional): a path in the app, never a full URL
+- `solutionId` (optional): kept only if it is the User's own Solution
+
+**Response (201):** `{ "success": true }`
+
+| Status | Error                          |
+| ------ | ------------------------------ |
+| 400    | The first problem with the body, e.g. "Please write a message" |
+| 401    | Not logged in                  |
+| 429    | Too many attempts              |
+
+---
+
 ## Solve Endpoints
 
 ### POST /api/solve
@@ -733,6 +764,45 @@ are still not served). This applies to every report on the same answer.
 | ------ | --------------------------------------------- |
 | 404    | Report not found                              |
 | 409    | This report has no blocked answer to unblock |
+
+---
+
+### GET /admin/feedback
+
+Feedback from Users, newest first, with the sender's email. **Requires admin.**
+
+Query: `includeDone=true` to include done items, `limit` (1 to 200, default 50).
+
+**Response (200):**
+
+```json
+{
+  "feedback": [
+    {
+      "id": "feedback_id",
+      "kind": "idea",
+      "message": "Add a graph of the answer",
+      "page": "/app",
+      "solutionId": null,
+      "email": "student@example.com",
+      "done": false,
+      "createdAt": "2026-10-14T17:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### PATCH /admin/feedback/:id/done
+
+Mark Feedback as read and handled. **Requires admin.**
+
+**Response (200):** `{ "done": true }`
+
+| Status | Error              |
+| ------ | ------------------ |
+| 404    | Feedback not found |
 
 ---
 
