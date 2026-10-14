@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { useNavigate } from "react-router-dom";
 import { Menu, Plus, X } from "lucide-react";
 import Logo from "../../components/brand/Logo";
-import api from "../../services/api";
 import { solveProblem } from "../../services/solve.service";
 import { reportSolution } from "../../services/history.service";
 import { useAppDataStore } from "../../stores/appDataStore";
@@ -75,7 +74,6 @@ export function SolverPage() {
   const { history, isInitialized, historyLoading } = useAppDataStore();
 
   const [input, setInput] = useState("");
-  const [remaining, setRemaining] = useState<number | undefined>(undefined);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [phoneInputOpen, setPhoneInputOpen] = useState(false);
   // Counts the solves of each chat, so a re-solve always gets a new solution id.
@@ -104,22 +102,13 @@ export function SolverPage() {
     }
   }, [isInitialized, history, historyLoaded]);
 
-  // Free problems left today. Asked again after every solve.
-  const [creditsTick, setCreditsTick] = useState(0);
+  // Free problems left today, from the shared profile. Asked again after every solve.
+  const remaining = useAppDataStore((s) => s.profile?.dailyCredits?.remaining);
+  const hasProfile = useAppDataStore((s) => s.profile !== null);
   useEffect(() => {
-    let current = true;
-    api
-      .get<{ dailyCredits?: { remaining?: number } }>("/api/profile")
-      .then((response) => {
-        if (current) setRemaining(response.data.dailyCredits?.remaining);
-      })
-      .catch(() => {
-        // The line is only a nice extra, so it stays hidden if this fails.
-      });
-    return () => {
-      current = false;
-    };
-  }, [creditsTick]);
+    // Usually already loading from the app start; this joins that request
+    if (!hasProfile) void useAppDataStore.getState().refreshProfile();
+  }, [hasProfile]);
 
   const saved = useMemo(() => chats.filter((chat) => isSaved(chat) && !hidden.has(chat.id)), [chats, hidden]);
 
@@ -215,7 +204,7 @@ export function SolverPage() {
         setSolveCount((counts) => ({ ...counts, [chatId]: (counts[chatId] ?? 0) + 1 }));
         after.setPendingProblem(null);
         setInput("");
-        setCreditsTick((n) => n + 1);
+        void useAppDataStore.getState().refreshProfile();
         return;
       }
 

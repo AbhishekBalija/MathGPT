@@ -7,6 +7,7 @@ vi.mock("../src/services/api", () => ({ default: { get: vi.fn(), post: vi.fn(), 
 import api from "../src/services/api";
 import * as adapter from "../src/features/solver/model/adapter";
 import { SolverPage } from "../src/features/solver/SolverPage";
+import { useAppDataStore } from "../src/stores/appDataStore";
 import { useChatStore, type Chat, type Solution } from "../src/stores/chatStore";
 import { SOLVE_ERROR_COPY } from "../src/utils/errorMessages";
 import { division156, quadratic } from "./fixtures/solutions";
@@ -105,6 +106,7 @@ beforeEach(() => {
   get.mockReset();
   post.mockReset();
   get.mockResolvedValue({ data: { dailyCredits: { remaining: 3 } } });
+  useAppDataStore.getState().clearData();
   useChatStore.setState({
     chats: [],
     activeChatId: null,
