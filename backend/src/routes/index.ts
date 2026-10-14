@@ -7,7 +7,7 @@ import { Router } from "express";
 import type { AppServices } from "../create-app";
 import { requireUser, requireVerifiedEmail } from "../modules/auth/auth.middleware";
 import { createAdminRouter } from "../modules/admin/admin.router";
-import { limitByIp } from "../modules/rate-limits/rate-limit.middleware";
+import { limitByIp, limitByUser } from "../modules/rate-limits/rate-limit.middleware";
 
 import { healthRoute } from "./health.route";
 
@@ -75,7 +75,13 @@ export function createRouter(services: AppServices) {
   router.delete("/api/clear-history", requireUser, clearHistoryRoute);
   router.get("/api/solution/:id", requireUser, getSolutionRoute);
   router.delete("/api/solution/:id", requireUser, deleteSolutionRoute);
-  router.post("/api/solutions/:id/report", requireUser, reportSolutionRoute);
+  // A report blocks a shared answer for everyone, so one account cannot block them all
+  router.post(
+    "/api/solutions/:id/report",
+    requireUser,
+    limitByUser("report", 10, 60 * 60),
+    reportSolutionRoute
+  );
   router.get("/api/profile", requireUser, profileRoute);
 
   // Public
