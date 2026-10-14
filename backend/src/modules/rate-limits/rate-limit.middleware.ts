@@ -13,6 +13,7 @@
 
 import type { RequestHandler } from "express";
 import { tooManyAttemptsMessage } from "../../lib/format-wait";
+import { getCurrentUser } from "../auth/auth.middleware";
 import { rateLimitRepository } from "./rate-limit.repository";
 
 export function limitByIp(
@@ -20,9 +21,26 @@ export function limitByIp(
   limit: number,
   windowSeconds: number
 ): RequestHandler {
+  return limitBy(action, limit, windowSeconds, (req) => `ip:${req.ip ?? "unknown"}`);
+}
+
+/** The same, per logged-in User. Mount it after requireUser. */
+export function limitByUser(
+  action: string,
+  limit: number,
+  windowSeconds: number
+): RequestHandler {
+  return limitBy(action, limit, windowSeconds, (req) => `user:${getCurrentUser(req).id}`);
+}
+
+function limitBy(
+  action: string,
+  limit: number,
+  windowSeconds: number,
+  who: (req: Parameters<RequestHandler>[0]) => string
+): RequestHandler {
   return async (req, res, next) => {
-    const ip = req.ip ?? "unknown";
-    const result = await rateLimitRepository.hit(`${action}:ip:${ip}`, limit, windowSeconds);
+    const result = await rateLimitRepository.hit(`${action}:${who(req)}`, limit, windowSeconds);
 
     if (!result.allowed) {
       res.setHeader("Retry-After", String(result.retryAfterSeconds));

@@ -128,6 +128,20 @@ describe("POST /api/solutions/:id/report", () => {
     expect((await report(student.accessToken, solved.solution.id)).status).toBe(200);
   });
 
+  it("allows 10 reports an hour, so one account cannot block every shared answer", async () => {
+    const student = await registerVerifiedUser();
+    const solved = await solveAs(student.accessToken, uniqueProblem());
+
+    for (let i = 0; i < 10; i++) {
+      expect((await report(student.accessToken, solved.solution.id)).status).toBe(200);
+    }
+    const res = await report(student.accessToken, solved.solution.id);
+
+    expect(res.status).toBe(429);
+    expect(await res.json()).toMatchObject({ code: "RATE_LIMITED" });
+    expect(res.headers.get("Retry-After")).toBeTruthy();
+  });
+
   it("gives 404 for someone else's solution, without saying it exists", async () => {
     const owner = await registerVerifiedUser();
     const solved = await solveAs(owner.accessToken, uniqueProblem());
