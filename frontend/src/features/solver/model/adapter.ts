@@ -9,6 +9,12 @@ function isPlainExpression(text: string): boolean {
   return !/[A-Za-z]{2,}/.test(text.replace(MATH_WORDS, ""));
 }
 
+// toISOString throws on an invalid Date. A broken old row still opens, and
+// sorts with the oldest history instead of pretending to be from today.
+function safeIsoDate(date: Date): string {
+  return Number.isNaN(date.getTime()) ? new Date(0).toISOString() : date.toISOString();
+}
+
 // Converts a saved (old format) solution into the v2 shape.
 // Old rows have no level or method, so the header shows neither.
 // The old VERIFIED status is dropped on purpose, v2 never shows it.
@@ -16,7 +22,7 @@ export function toSolutionV2(old: Solution): SolutionV2 {
   return {
     formatVersion: 2,
     id: old.id,
-    createdAt: old.createdAt.toISOString(),
+    createdAt: safeIsoDate(old.createdAt),
     header: {
       questionType: old.problemType,
       method: { id: "default", label: "", alternatives: [] },

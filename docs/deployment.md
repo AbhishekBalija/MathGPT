@@ -51,6 +51,7 @@ detection needs. `src/server.ts` only listens, for local development.
 | `OPEN_ROUTER_API_KEY`  | OpenRouter key (backup model when Gemini fails)                       |
 | `USE_MULTI_MODEL`      | `false` or `true`                                                     |
 | `SENTRY_DSN`           | Optional. DSN of the Sentry backend project, for error alerts          |
+| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret. Required in production, or every sign-up is refused. Preview can use Cloudflare's test secret `1x0000000000000000000000000000000AA` |
 | `RESEND_API`           | Resend API key                                                        |
 | `FROM_EMAIL`           | Verified sender, e.g. `NeoMath <hello@your-domain>`                   |
 | `APP_URL`              | Frontend URL used in email links                                      |

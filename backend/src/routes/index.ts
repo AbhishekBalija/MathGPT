@@ -27,6 +27,7 @@ import { profileRoute } from "./profile.route";
 import { publicStatsRoute } from "./public-stats.route";
 import { getSolutionRoute } from "./solution.route";
 import { createSolveRoute } from "./solve.route";
+import { reportSolutionRoute } from "./report-solution.route";
 
 
 export function createRouter(services: AppServices) {
@@ -38,8 +39,9 @@ export function createRouter(services: AppServices) {
   // Per-IP limits stop one client from farming accounts or guessing passwords (ADR-0003)
   router.post(
     "/auth/register",
-    limitByIp("register", 5, 60 * 60),
-    createRegisterRoute(services.emailSender)
+    // 20 an hour, so a school computer lab can sign up a whole class
+    limitByIp("register", 20, 60 * 60),
+    createRegisterRoute(services.emailSender, services.humanCheck)
   );
   router.post("/auth/login", limitByIp("login", 10, 15 * 60), loginRoute);
   // Google sign-in can also create accounts, so it shares the login budget
@@ -59,13 +61,21 @@ export function createRouter(services: AppServices) {
   );
 
   // Solving and history
-  router.post("/api/solve", requireUser, requireVerifiedEmail, createSolveRoute(services.solver));
+  // Per IP as well as per account, so many accounts on one machine cannot farm the AI
+  router.post(
+    "/api/solve",
+    limitByIp("solve", 100, 60 * 60),
+    requireUser,
+    requireVerifiedEmail,
+    createSolveRoute(services.solver)
+  );
   router.get("/api/history", requireUser, historyRoute);
   // The frontend calls DELETE /api/history; /api/clear-history is the older path
   router.delete("/api/history", requireUser, clearHistoryRoute);
   router.delete("/api/clear-history", requireUser, clearHistoryRoute);
   router.get("/api/solution/:id", requireUser, getSolutionRoute);
   router.delete("/api/solution/:id", requireUser, deleteSolutionRoute);
+  router.post("/api/solutions/:id/report", requireUser, reportSolutionRoute);
   router.get("/api/profile", requireUser, profileRoute);
 
   // Public

@@ -250,3 +250,77 @@ Request bodies (passwords, the problems students type), headers (login tokens),
 cookies and user details. Sentry collects several of these by default, so we
 turn each one off and send only an opaque user id and an error code.
 
+## Checking AI answers
+
+### Intermediate: How do you check an AI's integral without solving it yourself?
+
+Differentiate the AI's answer and compare it with the integrand. Antiderivatives
+are hard to find but easy to check, and the "+ C" disappears when you
+differentiate. We compare at 12 random points instead of proving the two are
+equal symbolically, which is simpler and good enough: two different
+expressions almost never agree at 12 random points.
+
+### Advanced: The AI's answer is untrusted text. How do you run it as math safely?
+
+Never `eval` it and never call `mathjs.evaluate` on the string. Parse it into a
+tree first, then walk the tree and refuse it unless every node is on an
+allowlist (numbers, the one variable, `pi`, `e`, `+ - * / ^`, and a short list
+of functions like `sin` and `log`), it has at most 200 nodes and it is at most
+30 deep. Only then compile it and run it with a scope that holds just the
+variable. An allowlist is safer than a blocklist because anything new or
+unexpected is refused by default.
+
+### Intermediate: Why draw fresh random points on every check?
+
+A fixed list of points can be gamed: an answer can be wrong everywhere except
+at those points. Fresh points each time make that impossible to rely on.
+
+### Intermediate: How do you share AI answers between users without spreading a wrong one?
+
+Only share an answer after an independent check. First code: put the roots
+back in, or differentiate an integral. If code cannot check it, ask a model
+from a different company for just the final answer and share only if the two
+agree. Two models from one company can make the same mistake. Until then the
+answer stays private to the student who asked, and a report blocks it for good.
+
+### Intermediate: Why does the second model answer in plain text instead of JSON?
+
+LaTeX is full of backslashes, and models often forget to escape them in JSON.
+`"\frac{1}{3}"` written with one backslash is still valid JSON, because `\f` is
+the form-feed escape, so the answer silently turns into a control character
+plus "rac{1}{3}". For a one-line answer, plain text avoids the problem completely.
+
+### Basic: Why is a cache entry keyed on the prompt version?
+
+When the prompt changes, solutions written under the old prompt may not follow
+the new rules. Putting the version in the key means old entries are simply
+never found again, with no clean-up job.
+
+## Abuse guards
+
+### Intermediate: Your robot check needs a secret. What happens if it is missing?
+
+It depends on where. Locally and in tests we skip the check, so nobody needs
+Cloudflare keys to work on the app. In production a missing secret refuses
+every sign-up ("fail closed"). Letting everyone through would quietly switch
+off the protection; refusing sign-ups is loud and gets fixed fast.
+
+### Basic: Why limit by IP address as well as by account?
+
+A per-account limit stops one account from overusing the AI, but one person
+can make many accounts. A per-IP limit caps what one machine can do across all
+its accounts. It has to be generous, because a whole school can share one IP.
+
+### Intermediate: How do you block "a@x.mailinator.com" as well as "a@mailinator.com"?
+
+Check the domain and every parent domain: x.mailinator.com, then
+mailinator.com. Comparing with `endsWith` would be wrong, because
+"schoolmailinator.com" ends with "mailinator.com" too.
+
+### Intermediate: Why run the second-model check only on the second ask?
+
+Sharing exists to save AI calls on repeated problems, but most problems are
+asked once. Checking every unchecked answer straight away would nearly double
+the cost of word problems and proofs for no benefit. Waiting for a second ask
+means we only pay for the check when sharing can actually pay it back.
+

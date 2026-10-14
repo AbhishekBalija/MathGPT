@@ -99,6 +99,9 @@ export const solutions = pgTable(
     // New format (null on old rows); format_version says which one a row uses
     content: jsonb("content").$type<SolutionV2Content>(),
     formatVersion: integer("format_version").notNull().default(1),
+    // The shared-cache entry this Solution was served from or put into, so a
+    // report can find and block it. Null for instant answers and old rows.
+    cacheKey: text("cache_key"),
     processingTimeMs: integer("processing_time_ms").notNull(),
     inputTokens: integer("input_tokens").notNull().default(0),
     outputTokens: integer("output_tokens").notNull().default(0),
@@ -115,6 +118,65 @@ export const solutions = pgTable(
 );
 
 export type SolutionRow = typeof solutions.$inferSelect;
+
+/**
+ * Solutions shared between students, so the same problem is not paid for
+ * twice. An entry is only served once its answer passed an independent check
+ * (status "shared"). Nothing about the student is stored here.
+ */
+export const solutionCache = pgTable(
+  "solution_cache",
+  {
+    // sha256 of the prompt version, the tidied problem, the level and the method
+    key: text("key").primaryKey(),
+    content: jsonb("content").$type<SolutionV2Content>().notNull(),
+    problemType: text("problem_type").$type<ProblemType>().notNull(),
+    hits: integer("hits").notNull().default(0),
+    status: text("status").$type<CacheStatus>().notNull().default("unchecked"),
+    // How the answer was confirmed: by code, or by a second model
+    checkMethod: text("check_method").$type<CheckMethod>(),
+    // The model ids used, e.g. { "primary": "gemini-2.5-flash", "second": "deepseek/..." }
+    checkedBy: jsonb("checked_by").$type<{ primary?: string; second?: string }>(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check("solution_cache_status_valid", sql`${table.status} in ('unchecked', 'shared', 'blocked')`),
+    check(
+      "solution_cache_check_method_valid",
+      sql`${table.checkMethod} is null or ${table.checkMethod} in ('code', 'second-model')`
+    ),
+  ]
+);
+
+// A student saying a Solution looks wrong. Blocks its shared-cache entry.
+// Kept when the student deletes the Solution (the link just goes null), so
+// the problem and answer are copied in. Deleting the account removes it.
+export const solutionReports = pgTable(
+  "solution_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    solutionId: uuid("solution_id").references(() => solutions.id, { onDelete: "set null" }),
+    problemText: text("problem_text"),
+    answerText: text("answer_text"),
+    cacheKey: text("cache_key"),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    reason: text("reason"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("solution_reports_solution_id_idx").on(table.solutionId),
+    index("solution_reports_user_id_idx").on(table.userId),
+  ]
+);
+
+export type CacheStatus = "unchecked" | "shared" | "blocked";
+export type CheckMethod = "code" | "second-model";
 
 // Something that happened, e.g. "solution_saved", for admin statistics
 export const analyticsEvents = pgTable(

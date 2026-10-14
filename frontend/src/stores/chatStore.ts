@@ -3,6 +3,12 @@ import { resolveSolution } from "../features/solver/model/resolve";
 import type { SolutionV2 } from "../features/solver/model/solution";
 import type { SolveError } from "../utils/errorMessages";
 
+// A saved solution the page cannot read (neither format). Retrying would not help.
+const UNREADABLE_SOLUTION = {
+  message: "We couldn't open that solution. Try again from History.",
+  noAction: true,
+} as const;
+
 export interface Message {
   id: string;
   role: "user" | "assistant" | "system";
@@ -157,6 +163,8 @@ export const useChatStore = create<ChatState>((set) => ({
             chat.id === chatId ? { ...chat, solution } : chat
           ),
         }));
+      } else {
+        set({ solveError: UNREADABLE_SOLUTION });
       }
       return;
     }
@@ -175,6 +183,9 @@ export const useChatStore = create<ChatState>((set) => ({
             chat.id === chatId ? { ...chat, solution } : chat
           ),
         }));
+      } else {
+        // Without this the student taps the item and nothing happens
+        set({ solveError: UNREADABLE_SOLUTION });
       }
     } finally {
       set({ solutionLoading: false });

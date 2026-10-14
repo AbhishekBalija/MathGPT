@@ -10,10 +10,15 @@
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import type { SolveResult } from "../../modules/ai/math-solver";
-import { runWithFailover } from "./failover";
-import { generateValidSolution, type ModelOutput } from "./generate-solution";
-import { MATH_TUTOR_SYSTEM_PROMPT, buildSolvePrompt } from "./prompts";
+import type { SecondOpinion, SolveOptions, SolveResult } from "../../modules/ai/math-solver";
+import { runWithFailover, withTimeout } from "./failover";
+import { generateValidSolution, stripCodeFences, type ModelOutput } from "./generate-solution";
+import {
+  ANSWER_ONLY_SYSTEM_PROMPT,
+  MATH_TUTOR_SYSTEM_PROMPT,
+  buildAnswerOnlyPrompt,
+  buildSolvePrompt,
+} from "./prompts";
 import { UnsolvableProblemError } from "./solver-errors";
 
 // ============================================================================
@@ -35,14 +40,24 @@ const BACKUP_HOSTS = ["deepinfra", "relace", "parasail", "azure", "cloudflare", 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_MATH_AI_API || "");
 
 // Patterns that indicate an unsolvable problem
+// Only literal division by zero. Words like "infinity", "undefined" or "no
+// solution" appear in real problems (limits, proofs), so the AI decides those.
 const UNSOLVABLE_PATTERNS = [
   /divide\s*by\s*zero/i,
-  /1\s*\/\s*0\b/,
-  /\b0\s*\/\s*0\b/,
-  /\binfinity\b/i,
-  /\bundefined\b/i,
-  /\bno\s*solution\b/i,
+  // "1/0" or "0/0", but not "10/0.5"
+  /\b\d+\s*\/\s*0(?![.\d])/,
 ];
+
+/** Throws UnsolvableProblemError for a problem that divides by zero. */
+export function rejectObviouslyUnsolvable(problem: string): void {
+  for (const pattern of UNSOLVABLE_PATTERNS) {
+    if (pattern.test(problem)) {
+      throw new UnsolvableProblemError(
+        "This problem involves undefined or unsolvable mathematical operations."
+      );
+    }
+  }
+}
 
 // ============================================================================
 // MAIN SOLVE FUNCTION
@@ -54,18 +69,12 @@ const UNSOLVABLE_PATTERNS = [
  */
 export async function solveMathProblem(
   problem: string,
-  options: { method?: string } = {}
+  options: SolveOptions = {}
 ): Promise<SolveResult> {
   const startTime = Date.now();
 
   // Check for obviously unsolvable problems
-  for (const pattern of UNSOLVABLE_PATTERNS) {
-    if (pattern.test(problem)) {
-      throw new UnsolvableProblemError(
-        "This problem involves undefined or unsolvable mathematical operations."
-      );
-    }
-  }
+  rejectObviouslyUnsolvable(problem);
 
   const prompt = buildSolvePrompt(problem, options);
   // Use the backup model too if multi-model is enabled, otherwise one Gemini call
@@ -94,7 +103,7 @@ async function askModelsWithFailover(prompt: string): Promise<ModelOutput> {
     }
   );
   console.log(`Answered by ${usedBackup ? BACKUP_MODEL : PRIMARY_MODEL}`);
-  return value;
+  return { ...value, model: usedBackup ? BACKUP_MODEL : PRIMARY_MODEL };
 }
 
 // ============================================================================
@@ -106,7 +115,8 @@ async function askModelsWithFailover(prompt: string): Promise<ModelOutput> {
  */
 async function callOpenRouter(
   prompt: string,
-  model: string
+  model: string,
+  systemPrompt: string = MATH_TUTOR_SYSTEM_PROMPT
 ): Promise<ModelOutput> {
   const apiKey = process.env.OPEN_ROUTER_API_KEY;
   if (!apiKey) {
@@ -126,7 +136,7 @@ async function callOpenRouter(
       body: JSON.stringify({
         model: model,
         messages: [
-          { role: "system", content: MATH_TUTOR_SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           { role: "user", content: prompt },
         ],
         temperature: 0.3,
@@ -167,13 +177,17 @@ async function callOpenRouter(
       }
     : undefined;
 
-  return { text: content, tokenUsage };
+  return { text: content, tokenUsage, model };
 }
 
 /**
  * Call Gemini API (primary model)
  */
-async function callGemini(prompt: string): Promise<ModelOutput> {
+async function callGemini(
+  prompt: string,
+  systemPrompt: string = MATH_TUTOR_SYSTEM_PROMPT,
+  jsonOnly = true
+): Promise<ModelOutput> {
   const model = genAI.getGenerativeModel({
     model: PRIMARY_MODEL,
     generationConfig: {
@@ -182,12 +196,12 @@ async function callGemini(prompt: string): Promise<ModelOutput> {
       topK: 40,
       maxOutputTokens: 8192,
       // Ask Gemini for JSON only, so there are no code fences to strip
-      responseMimeType: "application/json",
+      responseMimeType: jsonOnly ? "application/json" : "text/plain",
     },
   }, { timeout: PRIMARY_TIMEOUT_MS });
 
   const result = await model.generateContent([
-    { text: MATH_TUTOR_SYSTEM_PROMPT },
+    { text: systemPrompt },
     { text: prompt },
   ]);
 
@@ -209,7 +223,61 @@ async function callGemini(prompt: string): Promise<ModelOutput> {
       }
     : undefined;
 
-  return { text, tokenUsage };
+  return { text, tokenUsage, model: PRIMARY_MODEL };
+}
+
+// ============================================================================
+// SECOND OPINION
+// ============================================================================
+
+const MAX_SECOND_ANSWER = 500;
+
+/**
+ * The second model's reply as an answer, or null. Plain text, not JSON:
+ * models often write LaTeX in JSON with single backslashes, and "\frac"
+ * then breaks (or silently turns into a control character).
+ */
+export function readSecondAnswer(reply: string): string | null {
+  const lines = stripCodeFences(reply)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const last = lines[lines.length - 1];
+  if (!last) return null;
+  const answer = last
+    .replace(/^(?:final\s+)?answer\s*:\s*/i, "")
+    .replace(/^\$+|\$+$/g, "")
+    .trim();
+  if (!answer || answer.toUpperCase() === "UNKNOWN" || answer.length > MAX_SECOND_ANSWER) return null;
+  return answer;
+}
+
+/**
+ * Asks a model from a different maker than the one that solved the problem
+ * for the final answer only. DeepSeek checks Gemini's answers, and Gemini
+ * checks DeepSeek's, so a maker never checks itself.
+ */
+export async function askSecondOpinion(
+  problem: string,
+  primaryModel: string | undefined
+): Promise<SecondOpinion | null> {
+  const prompt = buildAnswerOnlyPrompt(problem);
+  const output =
+    primaryModel === BACKUP_MODEL
+      ? await withTimeout(callGemini(prompt, ANSWER_ONLY_SYSTEM_PROMPT, false), PRIMARY_TIMEOUT_MS, PRIMARY_MODEL)
+      : await withTimeout(
+          callOpenRouter(prompt, BACKUP_MODEL, ANSWER_ONLY_SYSTEM_PROMPT),
+          BACKUP_TIMEOUT_MS,
+          BACKUP_MODEL
+        );
+
+  const answer = readSecondAnswer(output.text);
+  if (!answer) {
+    // The reply is only math, so a short piece is safe to log
+    console.log(`Second opinion not usable from ${output.model}: ${output.text.slice(0, 200)}`);
+    return null;
+  }
+  return { answer, model: output.model ?? "unknown" };
 }
 
 /**

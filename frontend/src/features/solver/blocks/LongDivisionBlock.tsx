@@ -57,6 +57,8 @@ export function LongDivisionBlock({ dividend, divisor }: { dividend: number; div
                     key={c}
                     data-row={r}
                     data-col={c}
+                    // "subtract", "bringDown" or "remainder", so two "0" rows can be told apart
+                    data-kind={row.kind}
                     className={`text-center ${underline ? `border-b-2 ${LINE}` : ""}`}
                   >
                     {inRow ? row.value[c - start] : ""}

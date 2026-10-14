@@ -56,6 +56,9 @@ export interface Solution {
   /** Unique identifier */
   id: string;
 
+  /** The shared-cache entry this came from or went into, if any */
+  cacheKey?: string;
+
   /** The original problem statement */
   problem: string;
 

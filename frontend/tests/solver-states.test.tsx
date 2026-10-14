@@ -160,3 +160,24 @@ describe("chat store solver fields", () => {
     expect(next.view).toBe("hint");
   });
 });
+
+describe("ErrorState for text that needs an edit", () => {
+  it("offers Edit problem instead of Try again", () => {
+    const onEdit = vi.fn();
+    const onRetry = vi.fn();
+    render(<ErrorState message="That doesn't look like a math problem." onRetry={onRetry} onEdit={onEdit} />);
+
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Edit problem" }));
+    expect(onEdit).toHaveBeenCalledOnce();
+    expect(onRetry).not.toHaveBeenCalled();
+  });
+});
+
+describe("ErrorState with nothing to do", () => {
+  it("shows the message without a button", () => {
+    render(<ErrorState message="We couldn't open that solution." onRetry={vi.fn()} noAction />);
+    expect(screen.getByRole("alert").textContent).toBe("We couldn't open that solution.");
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+});

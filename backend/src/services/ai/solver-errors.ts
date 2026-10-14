@@ -18,3 +18,14 @@ export class InvalidSolverOutputError extends Error {
     this.name = "InvalidSolverOutputError";
   }
 }
+
+/** The text is not a math problem, so there is nothing to solve. */
+export class NotMathError extends Error {
+  constructor() {
+    super(NOT_MATH_MESSAGE);
+    this.name = "NotMathError";
+  }
+}
+
+export const NOT_MATH_MESSAGE =
+  "That doesn't look like a math problem. Try something like x^2 + 5x + 6 = 0.";

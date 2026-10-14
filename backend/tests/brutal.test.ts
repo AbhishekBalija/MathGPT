@@ -724,7 +724,7 @@ describe("📜 HISTORY - IDOR & Data Isolation", () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${ownerToken}`,
         },
-        body: JSON.stringify({ problem: "To be deleted" }),
+        body: JSON.stringify({ problem: "To be deleted: 2x = 4" }),
       });
 
       const { solution } = await createRes.json();

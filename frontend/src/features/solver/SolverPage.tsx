@@ -4,6 +4,7 @@ import { Menu, Plus, X } from "lucide-react";
 import Logo from "../../components/brand/Logo";
 import api from "../../services/api";
 import { solveProblem } from "../../services/solve.service";
+import { reportSolution } from "../../services/history.service";
 import { useAppDataStore } from "../../stores/appDataStore";
 import { useAuthStore } from "../../stores/authStore";
 import { useChatStore, type Chat } from "../../stores/chatStore";
@@ -139,6 +140,9 @@ export function SolverPage() {
     const solution = activeChat.solution;
     return { ...solution, id: `${solution.id}:${solveCount[activeChat.id] ?? 0}` };
   }, [activeChat, solveCount]);
+
+  // The real server id, without the ":n" re-render suffix, for reports
+  const savedSolutionId = activeChat?.solution?.id;
 
   const position = activeChat ? ordered.findIndex((chat) => chat.id === activeChat.id) + 1 : 0;
 
@@ -347,7 +351,13 @@ export function SolverPage() {
             ) : (
               <>
                 {solveError ? (
-                  <ErrorState message={solveError.message} retryAfter={solveError.retryAfter} onRetry={retry} />
+                  <ErrorState
+                    message={solveError.message}
+                    retryAfter={solveError.retryAfter}
+                    onRetry={retry}
+                    onEdit={solveError.needsEdit ? focusComposer : undefined}
+                    noAction={solveError.noAction}
+                  />
                 ) : null}
 
                 {solutionLoading ? (
@@ -376,6 +386,7 @@ export function SolverPage() {
                         onEdit={editProblem}
                         onNew={newProblem}
                         onMethodChange={changeMethod}
+                        onReport={savedSolutionId ? () => reportSolution(savedSolutionId) : undefined}
                         renderNextStep={
                           isPhone
                             ? (next, shown, total) => <NextStepBar onNext={next} shown={shown} total={total} />

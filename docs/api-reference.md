@@ -237,6 +237,23 @@ Logout user. **Requires auth.**
 
 ---
 
+## Reports
+
+### POST /api/solutions/:id/report
+
+The current User says one of their Solutions looks wrong. **Requires auth.**
+Body (optional): `{ "reason": "..." }`, at most 500 characters (longer gets
+**400**). The report is saved for the admin, with a copy of the
+problem and answer, and it is kept even if the student later deletes the
+Solution or clears their History (deleting the account removes it). If the Solution came from or went
+into the shared cache, that entry is blocked: no other student gets it again.
+Someone else's Solution, or an id that is not a Solution, gets **404**
+`{ "error": "Solution not found" }`.
+
+**Response (200):** `{ "success": true }`
+
+---
+
 ## Solve Endpoints
 
 ### POST /api/solve
@@ -245,6 +262,19 @@ Solve a math problem. **Requires auth and a verified email.** Limited to 5
 per minute per User (429 `RATE_LIMITED` with `retryAfter`), separate from the
 Daily Limit of 5 per day. An unverified
 User gets **403** `{ "error": "...", "code": "EMAIL_NOT_VERIFIED" }`.
+Text that is not a math problem gets **422**
+`{ "error": "That doesn't look like a math problem. ...", "code": "NOT_MATH" }`.
+If the text has no math in it at all, the AI is never called and no Credit is
+spent; if the AI decides it is not math, the Credit is spent.
+
+The response has `source`: `"instant"` (plain arithmetic, no AI), `"cache"` (a
+solution another student already got, whose answer passed a check; no AI call
+and no Credit) or `"ai"`. `solution.content.answer.check` is set only when code
+confirmed the answer ("Checked by putting the answer back in." or "Checked by
+recomputing."). When code proves the answer wrong, the AI gets one more try
+(no extra Credit); if that is wrong too, `solution.content.answer.warning` is
+"This answer didn't pass our check. Please double-check it." Both fields are
+only ever set by the server, never by the AI.
 
 **Request Body:**
 

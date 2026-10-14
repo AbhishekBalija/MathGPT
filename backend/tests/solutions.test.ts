@@ -6,8 +6,9 @@ import {
 } from "./support/fake-math-solver";
 import { solutionRepository } from "../src/modules/solutions/solution.repository";
 import { authedFetch, registerAdmin, registerVerifiedUser } from "./support/users";
+import { uniqueProblem } from "./support/problems";
 
-async function solve(accessToken: string, problem = "2x = 4") {
+async function solve(accessToken: string, problem = uniqueProblem()) {
   const res = await authedFetch(accessToken, "/api/solve", {
     method: "POST",
     body: { problem },
@@ -19,14 +20,15 @@ async function solve(accessToken: string, problem = "2x = 4") {
 describe("a User's Solutions", () => {
   it("can be opened and deleted with the ID that solving returned", async () => {
     const { accessToken } = await registerVerifiedUser();
-    const solution = await solve(accessToken);
+    const problem = uniqueProblem();
+    const solution = await solve(accessToken, problem);
 
     const opened = await authedFetch(accessToken, `/api/solution/${solution.id}`);
     expect(opened.status).toBe(200);
     const body = await opened.json();
     expect(body.solution).toMatchObject({
       id: solution.id,
-      problem: "2x = 4",
+      problem,
       finalAnswer: FAKE_FINAL_ANSWER,
       formatVersion: 2,
       // Same moment the solve response reported
@@ -108,20 +110,47 @@ describe("a User's Solutions", () => {
     expect(res.status).toBe(500);
     const history = await (await authedFetch(accessToken, "/api/history")).json();
     expect(history.history).toEqual([]);
+    // Nothing saved, so no Credit spent either
+    const profile = await (await authedFetch(accessToken, "/api/profile")).json();
+    expect(profile.dailyCredits).toMatchObject({ used: 0 });
+  });
+
+  it("explain broken content in a short message, at most 3 problems", async () => {
+    const broken = { ...FAKE_CONTENT, steps: [], hint: 5, answer: {}, header: {} } as never;
+
+    const error = await solutionRepository
+      .create("00000000-0000-0000-0000-000000000000", {
+        id: "00000000-0000-0000-0000-000000000001",
+        problem: "2x = 4",
+        problemType: "algebra",
+        steps: [],
+        finalAnswer: "",
+        summary: "",
+        content: broken,
+        processingTimeMs: 1,
+        createdAt: new Date().toISOString(),
+      })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(Error);
+    const message = (error as Error).message;
+    expect(message).toMatch(/^Solution content is not valid: /);
+    expect(message.split("; ").length).toBeLessThanOrEqual(3);
+    expect(message.length).toBeLessThan(400);
   });
 
   it("show in History newest first", async () => {
     const { accessToken } = await registerVerifiedUser();
-    await solve(accessToken, "first problem");
-    await solve(accessToken, "second problem");
+    await solve(accessToken, "first problem: 2x = 4");
+    await solve(accessToken, "second problem: 3x = 9");
 
     const res = await authedFetch(accessToken, "/api/history");
 
     expect(res.status).toBe(200);
     const { history } = await res.json();
     expect(history.map((item: { problem: string }) => item.problem)).toEqual([
-      "second problem",
-      "first problem",
+      "second problem: 3x = 9",
+      "first problem: 2x = 4",
     ]);
   });
 

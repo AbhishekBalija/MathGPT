@@ -15,6 +15,8 @@ interface SolutionViewProps {
   onEdit?: () => void;
   onNew?: () => void;
   onMethodChange?: (methodId: string) => void;
+  // Sends a "this looks wrong" report. Resolves to false if it did not send.
+  onReport?: () => Promise<boolean>;
   // Lets the phone layout draw its own "Next step" bar.
   renderNextStep?: (next: () => void, shown: number, total: number) => ReactNode;
 }
@@ -33,6 +35,7 @@ function SolutionBody({
   onEdit,
   onNew,
   onMethodChange,
+  onReport,
   renderNextStep,
 }: SolutionViewProps) {
   const [revealed, setRevealed] = useState(1);
@@ -142,7 +145,10 @@ function SolutionBody({
       ) : null}
 
       {answerVisible ? (
-        <AnswerStep answer={solution.answer} />
+        <>
+          <AnswerStep answer={solution.answer} />
+          {onReport ? <ReportLink onReport={onReport} /> : null}
+        </>
       ) : (
         <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-dashed border-gray-300 p-4 text-sm text-gray-600 dark:border-gray-600 dark:text-gray-400">
           <span>The answer shows after the last step.</span>
@@ -152,6 +158,39 @@ function SolutionBody({
         </div>
       )}
     </article>
+  );
+}
+
+// A quiet link under the answer. One report per solution view.
+function ReportLink({ onReport }: { onReport: () => Promise<boolean> }) {
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "failed">("idle");
+
+  async function send() {
+    setState("sending");
+    setState((await onReport()) ? "sent" : "failed");
+  }
+
+  if (state === "sent") {
+    return (
+      // Same height as the link, so the page does not jump when it changes
+      <p role="status" className="mt-4 flex min-h-11 items-center text-sm text-gray-600 dark:text-gray-400">
+        Thanks. We'll check it.
+      </p>
+    );
+  }
+
+  return (
+    <p className="mt-4 flex flex-wrap items-center gap-x-2 text-sm text-gray-600 dark:text-gray-400">
+      {state === "failed" ? <span role="alert">That didn't send.</span> : null}
+      <button
+        type="button"
+        onClick={send}
+        disabled={state === "sending"}
+        className="min-h-11 underline underline-offset-4 disabled:opacity-60"
+      >
+        {state === "failed" ? "Try again" : "Something looks wrong? Tell us"}
+      </button>
+    </p>
   );
 }
 

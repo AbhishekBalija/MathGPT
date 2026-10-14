@@ -105,6 +105,19 @@ export async function deleteSolution(solutionId: string): Promise<boolean> {
 }
 
 /**
+ * Report that a solution looks wrong. It is then never shared with other students.
+ */
+export async function reportSolution(solutionId: string): Promise<boolean> {
+  try {
+    const response = await api.post<{ success: boolean }>(`/api/solutions/${solutionId}/report`, {});
+    return response.data.success;
+  } catch (error) {
+    console.error("Failed to report solution:", error);
+    return false;
+  }
+}
+
+/**
  * Clear all user history
  */
 export async function clearAllHistory(): Promise<boolean> {

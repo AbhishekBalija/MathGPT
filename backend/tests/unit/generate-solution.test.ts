@@ -10,8 +10,10 @@ import {
 } from "../../src/services/ai/generate-solution";
 import {
   InvalidSolverOutputError,
+  NotMathError,
   UnsolvableProblemError,
 } from "../../src/services/ai/solver-errors";
+import { MATH_TUTOR_SYSTEM_PROMPT } from "../../src/services/ai/prompts";
 
 const validReply = JSON.stringify({ problemType: "algebra", solution: FAKE_CONTENT });
 
@@ -67,6 +69,46 @@ describe("generateValidSolution", () => {
       })
     ).rejects.toThrow(UnsolvableProblemError);
     expect(calls).toBe(1);
+  });
+});
+
+describe("a proof answer with only a sentence", () => {
+  it("uses the sentence as the answer instead of asking again", async () => {
+    // Gemini sometimes ends a proof with only "Hence proved ..." in answer.sentence
+    const reply = JSON.stringify({
+      problemType: "geometry",
+      solution: { ...FAKE_CONTENT, answer: { sentence: "Hence, the angles opposite equal sides are equal." } },
+    });
+    let calls = 0;
+    const result = await generateValidSolution("prove it", "prompt", async () => {
+      calls += 1;
+      return { text: reply };
+    });
+
+    expect(calls).toBe(1);
+    expect(result.content.answer).toEqual({
+      text: "Hence, the angles opposite equal sides are equal.",
+      sentence: "Hence, the angles opposite equal sides are equal.",
+    });
+  });
+});
+
+describe("not a math problem", () => {
+  it("stops at once when the AI says the text is not math", async () => {
+    let calls = 0;
+    await expect(
+      generateValidSolution("write my essay 2", "prompt", async () => {
+        calls += 1;
+        return { text: '{"notMath": true}' };
+      })
+    ).rejects.toThrow(NotMathError);
+    expect(calls).toBe(1);
+  });
+
+  it("tells the AI to reply notMath, and to pick a task for a bare expression", () => {
+    expect(MATH_TUTOR_SYSTEM_PROMPT).toContain('{"notMath": true}');
+    // A bare expression like (log x)^2/x used to be refused for having no task
+    expect(MATH_TUTOR_SYSTEM_PROMPT).toMatch(/no instruction/i);
   });
 });
 
