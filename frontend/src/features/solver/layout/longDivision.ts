@@ -1,3 +1,5 @@
+import { isWholeNumber } from "./wholeNumber";
+
 export interface LongDivisionRow {
   value: string;
   // Index in `digits` of the row's last digit. Rows are right-aligned to it.
@@ -16,10 +18,10 @@ export interface LongDivisionLayout {
 
 // Works out the written long-division steps, column by column.
 export function layoutLongDivision(dividend: number, divisor: number): LongDivisionLayout {
-  if (!Number.isInteger(dividend) || dividend < 0) {
+  if (!isWholeNumber(dividend)) {
     throw new RangeError("dividend must be a non-negative integer");
   }
-  if (!Number.isInteger(divisor) || divisor <= 0) {
+  if (!isWholeNumber(divisor) || divisor === 0) {
     throw new RangeError("divisor must be a positive integer");
   }
 

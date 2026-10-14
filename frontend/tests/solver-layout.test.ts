@@ -79,3 +79,16 @@ describe("column arithmetic", () => {
     expect(() => layoutColumnSubtraction(3, 5)).toThrow(RangeError);
   });
 });
+
+describe("whole-number checks", () => {
+  it("refuses numbers too big to write digit by digit", () => {
+    // 1e21 is an "integer" to JavaScript, but its digits are not exact
+    expect(() => layoutLongDivision(1e21, 4)).toThrow(RangeError);
+    expect(() => layoutLongDivision(156, 1e21)).toThrow(RangeError);
+    expect(() => layoutColumnAddition([1e21, 1])).toThrow(RangeError);
+  });
+
+  it("still lays out the largest safe numbers", () => {
+    expect(() => layoutColumnAddition([Number.MAX_SAFE_INTEGER - 1, 1])).not.toThrow();
+  });
+});
