@@ -82,7 +82,7 @@ export default function AdminNav() {
       aria-label="Admin"
       className="flex items-center gap-1 overflow-x-auto border-b border-gray-200 bg-white px-2 dark:border-white/10 dark:bg-[#120d12] md:sticky md:top-0 md:h-screen md:flex-col md:items-stretch md:gap-0 md:overflow-y-auto md:border-b-0 md:border-r md:px-3 md:py-4"
     >
-      <Link to="/admin" className="flex min-h-11 shrink-0 items-center gap-2 px-1 md:mb-4" aria-label="NeoMath admin">
+      <Link to="/admin" className="order-first flex min-h-11 shrink-0 items-center gap-2 px-1 md:order-none md:mb-4" aria-label="NeoMath admin">
         <Logo height="20px" />
         <span className="rounded-md border border-gray-200 px-1.5 text-xs font-semibold text-gray-600 dark:border-white/10 dark:text-[#8b93a1]">
           Admin
