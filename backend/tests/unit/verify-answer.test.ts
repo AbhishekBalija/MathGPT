@@ -103,6 +103,17 @@ describe("verifyAnswer: integrals", () => {
 });
 
 describe("verifyAnswer: anything else stays unchecked", () => {
+  it("does not check trig or log arithmetic, which CBSE means in degrees and base 10", () => {
+    // mathjs would read radians and natural log, and fail these right answers
+    expect(verifyAnswer("sin 30 + cos 60", withAnswer("1"))).toBe("unchecked");
+    expect(verifyAnswer("log 100", withAnswer("2"))).toBe("unchecked");
+    expect(verifyAnswer("tan 45", withAnswer("1"))).toBe("unchecked");
+  });
+
+  it("does not pass a root named after a different variable", () => {
+    expect(verifyAnswer("2x = 4", withAnswer("y = 2"))).toBe("unchecked");
+  });
+
   it("does not check a geometry proof", () => {
     const content: SolutionV2Content = {
       ...FAKE_CONTENT,
