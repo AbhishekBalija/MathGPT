@@ -6,6 +6,7 @@ import { useAuthStore } from "../../../stores/authStore";
 import { useChatStore } from "../../../stores/chatStore";
 import { useThemeStore } from "../../../stores/themeStore";
 import { groupByDate } from "./groupByDate";
+import { ProblemTitle } from "./ProblemTitle";
 
 export interface HistoryEntry {
   id: string;
@@ -150,7 +151,7 @@ export function HistorySidebar({
                             : "text-gray-900 hover:bg-gray-50 dark:text-gray-50 dark:hover:bg-white/5"
                         }`}
                       >
-                        {entry.problem}
+                        <ProblemTitle problem={entry.problem} />
                       </button>
                       <button
                         type="button"
