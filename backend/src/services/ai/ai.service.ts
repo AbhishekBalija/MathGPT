@@ -9,7 +9,7 @@
  * Only one model runs at a time, so we never pay for two answers.
  */
 
-import { GoogleGenerativeAI, type GenerationConfig } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { SecondOpinion, SolveOptions, SolveResult } from "../../modules/ai/math-solver";
 import { runWithFailover, withTimeout } from "./failover";
 import { generateValidSolution, stripCodeFences, type ModelOutput } from "./generate-solution";
@@ -24,9 +24,6 @@ import { UnsolvableProblemError } from "./solver-errors";
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
-
-// How many tokens Gemini may spend thinking before it answers
-const GEMINI_THINKING_BUDGET = 1024;
 
 // Time limits for each model
 const PRIMARY_TIMEOUT_MS = 20000;
@@ -191,19 +188,17 @@ async function callGemini(
   systemPrompt: string = MATH_TUTOR_SYSTEM_PROMPT,
   jsonOnly = true
 ): Promise<ModelOutput> {
-  // thinkingConfig is not in this SDK's types yet, but it is sent to Gemini as given
-  const generationConfig: GenerationConfig & { thinkingConfig: { thinkingBudget: number } } = {
-    temperature: 0.3,
-    topP: 0.8,
-    topK: 40,
-    maxOutputTokens: 8192,
-    // Ask Gemini for JSON only, so there are no code fences to strip
-    responseMimeType: jsonOnly ? "application/json" : "text/plain",
-    // Long proofs thought for up to 2,300 tokens and ran past the 20s limit;
-    // with this cap they take 10 to 14s (issue #59)
-    thinkingConfig: { thinkingBudget: GEMINI_THINKING_BUDGET },
-  };
-  const model = genAI.getGenerativeModel({ model: PRIMARY_MODEL, generationConfig }, { timeout: PRIMARY_TIMEOUT_MS });
+  const model = genAI.getGenerativeModel({
+    model: PRIMARY_MODEL,
+    generationConfig: {
+      temperature: 0.3,
+      topP: 0.8,
+      topK: 40,
+      maxOutputTokens: 8192,
+      // Ask Gemini for JSON only, so there are no code fences to strip
+      responseMimeType: jsonOnly ? "application/json" : "text/plain",
+    },
+  }, { timeout: PRIMARY_TIMEOUT_MS });
 
   const result = await model.generateContent([
     { text: systemPrompt },
