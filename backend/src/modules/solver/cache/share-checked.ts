@@ -132,6 +132,14 @@ export async function putInCache(
     checkedBy: { primary: result.model },
   });
   const askedBefore = !stored.isNew && stored.status === "unchecked";
+  // An earlier answer could not be checked, but this one passed: share this one
+  if (check === "passed" && askedBefore) {
+    await solutionCache.promoteCodeChecked(key, {
+      content,
+      problemType: result.problemType,
+      checkedBy: { primary: result.model },
+    });
+  }
   return { askSecondModel: check === "unchecked" && askedBefore };
 }
 

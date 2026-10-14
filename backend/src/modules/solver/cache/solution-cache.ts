@@ -113,6 +113,27 @@ export const solutionCache = {
     return { isNew: false, status: existing?.status ?? "blocked" };
   },
 
+  /**
+   * A later answer passed the code check: it replaces a stored "unchecked"
+   * one and is shared. Only touches an unchecked entry, so a blocked one
+   * stays blocked.
+   */
+  async promoteCodeChecked(
+    key: string,
+    entry: CachedSolution & { checkedBy: { primary?: string } }
+  ): Promise<void> {
+    await db
+      .update(cacheTable)
+      .set({
+        status: "shared",
+        checkMethod: "code",
+        checkedBy: entry.checkedBy,
+        content: solutionV2Schema.parse(entry.content),
+        problemType: entry.problemType,
+      })
+      .where(and(eq(cacheTable.key, key), eq(cacheTable.status, "unchecked")));
+  },
+
   /** A student reported it: never serve it again, and never re-share it. */
   async block(key: string): Promise<void> {
     await db.update(cacheTable).set({ status: "blocked" }).where(eq(cacheTable.key, key));
