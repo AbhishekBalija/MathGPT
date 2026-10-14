@@ -20,7 +20,7 @@
  * run, with a scope that holds just the one variable.
  */
 
-import { derivative, rationalize, isConstantNode, isFunctionNode, isOperatorNode, isParenthesisNode, isSymbolNode, parse } from "mathjs";
+import { derivative, isConstantNode, isFunctionNode, isOperatorNode, isParenthesisNode, isSymbolNode, parse } from "mathjs";
 import type { MathNode } from "mathjs";
 import type { SolutionV2Content } from "../../solutions/solution-v2.schema";
 
@@ -369,17 +369,84 @@ function readRoots(answer: string, variable?: string): number[] {
 // The checks, one per kind of problem
 // ---------------------------------------------------------------------------
 
+// Above this degree we do not check: no school answer lists that many roots
+const MAX_DEGREE = 12;
+
+// A polynomial as its coefficients, lowest power first: [6, 5, 1] is x^2 + 5x + 6
+type Polynomial = number[];
+
+function addPolynomials(a: Polynomial, b: Polynomial, sign: 1 | -1): Polynomial {
+  const sum: Polynomial = [];
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    sum.push((a[i] ?? 0) + sign * (b[i] ?? 0));
+  }
+  return sum;
+}
+
+function multiplyPolynomials(a: Polynomial, b: Polynomial): Polynomial {
+  if (a.length + b.length - 2 > MAX_DEGREE) throw new CannotCheck();
+  const product: Polynomial = new Array(a.length + b.length - 1).fill(0);
+  a.forEach((x, i) => b.forEach((y, j) => (product[i + j] += x * y)));
+  return product;
+}
+
+// Drops top coefficients that came out as (almost) zero, so x^2 - x^2 + x has degree 1
+function trimPolynomial(p: Polynomial): Polynomial {
+  const scale = Math.max(1, ...p.map(Math.abs));
+  let end = p.length;
+  while (end > 1 && Math.abs(p[end - 1] as number) <= EQUATION_TOLERANCE * scale) end--;
+  return p.slice(0, end);
+}
+
+// Turns a tree into coefficients, with plain arithmetic on small lists.
+// We used mathjs rationalize here before, but it took over 15 seconds on
+// (x+1)^5 and blocked the whole server. Anything that is not a polynomial
+// in `variable` (sin x, 1/x, x^0.5) cannot be checked.
+function toPolynomial(node: MathNode, variable: string): Polynomial {
+  if (isParenthesisNode(node)) return toPolynomial(node.content, variable);
+  if (isSymbolNode(node) && node.name === variable) return [0, 1];
+
+  // No variable inside (5, pi, sqrt(2)): just a number
+  if (!freeSymbols(node).has(variable)) {
+    const value = compileFunction(node, undefined)(0);
+    if (value === null) throw new CannotCheck();
+    return [value];
+  }
+
+  if (isOperatorNode(node)) {
+    const [a, b] = node.args;
+    if (node.fn === "unaryPlus" && a) return toPolynomial(a, variable);
+    if (node.fn === "unaryMinus" && a) return toPolynomial(a, variable).map((c) => -c);
+    if (a && b) {
+      if (node.fn === "add") return addPolynomials(toPolynomial(a, variable), toPolynomial(b, variable), 1);
+      if (node.fn === "subtract") return addPolynomials(toPolynomial(a, variable), toPolynomial(b, variable), -1);
+      if (node.fn === "multiply") {
+        return trimPolynomial(multiplyPolynomials(toPolynomial(a, variable), toPolynomial(b, variable)));
+      }
+      if (node.fn === "divide" && !freeSymbols(b).has(variable)) {
+        const divisor = toPolynomial(b, variable)[0] as number;
+        if (divisor === 0) throw new CannotCheck();
+        return toPolynomial(a, variable).map((c) => c / divisor);
+      }
+      if (node.fn === "pow" && !freeSymbols(b).has(variable)) {
+        const power = toPolynomial(b, variable)[0] as number;
+        if (!Number.isInteger(power) || power < 0 || power > MAX_DEGREE) throw new CannotCheck();
+        const base = trimPolynomial(toPolynomial(a, variable));
+        let result: Polynomial = [1];
+        for (let i = 0; i < power; i++) result = trimPolynomial(multiplyPolynomials(result, base));
+        return result;
+      }
+    }
+  }
+  throw new CannotCheck();
+}
+
 // The degree of a polynomial. Anything else (sin x, 1/x, no variable) cannot
 // be checked, because we could not tell whether a root is missing.
-function polynomialDegree(node: MathNode): number {
-  let result: { coefficients: number[]; denominator: MathNode | null };
-  try {
-    result = rationalize(node, {}, true) as unknown as typeof result;
-  } catch {
-    throw new CannotCheck();
-  }
-  if (result.denominator || result.coefficients.length < 2) throw new CannotCheck();
-  return result.coefficients.length - 1;
+function polynomialDegree(node: MathNode, variable: string): number {
+  const coefficients = trimPolynomial(toPolynomial(node, variable));
+  if (coefficients.length < 2) throw new CannotCheck();
+  return coefficients.length - 1;
 }
 
 // Roots that are the same number count once
@@ -394,7 +461,7 @@ function checkEquation(equation: string, content: SolutionV2Content): VerifyResu
   const variable = onlyVariable(`(${left}) - (${right})`);
   if (!variable) throw new CannotCheck();
 
-  const degree = polynomialDegree(safeExpression(`(${left}) - (${right})`, variable));
+  const degree = polynomialDegree(safeExpression(`(${left}) - (${right})`, variable), variable);
   const roots = distinctRoots(readRoots(answerText(content), variable));
 
   const leftValue = compileFunction(safeExpression(left, variable), variable);
