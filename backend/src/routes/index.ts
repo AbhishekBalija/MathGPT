@@ -28,6 +28,7 @@ import { publicStatsRoute } from "./public-stats.route";
 import { getSolutionRoute } from "./solution.route";
 import { createSolveRoute } from "./solve.route";
 import { reportSolutionRoute } from "./report-solution.route";
+import { sendFeedbackRoute } from "../modules/feedback/send-feedback.route";
 
 
 export function createRouter(services: AppServices) {
@@ -82,6 +83,7 @@ export function createRouter(services: AppServices) {
     limitByUser("report", 10, 60 * 60),
     reportSolutionRoute
   );
+  router.post("/api/feedback", requireUser, limitByUser("feedback", 5, 60 * 60), sendFeedbackRoute);
   router.get("/api/profile", requireUser, profileRoute);
 
   // Public

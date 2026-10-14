@@ -258,6 +258,7 @@ graph TB
         ADMIN_ANALYTICS["/admin/analytics"]
         ADMIN_ERRORS["/admin/errors"]
         ADMIN_REPORTS["/admin/reports"]
+        ADMIN_FEEDBACK["/admin/feedback"]
     end
 
     subgraph "Middleware"
@@ -307,6 +308,7 @@ graph TB
     ADMIN_ANALYTICS --> ADMIN_MW
     ADMIN_ERRORS --> ADMIN_MW
     ADMIN_REPORTS --> ADMIN_MW
+    ADMIN_FEEDBACK --> ADMIN_MW
 
     AUTH_MW --> GUARD
     GUARD --> INSTANT

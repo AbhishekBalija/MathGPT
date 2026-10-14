@@ -19,6 +19,7 @@ import {
   Users,
   Errors,
   Reports,
+  Feedback,
   Analytics,
 } from "./pages/Admin/index";
 import AnalyticsTracker from "./components/AnalyticsTracker";
@@ -55,6 +56,7 @@ const App = () => {
             <Route path="users" element={<Users />} />
             <Route path="errors" element={<Errors />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="feedback" element={<Feedback />} />
             <Route path="analytics" element={<Analytics />} />
           </Route>
         </Route>
