@@ -23,3 +23,23 @@ describe("chatStore.deleteChat", () => {
     expect(useChatStore.getState().globalLoading).toBe(false);
   });
 });
+
+describe("chatStore.fetchSolution", () => {
+  it("tells the student when a saved solution cannot be read", async () => {
+    const { useAppDataStore } = await import("../src/stores/appDataStore");
+    // A reply with neither the new content nor the old fields
+    vi.spyOn(useAppDataStore.getState(), "getCachedSolution").mockReturnValue(null);
+    vi.spyOn(useAppDataStore.getState(), "fetchAndCacheSolution").mockResolvedValue({
+      id: "solution-1",
+      createdAt: "2026-10-14T00:00:00.000Z",
+    } as never);
+    useChatStore.setState({ solveError: null });
+
+    await useChatStore.getState().fetchSolution("chat-1", "solution-1");
+
+    expect(useChatStore.getState().solveError).toEqual({
+      message: "We couldn't open that solution. Try again from History.",
+      noAction: true,
+    });
+  });
+});

@@ -173,3 +173,11 @@ describe("ErrorState for text that needs an edit", () => {
     expect(onRetry).not.toHaveBeenCalled();
   });
 });
+
+describe("ErrorState with nothing to do", () => {
+  it("shows the message without a button", () => {
+    render(<ErrorState message="We couldn't open that solution." onRetry={vi.fn()} noAction />);
+    expect(screen.getByRole("alert").textContent).toBe("We couldn't open that solution.");
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+});
