@@ -21,6 +21,11 @@ describe("looksLikeMath", () => {
     "Integrate sin x",
     "θ",
     "5",
+    // Real problems with no digits or symbols
+    "Calculate the perimeter of a square with side seven",
+    "What is the square root of sixteen",
+    "How many sides does a hexagon have",
+    "What is the average of three and five",
   ])("says yes to %j", (text) => {
     expect(looksLikeMath(text)).toBe(true);
   });
