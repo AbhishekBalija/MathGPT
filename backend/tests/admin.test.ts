@@ -32,6 +32,8 @@ const ADMIN_ENDPOINTS: Array<[string, string]> = [
   ["PATCH", "/admin/errors/00000000-0000-4000-8000-000000000000/resolve"],
   ["GET", "/admin/users"],
   ["GET", "/admin/reports"],
+  ["GET", "/admin/feedback"],
+  ["PATCH", "/admin/feedback/00000000-0000-4000-8000-000000000000/done"],
   ["POST", "/admin/reports/00000000-0000-4000-8000-000000000000/unblock"],
   ["PUT", "/admin/users/update-role"],
   ["PATCH", "/admin/users/00000000-0000-4000-8000-000000000000/role"],

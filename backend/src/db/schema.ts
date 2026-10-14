@@ -175,6 +175,38 @@ export const solutionReports = pgTable(
   ]
 );
 
+export type FeedbackKind = "bug" | "idea" | "other";
+
+// A User's message about the app itself, not about one Solution (that is a
+// Report). Deleting the account removes it.
+export const feedback = pgTable(
+  "feedback",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind").$type<FeedbackKind>().notNull(),
+    message: text("message").notNull(),
+    // Where the User was, e.g. "/app", and the Solution they had open
+    page: text("page"),
+    solutionId: uuid("solution_id").references(() => solutions.id, { onDelete: "set null" }),
+    done: boolean("done").notNull().default(false),
+    doneBy: uuid("done_by").references(() => users.id, { onDelete: "set null" }),
+    doneAt: timestamp("done_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check("feedback_kind_valid", sql`${table.kind} in ('bug', 'idea', 'other')`),
+    index("feedback_done_created_at_idx").on(table.done, table.createdAt.desc()),
+    index("feedback_user_id_idx").on(table.userId),
+    index("feedback_solution_id_idx").on(table.solutionId),
+    index("feedback_done_by_idx").on(table.doneBy),
+  ]
+);
+
 export type CacheStatus = "unchecked" | "shared" | "blocked";
 export type CheckMethod = "code" | "second-model";
 

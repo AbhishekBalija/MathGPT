@@ -73,3 +73,11 @@ _Avoid_: Bug report, incident
 **Analytics Event**:
 A named record of something that happened (for example a Solution being saved), used for admin statistics.
 _Avoid_: Metric, log
+
+**Report**:
+A User saying one of their Solutions looks wrong. It blocks that Solution's shared-cache entry until an Admin unblocks it.
+_Avoid_: Flag, complaint
+
+**Feedback**:
+A message from a User about the app itself (a Bug, an Idea or Other), not about one Solution. An Admin reads it and marks it done.
+_Avoid_: Report (that is about one Solution), ticket, support request

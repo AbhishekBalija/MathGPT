@@ -11,6 +11,8 @@ import { adminErrorsRoute } from "./admin-errors.route";
 import { adminResolveErrorRoute } from "./admin-resolve-error.route";
 import { adminAnalyticsRoute } from "./analytics.route";
 import { adminDeleteUserRoute } from "./delete-user.route";
+import { adminFeedbackDoneRoute } from "./feedback-done.route";
+import { adminFeedbackRoute } from "./feedback.route";
 import { adminReportsRoute } from "./reports.route";
 import { adminStatsRoute } from "./stats.route";
 import { adminTokenStatsRoute } from "./token-stats.route";
@@ -32,6 +34,8 @@ export function createAdminRouter(): Router {
   admin.patch("/errors/:id/resolve", adminResolveErrorRoute);
   admin.get("/reports", adminReportsRoute);
   admin.post("/reports/:id/unblock", adminUnblockReportRoute);
+  admin.get("/feedback", adminFeedbackRoute);
+  admin.patch("/feedback/:id/done", adminFeedbackDoneRoute);
   admin.get("/users", adminListUsersRoute);
   admin.put("/users/update-role", adminUpdateRolePutRoute);
   admin.patch("/users/:id/role", adminUpdateUserRoleRoute);
