@@ -119,7 +119,7 @@ describe("shared solution cache", () => {
     solveSpy.mockRestore();
   });
 
-  it("shares an unchecked answer only after a second model agrees", async () => {
+  it("does not pay for a second model on the first ask", async () => {
     const problem = `2x = 4 and y ${FAKE_SECOND_AGREES} ${counter++}`;
     const opinionSpy = vi.spyOn(fakeMathSolver, "secondOpinion");
     const first = await registerVerifiedUser();
@@ -127,6 +127,22 @@ describe("shared solution cache", () => {
 
     // No label: the code could not check it
     expect(firstBody.solution.content.answer.check).toBeUndefined();
+    // Give a background check a moment to start, if it were going to
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(opinionSpy).not.toHaveBeenCalled();
+    opinionSpy.mockRestore();
+    // Stored privately, ready for a second ask
+    expect(await cacheRow(problem)).toMatchObject({ status: "unchecked", checkMethod: null });
+  });
+
+  it("asks a second model on the second ask, and shares the answer if it agrees", async () => {
+    const problem = `2x = 4 and y ${FAKE_SECOND_AGREES} ${counter++}`;
+    const opinionSpy = vi.spyOn(fakeMathSolver, "secondOpinion");
+    await solveAs((await registerVerifiedUser()).accessToken, { problem });
+    const secondBody = await (await solveAs((await registerVerifiedUser()).accessToken, { problem })).json();
+    // The second student still got a fresh AI answer
+    expect(secondBody.source).toBe("ai");
+
     // The second check runs after the response, so wait for it
     await vi.waitFor(async () => {
       expect(await cacheRow(problem)).toMatchObject({
@@ -135,19 +151,21 @@ describe("shared solution cache", () => {
         checkedBy: { primary: FAKE_MODEL, second: FAKE_SECOND_MODEL },
       });
     });
+    expect(opinionSpy).toHaveBeenCalledOnce();
     expect(opinionSpy).toHaveBeenCalledWith(problem, FAKE_MODEL);
     opinionSpy.mockRestore();
 
-    const second = await registerVerifiedUser();
-    const body = await (await solveAs(second.accessToken, { problem })).json();
-    expect(body.source).toBe("cache");
+    // From the third ask on, no AI call at all
+    const third = await (await solveAs((await registerVerifiedUser()).accessToken, { problem })).json();
+    expect(third.source).toBe("cache");
+    expect(third.solution.content).toEqual(secondBody.solution.content);
   });
 
   it("keeps an unchecked answer private when the second model disagrees", async () => {
     const problem = `2x = 4 and y ${counter++}`;
     const opinionSpy = vi.spyOn(fakeMathSolver, "secondOpinion");
-    const first = await registerVerifiedUser();
-    await solveAs(first.accessToken, { problem });
+    await solveAs((await registerVerifiedUser()).accessToken, { problem });
+    await solveAs((await registerVerifiedUser()).accessToken, { problem });
 
     await vi.waitFor(() => expect(opinionSpy).toHaveBeenCalled());
     opinionSpy.mockRestore();
@@ -155,9 +173,8 @@ describe("shared solution cache", () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(await cacheRow(problem)).toMatchObject({ status: "unchecked", checkMethod: null });
 
-    const second = await registerVerifiedUser();
-    const body = await (await solveAs(second.accessToken, { problem })).json();
-    expect(body.source).toBe("ai");
+    const third = await (await solveAs((await registerVerifiedUser()).accessToken, { problem })).json();
+    expect(third.source).toBe("ai");
   });
 
   it("asks the AI again for the same problem with a different method", async () => {

@@ -317,3 +317,10 @@ Check the domain and every parent domain: x.mailinator.com, then
 mailinator.com. Comparing with `endsWith` would be wrong, because
 "schoolmailinator.com" ends with "mailinator.com" too.
 
+### Intermediate: Why run the second-model check only on the second ask?
+
+Sharing exists to save AI calls on repeated problems, but most problems are
+asked once. Checking every unchecked answer straight away would nearly double
+the cost of word problems and proofs for no benefit. Waiting for a second ask
+means we only pay for the check when sharing can actually pay it back.
+

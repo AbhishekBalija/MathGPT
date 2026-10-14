@@ -54,6 +54,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The second-model check for answers code cannot check now runs only when
+  the same problem is asked a second time. Most problems are asked once, so
+  this avoids an extra AI call for them; repeated problems are still shared
+  from the third ask on, once a second model agrees.
+
 - Sign-in, sign-up and email verification share a new layout: a pink panel
   with Neo on top of three steps (desktop) and the form on the right; on
   phones the logo, Neo on his own, then the form. Google comes first, then

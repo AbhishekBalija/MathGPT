@@ -396,14 +396,16 @@ export function createSolveRoute(solver: MathSolver) {
       }
 
       // SHARE ONLY CHECKED ANSWERS
+      let askSecondModel = false;
       try {
-        await putInCache(key, result, content, check);
+        ({ askSecondModel } = await putInCache(key, result, content, check));
       } catch (cacheError) {
         logger.warn("Failed to write the solution cache", {
           error: cacheError instanceof Error ? cacheError.message : "Unknown",
         });
       }
-      if (check === "unchecked") {
+      // Only on a repeat ask, so a problem asked once never costs a second call
+      if (askSecondModel) {
         // A second model, after the response, so the student never waits for it
         runInBackground("second-model-check", () =>
           secondModelCheck(solver, key, problem, { ...result, content })

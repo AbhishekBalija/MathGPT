@@ -5,9 +5,10 @@
  *    Failed: ask the AI once more, saying the answer was wrong. If that is
  *    wrong too, the student sees a gentle warning, it is never shared, and
  *    it is logged for the admin.
- * 2. Unchecked: store it privately, then (after the response) ask a model
- *    from a different maker for the final answer. Share it only if the two
- *    answers match.
+ * 2. Unchecked: store it privately. Most problems are asked only once, so
+ *    the second model is only asked when the same problem comes again:
+ *    after that response, a model from a different maker gives the final
+ *    answer, and the solution is shared only if the two answers match.
  */
 
 import { logger } from "../../../lib/logger";
@@ -113,22 +114,25 @@ function makerOf(model: string): string {
 /**
  * Stores the solution in the cache: shared if the code check passed,
  * private ("unchecked") if the code could not check it. A failed answer is
- * never stored.
+ * never stored. Says whether to ask a second model now: only for an
+ * unchecked answer to a problem that was already asked and is still unchecked.
  */
 export async function putInCache(
   key: string,
   result: SolveResult,
   content: SolutionV2Content,
   check: CodeCheck
-): Promise<void> {
-  if (check === "failed") return;
-  await solutionCache.put(key, {
+): Promise<{ askSecondModel: boolean }> {
+  if (check === "failed") return { askSecondModel: false };
+  const stored = await solutionCache.put(key, {
     content,
     problemType: result.problemType,
     status: check === "passed" ? "shared" : "unchecked",
     checkMethod: check === "passed" ? "code" : undefined,
     checkedBy: { primary: result.model },
   });
+  const askedBefore = !stored.isNew && stored.status === "unchecked";
+  return { askSecondModel: check === "unchecked" && askedBefore };
 }
 
 /** For an unchecked entry: ask a second model, and share only if it agrees. */
@@ -138,8 +142,8 @@ export async function secondModelCheck(
   problem: string,
   result: SolveResult
 ): Promise<void> {
-  const firstAnswer = result.content.answer.latex ?? result.content.answer.text;
-  if (!firstAnswer) return;
+  const thisAnswer = result.content.answer.latex ?? result.content.answer.text;
+  if (!thisAnswer) return;
 
   const opinion = await solver.secondOpinion(problem, result.model);
   if (!opinion) return;
@@ -150,8 +154,12 @@ export async function secondModelCheck(
     return;
   }
 
-  if (answersMatch(firstAnswer, opinion.answer)) {
-    await solutionCache.shareAfterSecondCheck(key, { primary: result.model, second: opinion.model });
+  if (answersMatch(thisAnswer, opinion.answer)) {
+    await solutionCache.shareAfterSecondCheck(key, {
+      content: result.content,
+      problemType: result.problemType,
+      checkedBy: { primary: result.model, second: opinion.model },
+    });
   } else {
     logger.info("Second model gave a different answer; not sharing", { model: opinion.model });
   }
