@@ -5,10 +5,12 @@ import {
   FAKE_INVALID_OUTPUT,
   FAKE_INVALID_TWICE,
   FAKE_NOT_MATH,
+  FAKE_MODEL,
   FAKE_UNSOLVABLE,
 } from "./support/fake-math-solver";
+import { PROMPT_VERSION } from "../src/services/ai/prompts";
 import { fakeMathSolver } from "./support/test-app";
-import { authedFetch, registerVerifiedUser } from "./support/users";
+import { authedFetch, registerAdmin, registerVerifiedUser } from "./support/users";
 import { uniqueProblem } from "./support/problems";
 
 const NOT_MATH_MESSAGE =
@@ -266,5 +268,50 @@ describe("Instant answers", () => {
     const res = await solveAs(accessToken, { problem: "1 + 1" });
 
     expect(res.status).toBe(429);
+  });
+});
+
+describe("what each solve records for the admin", () => {
+  // The fake AI answers "x = 2", so "nx = 2n" passes the code check and is shared
+  let counter = 900_000 + Math.floor(Math.random() * 90_000);
+  function sharedProblem(): string {
+    counter += 1;
+    return `${counter}x = ${counter * 2}`;
+  }
+
+  async function savedEventsOf(adminToken: string, userId: string) {
+    const { recentEvents } = await (await authedFetch(adminToken, "/admin/analytics")).json();
+    return recentEvents
+      .filter((event: { userId?: string }) => event.userId === userId)
+      .map((event: { properties: Record<string, unknown> }) => event.properties);
+  }
+
+  async function idOf(accessToken: string): Promise<string> {
+    return (await (await authedFetch(accessToken, "/auth/me")).json()).user.id;
+  }
+
+  it("records the source, the model and the prompt version for AI, cache and instant answers", async () => {
+    const { accessToken: adminToken } = await registerAdmin();
+    const problem = sharedProblem();
+    const first = await registerVerifiedUser();
+    const second = await registerVerifiedUser();
+
+    await solveAs(first.accessToken, { problem }); // the AI answers and it is shared
+    await solveAs(second.accessToken, { problem }); // served from the cache
+    await solveAs(second.accessToken, { problem: "156 ÷ 4" }); // instant
+
+    // Saved in the background
+    await vi.waitFor(async () => {
+      expect(await savedEventsOf(adminToken, await idOf(first.accessToken))).toEqual([
+        expect.objectContaining({ source: "ai", model: FAKE_MODEL, promptVersion: PROMPT_VERSION }),
+      ]);
+      const secondEvents = await savedEventsOf(adminToken, await idOf(second.accessToken));
+      expect(secondEvents).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ source: "cache", model: FAKE_MODEL, promptVersion: PROMPT_VERSION }),
+          expect.objectContaining({ source: "instant", model: null, promptVersion: PROMPT_VERSION }),
+        ])
+      );
+    });
   });
 });

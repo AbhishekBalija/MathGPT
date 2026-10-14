@@ -47,6 +47,31 @@ function logged(problem: string): string {
   return problem.slice(0, MAX_LOGGED_PROBLEM);
 }
 
+// One "solution_saved" event per solve, so the admin can count AI, cache and instant answers
+function trackSaved(
+  userId: string,
+  solution: Solution,
+  stepsCount: number,
+  source: "ai" | "cache" | "instant",
+  model: string | null
+): void {
+  runInBackground("track-analytics", () =>
+    trackAnalytics({
+      event: "solution_saved",
+      properties: {
+        problemType: solution.problemType,
+        stepsCount,
+        processingTimeMs: solution.processingTimeMs,
+        source,
+        model,
+        promptVersion: PROMPT_VERSION,
+        userId,
+      },
+      timestamp: new Date().toISOString(),
+    })
+  );
+}
+
 // What each model said, for the admin's failed-solve details
 function failureDetails(error: unknown, fullMessage: string): ErrorDetails {
   const attempts =
@@ -171,6 +196,7 @@ export function createSolveRoute(solver: MathSolver) {
           };
         }
 
+        trackSaved(userId, solution, 0, "instant", null);
         return {
           status: 200 as const,
           body: {
@@ -240,6 +266,7 @@ export function createSolveRoute(solver: MathSolver) {
       }
 
       logger.info("Served a shared solution", { userId });
+      trackSaved(userId, solution, cached.content.steps.length, "cache", cached.model);
       return {
         status: 200 as const,
         body: {
@@ -388,18 +415,7 @@ export function createSolveRoute(solver: MathSolver) {
         };
       }
 
-      runInBackground("track-analytics", () =>
-        trackAnalytics({
-          event: "solution_saved",
-          properties: {
-            problemType: solution.problemType,
-            stepsCount: content.steps.length,
-            processingTimeMs: solution.processingTimeMs,
-            userId,
-          },
-          timestamp: new Date().toISOString(),
-        })
-      );
+      trackSaved(userId, solution, content.steps.length, "ai", result.model ?? null);
 
       // INCREMENT DAILY USAGE COUNTER (after successful solve)
       try {

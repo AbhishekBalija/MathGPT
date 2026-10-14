@@ -12,6 +12,10 @@ export interface AnalyticsEventData {
     problemType?: string;
     stepsCount?: number;
     processingTimeMs?: number;
+    // Where the answer came from and which model wrote it (null for instant answers)
+    source?: "ai" | "cache" | "instant";
+    model?: string | null;
+    promptVersion?: string;
     userId?: string;
   };
   timestamp?: string;
