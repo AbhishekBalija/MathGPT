@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { FAKE_SOLVER_FAILURE } from "./support/fake-math-solver";
+import { FAKE_SOLVER_ERROR_MESSAGE, FAKE_SOLVER_FAILURE } from "./support/fake-math-solver";
+import { PROMPT_VERSION } from "../src/services/ai/prompts";
 import { apiUrl } from "./support/test-app";
 import {
   authedFetch,
@@ -88,7 +89,8 @@ describe("Error Logs", () => {
       errorId = errors[0].id;
     });
 
-    const byCode = await authedFetch(adminToken, "/admin/errors?errorCode=Error");
+    // The fake solver throws a plain Error, which is not blamed on the AI
+    const byCode = await authedFetch(adminToken, "/admin/errors?errorCode=UNKNOWN_ERROR");
     expect((await byCode.json()).errors.map((e: { id: string }) => e.id)).toContain(errorId);
 
     const resolve = await authedFetch(adminToken, `/admin/errors/${errorId}/resolve`, {
@@ -115,6 +117,28 @@ describe("Error Logs", () => {
       `/admin/errors?userId=${userId}&includeResolved=true`
     );
     expect((await withResolved.json()).errors).toHaveLength(1);
+  });
+
+  it("keeps the whole problem (up to 2,000 characters), the error code and what failed", async () => {
+    const { accessToken } = await registerVerifiedUser();
+    const userId = await userIdOf(accessToken);
+    // The longest problem a student can send (2,000 characters), with newlines, like a pasted worksheet
+    const problem = `${FAKE_SOLVER_FAILURE} ${"∫ x sin x dx\n".repeat(200)}`.slice(0, 2000);
+
+    expect((await solve(accessToken, problem)).status).toBe(500);
+
+    await vi.waitFor(async () => {
+      const { errors } = await (await authedFetch(adminToken, `/admin/errors?userId=${userId}`)).json();
+      expect(errors).toHaveLength(1);
+      expect(errors[0].problemText).toBe(problem);
+      expect(errors[0].problemText).toHaveLength(2000);
+      expect(errors[0].errorCode).toBe("UNKNOWN_ERROR");
+      expect(errors[0].details).toEqual({
+        attempts: [{ model: "unknown", error: FAKE_SOLVER_ERROR_MESSAGE }],
+        promptVersion: PROMPT_VERSION,
+        fullMessage: FAKE_SOLVER_ERROR_MESSAGE,
+      });
+    });
   });
 
   it("returns 404 when resolving an id that is not a UUID", async () => {

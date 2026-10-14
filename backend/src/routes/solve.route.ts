@@ -20,7 +20,7 @@ import {
 import { looksLikeMath } from "../modules/solver/guard/looks-like-math";
 import { cacheKey, solutionCache } from "../modules/solver/cache/solution-cache";
 import { putInCache, secondModelCheck, solveWithCodeCheck } from "../modules/solver/cache/share-checked";
-import { METHOD_ID_PATTERN } from "../services/ai/prompts";
+import { METHOD_ID_PATTERN, PROMPT_VERSION } from "../services/ai/prompts";
 import type { Solution } from "../types/solve.types";
 import { AllModelsFailedError } from "../services/ai/failover";
 import type { MathSolver } from "../modules/ai/math-solver";
@@ -34,9 +34,52 @@ import { handleSolveError } from "../events/solution/handle-solve-error";
 import { trackAnalytics } from "../events/solution/track-analytics";
 import { solutionRepository } from "../modules/solutions/solution.repository";
 import { trySolveArithmetic } from "../modules/solver/instant/arithmetic";
+import { errorCodeFor } from "../modules/solver/error-code";
+import type { ErrorDetails } from "../db/schema";
 
 // Daily free limit for users
 const DAILY_FREE_LIMIT = 5;
+
+// Enough of a pasted worksheet for the admin to see what failed
+const MAX_LOGGED_PROBLEM = 2000;
+
+function logged(problem: string): string {
+  return problem.slice(0, MAX_LOGGED_PROBLEM);
+}
+
+// One "solution_saved" event per solve, so the admin can count AI, cache and instant answers
+function trackSaved(
+  userId: string,
+  solution: Solution,
+  stepsCount: number,
+  source: "ai" | "cache" | "instant",
+  model: string | null
+): void {
+  runInBackground("track-analytics", () =>
+    trackAnalytics({
+      event: "solution_saved",
+      properties: {
+        problemType: solution.problemType,
+        stepsCount,
+        processingTimeMs: solution.processingTimeMs,
+        source,
+        model,
+        promptVersion: PROMPT_VERSION,
+        userId,
+      },
+      timestamp: new Date().toISOString(),
+    })
+  );
+}
+
+// What each model said, for the admin's failed-solve details
+function failureDetails(error: unknown, fullMessage: string): ErrorDetails {
+  const attempts =
+    error instanceof AllModelsFailedError
+      ? error.attempts.map((attempt) => ({ model: attempt.label, error: attempt.reason }))
+      : [{ model: "unknown", error: error instanceof Error ? error.message : "Unknown error" }];
+  return { attempts, promptVersion: PROMPT_VERSION, fullMessage };
+}
 
 // Short-window limit on solving, separate from the Daily Limit
 const RATE_LIMIT_MAX_REQUESTS = 5;
@@ -153,6 +196,7 @@ export function createSolveRoute(solver: MathSolver) {
           };
         }
 
+        trackSaved(userId, solution, 0, "instant", null);
         return {
           status: 200 as const,
           body: {
@@ -222,6 +266,7 @@ export function createSolveRoute(solver: MathSolver) {
       }
 
       logger.info("Served a shared solution", { userId });
+      trackSaved(userId, solution, cached.content.steps.length, "cache", cached.model);
       return {
         status: 200 as const,
         body: {
@@ -294,7 +339,7 @@ export function createSolveRoute(solver: MathSolver) {
           handleSolveError({
             chatId,
             userId,
-            problem: problem.slice(0, 200),
+            problem: logged(problem),
             errorCode: "AI_NOT_CONFIGURED",
             errorMessage: "AI service not configured",
             timestamp: new Date().toISOString(),
@@ -357,7 +402,7 @@ export function createSolveRoute(solver: MathSolver) {
           handleSolveError({
             chatId,
             userId,
-            problem: problem.slice(0, 200),
+            problem: logged(problem),
             errorCode: "SOLUTION_SAVE_FAILED",
             errorMessage: saveErrorMessage,
             processingTimeMs: Date.now() - startTime,
@@ -370,18 +415,7 @@ export function createSolveRoute(solver: MathSolver) {
         };
       }
 
-      runInBackground("track-analytics", () =>
-        trackAnalytics({
-          event: "solution_saved",
-          properties: {
-            problemType: solution.problemType,
-            stepsCount: content.steps.length,
-            processingTimeMs: solution.processingTimeMs,
-            userId,
-          },
-          timestamp: new Date().toISOString(),
-        })
-      );
+      trackSaved(userId, solution, content.steps.length, "ai", result.model ?? null);
 
       // INCREMENT DAILY USAGE COUNTER (after successful solve)
       try {
@@ -417,7 +451,7 @@ export function createSolveRoute(solver: MathSolver) {
           handleSolveError({
             chatId,
             userId,
-            problem: problem.slice(0, 200),
+            problem: logged(problem),
             errorCode: "ANSWER_CHECK_FAILED",
             errorMessage: `Code check failed twice for answer: ${(content.answer.latex ?? content.answer.text ?? "").slice(0, 200)}`,
             processingTimeMs: Date.now() - startTime,
@@ -481,7 +515,7 @@ export function createSolveRoute(solver: MathSolver) {
           handleSolveError({
             chatId,
             userId,
-            problem: problem.slice(0, 200),
+            problem: logged(problem),
             errorCode: "INVALID_OUTPUT",
             errorMessage: error.message,
             processingTimeMs: Date.now() - startTime,
@@ -500,7 +534,7 @@ export function createSolveRoute(solver: MathSolver) {
 
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error occurred";
-      const errorCode = error instanceof Error ? error.name : "UNKNOWN_ERROR";
+      const errorCode = errorCodeFor(error);
       // What each model really said goes to the admin log, never to the student
       const loggedMessage =
         error instanceof AllModelsFailedError
@@ -519,9 +553,10 @@ export function createSolveRoute(solver: MathSolver) {
         handleSolveError({
           chatId,
           userId,
-          problem: problem.slice(0, 200),
+          problem: logged(problem),
           errorCode,
           errorMessage: loggedMessage,
+          details: failureDetails(error, loggedMessage),
           processingTimeMs: Date.now() - startTime,
           timestamp: new Date().toISOString(),
         })

@@ -64,19 +64,25 @@ export interface CachedSolution {
 }
 
 export const solutionCache = {
-  /** A shared entry, or null. Counts the hit. */
-  async get(key: string): Promise<CachedSolution | null> {
+  /** A shared entry with the model that wrote it, or null. Counts the hit. */
+  async get(key: string): Promise<(CachedSolution & { model: string | null }) | null> {
     const [row] = await db
       .update(cacheTable)
       .set({ hits: sql`${cacheTable.hits} + 1` })
       .where(and(eq(cacheTable.key, key), eq(cacheTable.status, "shared")))
-      .returning({ content: cacheTable.content, problemType: cacheTable.problemType });
+      .returning({
+        content: cacheTable.content,
+        problemType: cacheTable.problemType,
+        checkedBy: cacheTable.checkedBy,
+      });
     if (!row) {
       return null;
     }
     // Re-checked on the way out, so a bad row can never reach a student
     const content = solutionV2Schema.safeParse(row.content);
-    return content.success ? { content: content.data, problemType: row.problemType } : null;
+    return content.success
+      ? { content: content.data, problemType: row.problemType, model: row.checkedBy?.primary ?? null }
+      : null;
   },
 
   /**

@@ -677,16 +677,32 @@ Get error logs for admin dashboard. **Requires admin.**
   "errors": [
     {
       "id": "error_id",
-      "errorCode": "AI_PARSE_ERROR",
-      "errorMessage": "Failed to parse AI response",
+      "errorCode": "AI_TIMEOUT",
+      "errorMessage": "All models failed: gemini-2.5-flash: timed out after 30000ms | backup: timed out after 30000ms",
       "problemText": "Solve x^2 + 1 = 0",
       "userId": "user_id",
       "resolved": false,
+      "details": {
+        "attempts": [
+          { "model": "gemini-2.5-flash", "error": "timed out after 30000ms" },
+          { "model": "backup", "error": "timed out after 30000ms" }
+        ],
+        "promptVersion": "2026-10-15.2",
+        "fullMessage": "All models failed: gemini-2.5-flash: timed out after 30000ms | backup: timed out after 30000ms"
+      },
       "createdAt": "2025-12-22T00:00:00.000Z"
     }
   ]
 }
 ```
+
+- `problemText` is the whole problem, up to 2,000 characters.
+- `errorCode` for a failed solve is one of `AI_RATE_LIMITED`, `AI_TIMEOUT`,
+  `AI_UNREACHABLE`, `ALL_MODELS_FAILED` or `UNKNOWN_ERROR`. Other codes such as
+  `INVALID_OUTPUT` and `ANSWER_CHECK_FAILED` come from earlier checks. Records
+  from before 2026-10-15 may say `Error`.
+- `details` is `null` for older records and for failures that never reached
+  the AI.
 
 ---
 

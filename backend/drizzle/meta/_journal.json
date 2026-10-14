@@ -71,6 +71,13 @@
       "when": 1791997986272,
       "tag": "0009_feedback",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792002556350,
+      "tag": "0010_admin_redesign",
+      "breakpoints": true
     }
   ]
 }
