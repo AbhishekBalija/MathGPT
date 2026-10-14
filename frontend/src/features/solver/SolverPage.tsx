@@ -351,7 +351,12 @@ export function SolverPage() {
             ) : (
               <>
                 {solveError ? (
-                  <ErrorState message={solveError.message} retryAfter={solveError.retryAfter} onRetry={retry} />
+                  <ErrorState
+                    message={solveError.message}
+                    retryAfter={solveError.retryAfter}
+                    onRetry={retry}
+                    onEdit={solveError.needsEdit ? focusComposer : undefined}
+                  />
                 ) : null}
 
                 {solutionLoading ? (
