@@ -33,6 +33,7 @@ export const adminErrorsRoute = route(async (req) => {
         problemText: error.problemText,
         userId: error.userId ?? undefined,
         resolved: error.resolved,
+        details: error.details,
         createdAt: error.createdAt.toISOString(),
       })),
     },

@@ -8,7 +8,7 @@
 import { and, count, desc, eq, gte, type SQL } from "drizzle-orm";
 import { db } from "../../db/client";
 import { isUuid as isId } from "../../lib/ids";
-import { analyticsEvents, errorLogs } from "../../db/schema";
+import { analyticsEvents, errorLogs, type ErrorDetails } from "../../db/schema";
 
 export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
 export type ErrorLog = typeof errorLogs.$inferSelect;
@@ -19,6 +19,7 @@ export interface NewErrorLog {
   problemText: string;
   userId?: string;
   processingTimeMs?: number;
+  details?: ErrorDetails;
 }
 
 export interface ErrorFilter {
@@ -62,6 +63,7 @@ export const analyticsRepository = {
   async recordError(error: NewErrorLog): Promise<void> {
     await db.insert(errorLogs).values({
       ...error,
+      details: error.details ?? null,
       userId: error.userId && isId(error.userId) ? error.userId : null,
     });
   },

@@ -8,6 +8,7 @@
 import { logger } from "../../lib/logger";
 import { reportSolveError } from "../../lib/sentry";
 import { analyticsRepository } from "../../modules/analytics/analytics.repository";
+import type { ErrorDetails } from "../../db/schema";
 
 export interface SolveErrorData {
   chatId?: string;
@@ -15,12 +16,14 @@ export interface SolveErrorData {
   problem: string;
   errorCode: string;
   errorMessage: string;
+  // What each model said; only for failures that reached the AI
+  details?: ErrorDetails;
   processingTimeMs?: number;
   timestamp: string;
 }
 
 export async function handleSolveError(data: SolveErrorData): Promise<void> {
-  const { chatId, userId, problem, errorCode, errorMessage, processingTimeMs } = data;
+  const { chatId, userId, problem, errorCode, errorMessage, details, processingTimeMs } = data;
 
   logger.warn("Recording solve error", {
     errorCode,
@@ -36,6 +39,7 @@ export async function handleSolveError(data: SolveErrorData): Promise<void> {
       problemText: problem,
       userId,
       processingTimeMs,
+      details,
     }),
     analyticsRepository.recordEvent(
       "solve_error",
