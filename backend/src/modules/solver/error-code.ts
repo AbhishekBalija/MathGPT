@@ -22,17 +22,15 @@ const PROVIDER_FAILURES: ReadonlySet<string> = new Set([
 
 // Checked in this order: Gemini's quota errors also say "Error fetching"
 const RATE_LIMITED = /429|quota|rate.?limit|resource.?exhausted/i;
-const TIMED_OUT = /timed out|timeout|in time/i;
-const UNREACHABLE = /fetch|ECONN|ENOTFOUND|network|socket/i;
+const TIMED_OUT = /timed out|timeout/i;
+const UNREACHABLE = /error fetching|fetch failed|ECONN|ENOTFOUND|network error|socket hang up/i;
 
 export function errorCodeFor(error: unknown): SolveErrorCode {
   if (error instanceof ModelTimeoutError) return "AI_TIMEOUT";
   if (error instanceof AllModelsFailedError) {
     return codeFromText(error.reasons) ?? "ALL_MODELS_FAILED";
   }
-  if (error instanceof Error) {
-    return TIMED_OUT.test(error.message) ? "AI_TIMEOUT" : "UNKNOWN_ERROR";
-  }
+  // Anything else (our own code, the database) is not blamed on the AI
   return "UNKNOWN_ERROR";
 }
 

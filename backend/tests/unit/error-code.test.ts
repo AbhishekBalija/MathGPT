@@ -17,7 +17,9 @@ describe("errorCodeFor", () => {
     ["both models timing out", bothFailed("gemini-2.5-flash timed out after 30000ms", "backup timed out after 30000ms"), "AI_TIMEOUT"],
     ["anything else from both models", bothFailed("bad JSON", "bad JSON"), "ALL_MODELS_FAILED"],
     ["one model timing out", new ModelTimeoutError("gemini", 30000), "AI_TIMEOUT"],
-    ["an AI that did not answer in time", new Error("The AI did not answer in time"), "AI_TIMEOUT"],
+    // Our own errors are never blamed on the AI, even when they mention a timeout
+    ["a database timeout", new Error("connection timeout"), "UNKNOWN_ERROR"],
+    ["a reply that only mentions fetching", bothFailed("could not fetch the answer field", "bad JSON"), "ALL_MODELS_FAILED"],
     ["a plain error", new Error("All models failed"), "UNKNOWN_ERROR"],
     ["something that is not an error", "not an error", "UNKNOWN_ERROR"],
   ])("gives the right code for %s", (_name, error, code) => {

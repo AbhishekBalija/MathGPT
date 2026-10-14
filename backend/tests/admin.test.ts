@@ -89,8 +89,8 @@ describe("Error Logs", () => {
       errorId = errors[0].id;
     });
 
-    // The fake AI "did not answer in time", so the code says so (not just "Error")
-    const byCode = await authedFetch(adminToken, "/admin/errors?errorCode=AI_TIMEOUT");
+    // The fake solver throws a plain Error, which is not blamed on the AI
+    const byCode = await authedFetch(adminToken, "/admin/errors?errorCode=UNKNOWN_ERROR");
     expect((await byCode.json()).errors.map((e: { id: string }) => e.id)).toContain(errorId);
 
     const resolve = await authedFetch(adminToken, `/admin/errors/${errorId}/resolve`, {
@@ -119,7 +119,7 @@ describe("Error Logs", () => {
     expect((await withResolved.json()).errors).toHaveLength(1);
   });
 
-  it("keeps the whole problem (up to 2,000 characters), the real error code and what failed", async () => {
+  it("keeps the whole problem (up to 2,000 characters), the error code and what failed", async () => {
     const { accessToken } = await registerVerifiedUser();
     const userId = await userIdOf(accessToken);
     // The longest problem a student can send (2,000 characters), with newlines, like a pasted worksheet
@@ -132,7 +132,7 @@ describe("Error Logs", () => {
       expect(errors).toHaveLength(1);
       expect(errors[0].problemText).toBe(problem);
       expect(errors[0].problemText).toHaveLength(2000);
-      expect(errors[0].errorCode).toBe("AI_TIMEOUT");
+      expect(errors[0].errorCode).toBe("UNKNOWN_ERROR");
       expect(errors[0].details).toEqual({
         attempts: [{ model: "unknown", error: FAKE_SOLVER_ERROR_MESSAGE }],
         promptVersion: PROMPT_VERSION,
