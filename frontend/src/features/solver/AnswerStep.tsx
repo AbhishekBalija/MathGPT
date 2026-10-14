@@ -35,18 +35,30 @@ export function AnswerStep({ answer }: { answer: SolutionV2["answer"] }) {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  // False once the answer is gone, so a copy that finishes later does nothing
+  const mounted = useRef(true);
+
   // Stop the pending reset if the answer goes away.
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      clearTimeout(timer.current);
+    };
+  }, []);
 
   async function copy() {
     const value = answer.text ?? answer.latex ?? "";
+    let copied = true;
     try {
       await navigator.clipboard.writeText(value);
-      setCopyState("copied");
     } catch {
-      // Copy can be blocked by the browser, so tell the student.
-      setCopyState("failed");
+      copied = false;
     }
+    // The clipboard can take a moment; the answer may have gone by then
+    if (!mounted.current) return;
+    // Copy can be blocked by the browser, so tell the student.
+    setCopyState(copied ? "copied" : "failed");
     clearTimeout(timer.current);
     timer.current = setTimeout(() => setCopyState("idle"), 1500);
   }
