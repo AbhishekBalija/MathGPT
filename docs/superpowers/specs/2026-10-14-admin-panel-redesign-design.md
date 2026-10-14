@@ -273,8 +273,12 @@ and only to within about an hour. So:
 - **An outside check for "everything is down"**: the alerts above need a
   running backend, a working database and real solves.
   - A GitHub Actions workflow loads `/health` and the site every 10 minutes.
-    The repo is public, so this is free. GitHub emails the owner when a run
-    fails.
+    The repo is public, so this is free.
+  - When a check fails, the job sends its own email through Resend. GitHub's
+    failure emails may go to the bot that merges PRs.
+  - The Health page shows when the check last ran. GitHub switches off
+    scheduled jobs after 60 days with no activity, so a stale or switched-off
+    check shows as down.
   - `/health` checks the database and answers 503 when it can't reach it.
 - **Delivery**: Resend sends every email, to every admin. They need
   `ALERT_EMAILS_ENABLED=true`, so local runs and tests never send real mail.

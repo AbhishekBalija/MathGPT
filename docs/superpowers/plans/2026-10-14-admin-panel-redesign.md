@@ -792,13 +792,20 @@ The alerts in Task 17 need a running backend, a working database and real
 solves. If the backend can't start, or the database is down, or no student
 is solving, nothing would send an email. An outside check covers that case.
 
-The repo is public, so scheduled GitHub Actions are free. GitHub emails the
-owner when a scheduled run fails, so no new service or account is needed.
+The repo is public, so scheduled GitHub Actions are free.
+
+GitHub's own failure emails are not reliable here, for two reasons:
+- They go to whoever last changed the schedule, which may be the bot that
+  merges PRs.
+- GitHub switches scheduled jobs off after 60 days with no repo activity.
+
+So the job sends its own email, and the Health page shows when it last ran.
 
 **Files:**
 - Modify: `backend/src/routes/health.route.ts`
 - Create: `.github/workflows/uptime.yml`
-- Test: `backend/tests/health.test.ts`
+- Modify: `backend/src/modules/admin/health/health.service.ts` (Task 9, adds `live.uptimeCheck`)
+- Test: `backend/tests/health.test.ts`, `backend/tests/admin-health.test.ts`
 
 **Interfaces:**
 - Produces:
@@ -806,17 +813,36 @@ owner when a scheduled run fails, so no new service or account is needed.
     - It answers 200 `{ status: "healthy", timestamp }` when that works.
     - It answers 503 `{ status: "unhealthy", timestamp }` when it doesn't,
       with no error details.
-  - The workflow runs `on: schedule: - cron: "*/10 * * * *"` (plus
-    `workflow_dispatch`). It does
-    `curl --fail --max-time 15 https://neomath-api.vercel.app/health` and
-    `curl --fail --max-time 15 https://neomath.vercel.app/`, retrying once
-    after 30 s before failing.
+  - The workflow:
+    - runs `on: schedule: - cron: "*/10 * * * *"` (plus `workflow_dispatch`
+      with an optional `url_override` input)
+    - does `curl --fail --max-time 15` on `https://neomath-api.vercel.app/health`
+      and `https://neomath.vercel.app/`, retrying once after 30 s
+    - **on failure** runs a step `if: failure()` that POSTs to
+      `https://api.resend.com/emails` with repo secrets `RESEND_API`,
+      `FROM_EMAIL` and `ALERT_TO` (the owner's email), with the subject
+      "NeoMath: the site is not answering"
+  - `live.uptimeCheck: { lastRunAt: string | null; lastResult: "success" | "failure" | null; enabled: boolean }`.
+    - It comes from the public GitHub API through a new
+      `HealthProbes.github()`, cached for 10 minutes.
+    - When the last run is over 30 minutes old, or `enabled` is false, the
+      Health page shows "Uptime check" as down, with the runbook "Turn it back
+      on: GitHub → Actions → Uptime check → Enable workflow".
 
-- [ ] **Step 1: Write the failing test.** With the database reachable, `/health` still answers 200 `healthy`. A unit test of `healthRoute` with a database stub that throws gets 503 and a body without the error text.
+- [ ] **Step 1: Write the failing tests.**
+  - With the database reachable, `/health` still answers 200 `healthy`.
+  - A unit test of `healthRoute` with a database stub that throws gets 503,
+    and a body without the error text.
+  - With a fake `github()` whose last run is 45 min old,
+    `live.uptimeCheck.lastRunAt` is that time.
 - [ ] **Step 2: Run.** Expected: FAIL.
-- [ ] **Step 3: Implement** the check and the workflow.
-- [ ] **Step 4: Run** the tests. Then trigger the workflow once by hand (`gh workflow run uptime.yml`) and check that it passes.
-- [ ] **Step 5: Commit** `feat: outside uptime check every 10 minutes`. Tell the owner that GitHub emails them when a run fails (Settings → Notifications → Actions → "Send notifications for failed workflows only").
+- [ ] **Step 3: Implement** the check, the probe and the workflow.
+- [ ] **Step 4: Run** the tests.
+- [ ] **Step 5: Prove the email arrives.** The owner adds the `RESEND_API`,
+  `FROM_EMAIL` and `ALERT_TO` repo secrets. Run the workflow once by hand with
+  `url_override` set to a URL that fails, and confirm the email reaches the
+  owner's inbox. Then run it normally and confirm it passes.
+- [ ] **Step 6: Commit** `feat: outside uptime check that emails the owner`.
 
 ---
 
