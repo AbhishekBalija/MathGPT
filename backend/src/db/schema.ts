@@ -32,6 +32,8 @@ export const users = pgTable(
     // Null for Users who only sign in with Google
     passwordHash: text("password_hash"),
     isAdmin: boolean("is_admin").notNull().default(false),
+    // Our own accounts (owner, testers), left out of business numbers. Admins count as team too.
+    isTeam: boolean("is_team").notNull().default(false),
     provider: text("provider").$type<AuthProvider>().notNull().default("email"),
     googleId: text("google_id").unique(),
     avatarUrl: text("avatar_url"),
@@ -232,6 +234,12 @@ export const analyticsEvents = pgTable(
   ]
 );
 
+export interface ErrorDetails {
+  attempts: Array<{ model: string; error: string }>;
+  promptVersion: string;
+  fullMessage: string;
+}
+
 // A failed solve, kept so an Admin can review it and mark it resolved
 export const errorLogs = pgTable(
   "error_logs",
@@ -245,6 +253,8 @@ export const errorLogs = pgTable(
     resolved: boolean("resolved").notNull().default(false),
     resolvedBy: uuid("resolved_by").references(() => users.id, { onDelete: "set null" }),
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    // What each model said, the full message and the prompt version. Null for older records.
+    details: jsonb("details").$type<ErrorDetails>(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -255,4 +265,24 @@ export const errorLogs = pgTable(
     index("error_logs_user_id_idx").on(table.userId),
     index("error_logs_resolved_by_idx").on(table.resolvedBy),
   ]
+);
+
+export type AlertStatus = "ok" | "failing";
+
+// One row per kind of alert (e.g. "solving"), so an email goes out once
+// when something starts failing and once when it recovers
+export const alertState = pgTable(
+  "alert_state",
+  {
+    kind: text("kind").primaryKey(),
+    status: text("status").$type<AlertStatus>().notNull().default("ok"),
+    // Times (ms) of recent failures, for "3 within 10 minutes"
+    recent: jsonb("recent").$type<number[]>().notNull().default([]),
+    consecutive: integer("consecutive").notNull().default(0),
+    changedAt: timestamp("changed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lastSentAt: timestamp("last_sent_at", { withTimezone: true }),
+  },
+  (table) => [check("alert_state_status_valid", sql`${table.status} in ('ok', 'failing')`)]
 );
