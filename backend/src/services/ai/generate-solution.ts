@@ -39,13 +39,39 @@ export function stripCodeFences(text: string): string {
     .trim();
 }
 
+// LaTeX commands that start with a letter JSON also uses as an escape
+// (\b \f \n \r \t \u). Written with one backslash they would silently turn
+// into a control character ("\times" into a tab and "imes"), so we double
+// the backslash when one of these names follows.
+const LATEX_LOOKING_LIKE_ESCAPES =
+  /^(beta|bar|binom|boxed|bmod|bot|bigl|bigr|frac|forall|flat|theta|times|tan|tanh|tau|text|textbf|textit|tfrac|to|top|triangle|tilde|right|rho|rangle|rightarrow|neq|ne|nu|neg|not|nabla|ni|nexists|underline|underbrace|uparrow|upsilon)(?![a-zA-Z])/;
+
+/**
+ * Models often write LaTeX inside JSON with one backslash ("\angle" instead
+ * of "\\angle"). That is either invalid JSON (\a) or, worse, a valid escape
+ * that corrupts the text (\t in "\triangle"). This doubles a lone backslash
+ * when a LaTeX command follows it, and leaves correct escapes alone: already
+ * doubled backslashes, real \uXXXX escapes, and "\n" before ordinary text.
+ */
+export function escapeLatexBackslashes(json: string): string {
+  return json.replace(/(\\+)([a-zA-Z]+)/g, (match, slashes: string, word: string) => {
+    // An even run is already escaped: "\\frac" is a backslash, then "frac"
+    if (slashes.length % 2 === 0) return match;
+    const first = word[0] ?? "";
+    // Not a JSON escape letter at all (\angle, \alpha, \sqrt): must be LaTeX
+    if (!"bfnrtu".includes(first)) return `\\${match}`;
+    if (first === "u" && /^u[0-9a-fA-F]{4}/.test(word)) return match;
+    return LATEX_LOOKING_LIKE_ESCAPES.test(word) ? `\\${match}` : match;
+  });
+}
+
 /**
  * Finds the JSON in a model reply. Drops <think> blocks and code fences,
  * and if that still is not JSON, takes everything from the first "{" to the
  * last "}" (models sometimes add a sentence before or after the JSON).
  */
 export function parseModelJson(text: string): unknown {
-  const cleaned = stripCodeFences(text.replace(/<think>[\s\S]*?<\/think>/gi, ""));
+  const cleaned = escapeLatexBackslashes(stripCodeFences(text.replace(/<think>[\s\S]*?<\/think>/gi, "")));
   try {
     return JSON.parse(cleaned);
   } catch {
@@ -69,6 +95,19 @@ function summarizeIssues(error: z.ZodError): string {
     .slice(0, MAX_ERROR_ISSUES)
     .map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`);
   return lines.join("; ").slice(0, MAX_ERROR_SUMMARY);
+}
+
+// A proof often ends with only "Hence proved ..." in answer.sentence. That is
+// a fine answer, so it is used as answer.text instead of failing the format.
+function withSentenceAsAnswer(solution: unknown): unknown {
+  if (!solution || typeof solution !== "object") return solution;
+  const answer = (solution as { answer?: unknown }).answer;
+  if (!answer || typeof answer !== "object") return solution;
+  const { latex, text, sentence } = answer as { latex?: unknown; text?: unknown; sentence?: unknown };
+  if (latex !== undefined || text !== undefined || typeof sentence !== "string" || !sentence.trim()) {
+    return solution;
+  }
+  return { ...solution, answer: { ...answer, text: sentence } };
 }
 
 type Checked =
@@ -105,7 +144,7 @@ function checkOutput(text: string): Checked {
     return { ok: false, reason: 'The reply must be {"problemType": ..., "solution": {...}}.' };
   }
 
-  const parsed = solutionV2Schema.safeParse(envelope.data.solution);
+  const parsed = solutionV2Schema.safeParse(withSentenceAsAnswer(envelope.data.solution));
   if (!parsed.success) {
     return { ok: false, reason: summarizeIssues(parsed.error) };
   }

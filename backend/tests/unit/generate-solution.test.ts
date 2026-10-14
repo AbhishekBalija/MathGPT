@@ -72,6 +72,27 @@ describe("generateValidSolution", () => {
   });
 });
 
+describe("a proof answer with only a sentence", () => {
+  it("uses the sentence as the answer instead of asking again", async () => {
+    // Gemini sometimes ends a proof with only "Hence proved ..." in answer.sentence
+    const reply = JSON.stringify({
+      problemType: "geometry",
+      solution: { ...FAKE_CONTENT, answer: { sentence: "Hence, the angles opposite equal sides are equal." } },
+    });
+    let calls = 0;
+    const result = await generateValidSolution("prove it", "prompt", async () => {
+      calls += 1;
+      return { text: reply };
+    });
+
+    expect(calls).toBe(1);
+    expect(result.content.answer).toEqual({
+      text: "Hence, the angles opposite equal sides are equal.",
+      sentence: "Hence, the angles opposite equal sides are equal.",
+    });
+  });
+});
+
 describe("not a math problem", () => {
   it("stops at once when the AI says the text is not math", async () => {
     let calls = 0;
