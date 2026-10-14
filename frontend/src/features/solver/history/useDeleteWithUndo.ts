@@ -8,7 +8,7 @@ const FAILED_MS = 5000;
 // Delete with Undo. The item is hidden at once and the real delete (`commit`) runs
 // after 5 seconds, unless the student taps Undo. Leaving the page, or deleting a
 // second item, finishes the waiting delete straight away. If `commit` fails the
-// item comes back and a short message is shown.
+// item comes back and a short message is shown, unless another Undo is open.
 export function useDeleteWithUndo(commit: (id: string) => Promise<boolean>) {
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const [toast, setToast] = useState<DeleteToast | null>(null);
@@ -41,8 +41,10 @@ export function useDeleteWithUndo(commit: (id: string) => Promise<boolean>) {
         unhide(id);
         return;
       }
+      // The item comes back, which shows it was not deleted. The message only
+      // shows when no Undo is open: another item's Undo must not be taken away.
       unhide(id);
-      setToast({ kind: "failed" });
+      setToast((current) => (current?.kind === "undo" ? current : { kind: "failed" }));
       if (failedTimer.current) clearTimeout(failedTimer.current);
       failedTimer.current = setTimeout(() => {
         setToast((current) => (current?.kind === "failed" ? null : current));
