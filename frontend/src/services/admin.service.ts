@@ -149,6 +149,22 @@ export const adminService = {
     }>(`/admin/errors/${errorId}/resolve`);
     return response.data;
   },
+
+  /**
+   * Get "something looks wrong" reports, newest first
+   */
+  getReports: async (limit = 50): Promise<ReportsResponse> => {
+    const response = await api.get<ReportsResponse>(`/admin/reports?limit=${limit}`);
+    return response.data;
+  },
+
+  /**
+   * The report was a mistake: serve its answer from the shared cache again
+   */
+  unblockReport: async (reportId: string): Promise<{ cacheStatus: "shared" | "unchecked" }> => {
+    const response = await api.post<{ cacheStatus: "shared" | "unchecked" }>(`/admin/reports/${reportId}/unblock`);
+    return response.data;
+  },
 };
 
 // Error types
@@ -172,6 +188,23 @@ export interface ErrorStats {
 export interface ErrorsResponse {
   stats: ErrorStats;
   errors: ErrorItem[];
+}
+
+// Report types
+// Null when the answer never went into the shared cache (an instant answer)
+export type ReportCacheStatus = "blocked" | "shared" | "unchecked" | null;
+
+export interface ReportItem {
+  id: string;
+  problemText: string | null;
+  answerText: string | null;
+  reason: string | null;
+  cacheStatus: ReportCacheStatus;
+  createdAt: string;
+}
+
+export interface ReportsResponse {
+  reports: ReportItem[];
 }
 
 // Analytics types

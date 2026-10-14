@@ -140,6 +140,20 @@ export const solutionCache = {
   },
 
   /**
+   * An Admin decided a report was a mistake. The entry goes back to how it
+   * was before: shared if its answer passed a check, unchecked if not.
+   * Returns the new status, or null if the entry was not blocked.
+   */
+  async unblock(key: string): Promise<"shared" | "unchecked" | null> {
+    const [row] = await db
+      .update(cacheTable)
+      .set({ status: sql`case when ${cacheTable.checkMethod} is null then 'unchecked' else 'shared' end` })
+      .where(and(eq(cacheTable.key, key), eq(cacheTable.status, "blocked")))
+      .returning({ status: cacheTable.status });
+    return row ? (row.status as "shared" | "unchecked") : null;
+  },
+
+  /**
    * A second model agreed with this answer: serve it from now on. The
    * answer it agreed with replaces the stored one, since that is what was checked.
    */

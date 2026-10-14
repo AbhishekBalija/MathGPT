@@ -687,6 +687,55 @@ Mark an error as resolved. **Requires admin.**
 
 ---
 
+### GET /admin/reports
+
+"Something looks wrong" reports from students, newest first. **Requires admin.**
+
+Query: `limit` (1 to 200, default 50).
+
+`cacheStatus` is the shared-cache entry the report blocked: `blocked` (not served
+to anyone), `shared` or `unchecked` (an Admin unblocked it), or `null` (an
+instant answer, which is never cached).
+
+**Response (200):**
+
+```json
+{
+  "reports": [
+    {
+      "id": "report_id",
+      "problemText": "If y = log(sec x + tan x), then dy/dx is equal to:",
+      "answerText": "\\sec x",
+      "reason": null,
+      "cacheStatus": "blocked",
+      "createdAt": "2026-10-14T16:34:39.709Z"
+    }
+  ]
+}
+```
+
+---
+
+### POST /admin/reports/:id/unblock
+
+The report was a mistake, so the answer it blocked goes back to how it was:
+`shared` if it passed a check, `unchecked` if it never did (unchecked answers
+are still not served). This applies to every report on the same answer.
+**Requires admin.**
+
+**Response (200):**
+
+```json
+{ "cacheStatus": "shared" }
+```
+
+| Status | Error                                         |
+| ------ | --------------------------------------------- |
+| 404    | Report not found                              |
+| 409    | This report has no blocked answer to unblock |
+
+---
+
 ## Error Responses
 
 All endpoints return errors in this format:
