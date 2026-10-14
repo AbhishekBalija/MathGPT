@@ -19,12 +19,14 @@ const MAX_REASON_LENGTH = 300;
  * `reasons` holds what each model actually said, for the admin error log.
  */
 export class AllModelsFailedError extends Error {
+  readonly attempts: ReadonlyArray<{ label: string; reason: string }>;
   readonly reasons: string;
 
-  constructor(reasons: string) {
+  constructor(attempts: Array<{ label: string; reason: string }>) {
     super("All models failed");
     this.name = "AllModelsFailedError";
-    this.reasons = reasons;
+    this.attempts = attempts;
+    this.reasons = attempts.map((attempt) => `${attempt.label}: ${attempt.reason}`).join(" | ");
   }
 }
 
@@ -75,9 +77,10 @@ export async function runWithFailover<T>(
   } catch (error) {
     const backupReason = errorMessage(error);
     console.log(`${backup.label} failed too: ${backupReason}`);
-    throw new AllModelsFailedError(
-      `${primary.label}: ${primaryReason} | ${backup.label}: ${backupReason}`
-    );
+    throw new AllModelsFailedError([
+      { label: primary.label, reason: primaryReason },
+      { label: backup.label, reason: backupReason },
+    ]);
   }
 }
 
