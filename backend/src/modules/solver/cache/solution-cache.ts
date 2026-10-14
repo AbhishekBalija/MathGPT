@@ -11,7 +11,7 @@
 import { createHash } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../../db/client";
-import { solutionCache as cacheTable, type CheckMethod } from "../../../db/schema";
+import { solutionCache as cacheTable, type CacheStatus, type CheckMethod } from "../../../db/schema";
 import { PROMPT_VERSION } from "../../../services/ai/prompts";
 import type { ProblemType } from "../../../types/solve.types";
 import { solutionV2Schema, type SolutionV2Content } from "../../solutions/solution-v2.schema";
@@ -81,7 +81,8 @@ export const solutionCache = {
 
   /**
    * Stores a solution. Does nothing if the key is already there, so a
-   * blocked entry stays blocked and a shared one is not replaced.
+   * blocked entry stays blocked and a shared one is not replaced. Says
+   * whether it was new, and if not, the status the entry already has.
    */
   async put(
     key: string,
@@ -90,8 +91,8 @@ export const solutionCache = {
       checkMethod?: CheckMethod;
       checkedBy: { primary?: string; second?: string };
     }
-  ): Promise<void> {
-    await db
+  ): Promise<{ isNew: true } | { isNew: false; status: CacheStatus }> {
+    const inserted = await db
       .insert(cacheTable)
       .values({
         key,
@@ -101,7 +102,15 @@ export const solutionCache = {
         checkMethod: entry.checkMethod ?? null,
         checkedBy: entry.checkedBy,
       })
-      .onConflictDoNothing({ target: cacheTable.key });
+      .onConflictDoNothing({ target: cacheTable.key })
+      .returning({ key: cacheTable.key });
+    if (inserted.length > 0) return { isNew: true };
+
+    const [existing] = await db
+      .select({ status: cacheTable.status })
+      .from(cacheTable)
+      .where(eq(cacheTable.key, key));
+    return { isNew: false, status: existing?.status ?? "blocked" };
   },
 
   /** A student reported it: never serve it again, and never re-share it. */
@@ -109,11 +118,23 @@ export const solutionCache = {
     await db.update(cacheTable).set({ status: "blocked" }).where(eq(cacheTable.key, key));
   },
 
-  /** A second model agreed: start serving an unchecked entry. */
-  async shareAfterSecondCheck(key: string, checkedBy: { primary?: string; second: string }): Promise<void> {
+  /**
+   * A second model agreed with this answer: serve it from now on. The
+   * answer it agreed with replaces the stored one, since that is what was checked.
+   */
+  async shareAfterSecondCheck(
+    key: string,
+    entry: CachedSolution & { checkedBy: { primary?: string; second: string } }
+  ): Promise<void> {
     await db
       .update(cacheTable)
-      .set({ status: "shared", checkMethod: "second-model", checkedBy })
+      .set({
+        status: "shared",
+        checkMethod: "second-model",
+        checkedBy: entry.checkedBy,
+        content: solutionV2Schema.parse(entry.content),
+        problemType: entry.problemType,
+      })
       .where(and(eq(cacheTable.key, key), eq(cacheTable.status, "unchecked")));
   },
 };
