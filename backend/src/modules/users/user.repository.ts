@@ -127,6 +127,19 @@ export const userRepository = {
     return user ?? null;
   },
 
+  /** Marks a User as one of our own accounts (or not). Admins always stay team. */
+  async setTeam(id: string, isTeam: boolean): Promise<User | null> {
+    if (!isUserId(id)) {
+      return null;
+    }
+    const [user] = await db
+      .update(users)
+      .set({ isTeam: sql`${isTeam} or ${users.isAdmin}`, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user ?? null;
+  },
+
   async setAdmin(id: string, isAdmin: boolean): Promise<User | null> {
     if (!isUserId(id)) {
       return null;
