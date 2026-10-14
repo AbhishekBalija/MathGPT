@@ -43,11 +43,14 @@ export function ProblemHeader({ solution, onEdit, onNew }: ProblemHeaderProps) {
         </div>
       </div>
       <div className="mt-2 text-2xl">
-        {problem.latex ? <Math latex={problem.latex} display /> : null}
+        {/* Words win: the AI sometimes also writes a word problem as one long
+            \text{...} formula, which showed it twice and ran off a phone screen */}
         {problem.text ? (
           <p className="text-lg">
             <InlineText text={problem.text} />
           </p>
+        ) : problem.latex ? (
+          <Math latex={problem.latex} display />
         ) : null}
       </div>
       <p className="mt-1 text-gray-600 dark:text-gray-400">
