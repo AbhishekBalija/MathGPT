@@ -270,6 +270,12 @@ and only to within about an hour. So:
   - The email lists new failed solves, reports and feedback since yesterday,
     with links.
   - It is skipped when there is nothing new.
+- **An outside check for "everything is down"**: the alerts above need a
+  running backend, a working database and real solves.
+  - A GitHub Actions workflow loads `/health` and the site every 10 minutes.
+    The repo is public, so this is free. GitHub emails the owner when a run
+    fails.
+  - `/health` checks the database and answers 503 when it can't reach it.
 - **Delivery**: Resend sends every email, to every admin. They need
   `ALERT_EMAILS_ENABLED=true`, so local runs and tests never send real mail.
 
