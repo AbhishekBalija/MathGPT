@@ -8,6 +8,7 @@ import AuthLayout from "../components/auth/AuthLayout";
 import * as ui from "../components/auth/authStyles";
 import { useGoogleButtonWidth } from "../components/auth/useGoogleButtonWidth";
 import { useThemeStore } from "../stores/themeStore";
+import { isGoogleSignInEnabled } from "../utils/googleSignIn";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -102,18 +103,23 @@ const Register = () => {
           </div>
         )}
 
-        <div className="flex justify-center">
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            theme="outline"
-            width={String(googleWidth)}
-            text="signup_with"
-            shape="rectangular"
-          />
-        </div>
+        {/* Only when Google sign-in is set up: the button crashes the page otherwise */}
+        {isGoogleSignInEnabled() ? (
+          <>
+            <div className="flex justify-center">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                theme="outline"
+                width={String(googleWidth)}
+                text="signup_with"
+                shape="rectangular"
+              />
+            </div>
 
-        <div className={ui.divider}>or</div>
+            <div className={ui.divider}>or</div>
+          </>
+        ) : null}
 
         <form className="space-y-3" onSubmit={handleEmailRegister}>
           <div>
