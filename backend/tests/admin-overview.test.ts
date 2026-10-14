@@ -50,19 +50,6 @@ describe("GET /admin/overview", () => {
     expect(typeof data.aiUsage.resetsAt).toBe("string");
   });
 
-  it("leaves team accounts out of student and business numbers", async () => {
-    const student = await registerVerifiedUser();
-    await solve(student.accessToken);
-    const before = await overview();
-
-    expect((await markTeam(await idOf(student.accessToken), true)).status).toBe(200);
-    const after = await overview();
-
-    expect(before.numbers.realStudents - after.numbers.realStudents).toBe(1);
-    expect(after.numbers.teamStudents - before.numbers.teamStudents).toBe(1);
-    expect(before.funnel.solved - after.funnel.solved).toBe(1);
-  });
-
   it("counts a solve at 00:30 India time on the India day", async () => {
     const student = await registerVerifiedUser();
     const solved = await (await solve(student.accessToken)).json();

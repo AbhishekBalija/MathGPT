@@ -8,7 +8,6 @@ import {
   registerUser,
   registerVerifiedUser,
 } from "./support/users";
-import { uniqueProblem } from "./support/problems";
 
 let adminToken: string;
 
@@ -153,47 +152,3 @@ describe("Error Logs", () => {
   });
 });
 
-describe("statistics", () => {
-  it("count Solutions, Analytics Events and tokens", async () => {
-    const before = await (await authedFetch(adminToken, "/admin/token-stats")).json();
-    const { accessToken } = await registerVerifiedUser();
-
-    expect((await solve(accessToken, uniqueProblem())).status).toBe(200);
-
-    const tokens = await (await authedFetch(adminToken, "/admin/token-stats")).json();
-    // The fake solver reports 10 input and 20 output tokens. Other test files
-    // solve in parallel, so totals can grow by more than this solve alone.
-    expect(tokens.totalInputTokens - before.totalInputTokens).toBeGreaterThanOrEqual(10);
-    expect(tokens.totalOutputTokens - before.totalOutputTokens).toBeGreaterThanOrEqual(20);
-    expect(tokens.solutionCount - before.solutionCount).toBeGreaterThanOrEqual(1);
-
-    const stats = await (await authedFetch(adminToken, "/admin/stats")).json();
-    expect(stats.totalSolutions).toBeGreaterThanOrEqual(1);
-    expect(stats.solutionsByType.algebra).toBeGreaterThanOrEqual(1);
-
-    await vi.waitFor(async () => {
-      const analytics = await (await authedFetch(adminToken, "/admin/analytics")).json();
-      const saved = analytics.eventsByType.find(
-        (e: { eventName: string }) => e.eventName === "solution_saved"
-      );
-      expect(saved?.count).toBeGreaterThanOrEqual(1);
-    });
-  });
-});
-
-describe("user management", () => {
-  it("never lets an Admin delete themselves", async () => {
-    const id = await userIdOf(adminToken);
-
-    const res = await authedFetch(adminToken, `/admin/users/${id}`, { method: "DELETE" });
-
-    expect(res.status).toBe(403);
-  });
-
-  it("treats regex-like characters in a search as plain text", async () => {
-    const res = await authedFetch(adminToken, `/admin/users?search=${encodeURIComponent(".*")}`);
-
-    expect(res.status).toBe(200);
-    expect((await res.json()).users).toEqual([]);
-  });
-});

@@ -59,7 +59,11 @@ describe("GET /admin/reports", () => {
     const solved = await solveAs(student.accessToken, problem);
     await reportAs(student.accessToken, solved.solution.id, "Step 2 is wrong");
 
-    const [newest] = await listReports();
+    // Other test files report at the same time, so find this test's own report
+    const reports = await listReports();
+    const newest = reports.find((report) => report.problemText === problem);
+    // Newest first: it comes before every older report
+    expect(reports.slice(1).every((report) => String(report.createdAt) <= String(reports[0]?.createdAt))).toBe(true);
 
     expect(newest).toMatchObject({
       problemText: problem,
