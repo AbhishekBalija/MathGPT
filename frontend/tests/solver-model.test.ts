@@ -58,6 +58,26 @@ describe("toSolutionV2", () => {
   });
 });
 
+describe("toSolutionV2 edge cases", () => {
+  it("does not crash on an invalid date, and sorts it with the oldest", () => {
+    const broken = { ...oldSolution, createdAt: new Date("not a date") };
+    expect(() => toSolutionV2(broken)).not.toThrow();
+    expect(toSolutionV2(broken).createdAt).toBe(new Date(0).toISOString());
+  });
+
+  it("keeps a solution with no steps", () => {
+    const v2 = toSolutionV2({ ...oldSolution, steps: [] });
+    expect(v2.steps).toEqual([]);
+    expect(v2.answer).toEqual({ latex: "x = 2" });
+  });
+
+  it("maps the old final answer to answer.latex and the problem to problem.latex", () => {
+    const v2 = toSolutionV2(oldSolution);
+    expect(v2.problem.latex).toBe("2x + 3 = 7");
+    expect(v2.answer.latex).toBe("x = 2");
+  });
+});
+
 describe("profileFor", () => {
   it("hides the marks key and sections for class 1-5 and college", () => {
     expect(profileFor("class1-5")).toEqual({ sections: false, marksKey: false });
@@ -68,5 +88,10 @@ describe("profileFor", () => {
   });
   it("shows them for class 9-10", () => {
     expect(profileFor("class9-10")).toEqual({ sections: true, marksKey: true });
+  });
+  it("shows them for class 11-12, and not for class 6-8 or grad", () => {
+    expect(profileFor("class11-12")).toEqual({ sections: true, marksKey: true });
+    expect(profileFor("class6-8")).toEqual({ sections: false, marksKey: false });
+    expect(profileFor("grad")).toEqual({ sections: false, marksKey: false });
   });
 });
