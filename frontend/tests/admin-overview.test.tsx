@@ -65,6 +65,19 @@ describe("admin Overview", () => {
     expect(screen.getByRole("link", { name: "Open in Failed solves" }).getAttribute("href")).toBe("/admin/failed/e1");
   });
 
+  it("closes the details when a refresh drops that item", async () => {
+    const item = { kind: "failed" as const, id: "e1", title: "(logx)^2/x", subtitle: "UNKNOWN_ERROR", at: "2026-10-10T16:43:00.000Z" };
+    getOverview.mockResolvedValueOnce(overview({ status: { state: "attention", failingSince: null }, needsYou: [item] })).mockResolvedValue(overview());
+    renderOverview();
+
+    fireEvent.click(await screen.findByRole("button", { name: /\(logx\)\^2\/x/ }));
+    expect(screen.getByRole("complementary", { name: "Details" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+
+    expect(await screen.findByText("All fine")).toBeTruthy();
+    expect(screen.queryByRole("complementary", { name: "Details" })).toBeNull();
+  });
+
   it("says when solving is failing", async () => {
     const since = new Date(Date.now() - 10 * 60 * 1000);
     getOverview.mockResolvedValue(overview({ status: { state: "down", failingSince: since.toISOString() } }));

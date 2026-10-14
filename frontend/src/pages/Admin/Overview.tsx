@@ -39,10 +39,12 @@ export default function Overview() {
   }
 
   const line = neoLine(data);
-  const page = selected ? ITEM_PAGES[selected.kind] : null;
+  // A refresh can drop the picked item (someone resolved it); then the panel closes
+  const current = selected ? (data.needsYou.find((item) => item.kind === selected.kind && item.id === selected.id) ?? null) : null;
+  const page = current ? ITEM_PAGES[current.kind] : null;
 
   return (
-    <div className={selected ? "lg:grid lg:grid-cols-[1fr_380px]" : ""}>
+    <div className={current ? "lg:grid lg:grid-cols-[1fr_380px]" : ""}>
       {/* One column on phones, with "Needs you" right after Neo; two columns on laptops */}
       <div className="flex min-w-0 flex-col gap-4 p-4 md:p-8 lg:grid lg:grid-cols-2">
         <div className="order-0 flex flex-wrap items-center justify-between gap-3 lg:col-span-2">
@@ -59,7 +61,7 @@ export default function Overview() {
           <NeoStatus state={data.status.state} title={line.title} text={line.text} />
         </div>
         <div className="order-2 lg:order-5">
-          <NeedsYou items={data.needsYou} selectedId={selected?.id ?? null} onSelect={setSelected} />
+          <NeedsYou items={data.needsYou} selectedId={current?.id ?? null} onSelect={setSelected} />
         </div>
         <div className="order-3 lg:col-span-2">
           <NumberRow numbers={data.numbers} />
@@ -75,18 +77,18 @@ export default function Overview() {
         </div>
       </div>
 
-      {selected && page ? (
+      {current && page ? (
         <DetailsPanel onClose={() => setSelected(null)}>
           <p className={`text-xs font-semibold uppercase tracking-wider ${MUTED}`}>{page.name}</p>
-          <h2 className="mt-1 text-lg font-semibold break-words whitespace-pre-wrap">{selected.title}</h2>
+          <h2 className="mt-1 text-lg font-semibold break-words whitespace-pre-wrap">{current.title}</h2>
           <dl className="mt-4 grid grid-cols-[96px_1fr] gap-x-3 gap-y-1.5 text-sm">
             <dt className={MUTED}>What</dt>
-            <dd>{selected.subtitle}</dd>
+            <dd>{current.subtitle}</dd>
             <dt className={MUTED}>When</dt>
-            <dd>{formatAdminTime(new Date(selected.at))}</dd>
+            <dd>{formatAdminTime(new Date(current.at))}</dd>
           </dl>
           <Link
-            to={`${page.path}/${selected.id}`}
+            to={`${page.path}/${current.id}`}
             className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-gray-900 px-4 text-sm font-semibold text-white dark:bg-gray-50 dark:text-gray-900"
           >
             Open in {page.name}

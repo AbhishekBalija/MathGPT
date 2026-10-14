@@ -16,13 +16,14 @@ const TOPIC_LABELS: Record<string, string> = {
 };
 
 const share = (part: number, whole: number) => (whole === 0 ? 0 : (part / whole) * 100);
-const percent = (part: number, whole: number) => `${Math.round(share(part, whole))}%`;
+// Capped at 100%, so an old account that solved before verifying cannot push a step past it
+const percent = (part: number, whole: number) => `${Math.min(100, Math.round(share(part, whole)))}%`;
 
 export function NumberRow({ numbers }: { numbers: AdminOverview["numbers"] }) {
   const items = [
     { label: "Solves", value: numbers.solves, note: `+${numbers.solvesToday} today`, tone: "text-emerald-700 dark:text-emerald-400" },
     { label: "Real students", value: numbers.realStudents, note: `+${numbers.teamStudents} team`, tone: MUTED },
-    { label: "Active this week", value: numbers.activeThisWeek, note: "", tone: MUTED },
+    { label: "Active, last 7 days", value: numbers.activeThisWeek, note: "", tone: MUTED },
     {
       label: "Failed tries",
       value: numbers.failedTries,
