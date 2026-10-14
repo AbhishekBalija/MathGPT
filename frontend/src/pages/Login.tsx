@@ -7,6 +7,7 @@ import AuthLayout from "../components/auth/AuthLayout";
 import * as ui from "../components/auth/authStyles";
 import { useGoogleButtonWidth } from "../components/auth/useGoogleButtonWidth";
 import { isGoogleSignInEnabled } from "../utils/googleSignIn";
+import { pathAfterLogin } from "../utils/pathAfterLogin";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -18,14 +19,9 @@ const Login = () => {
   const [password, setPassword] = useState("");
 
   const getRedirectPath = (isAdmin: boolean | undefined) => {
-    // If there's a saved location, go there (unless it's an admin trying to access /app which is fine)
     const savedPath = (location.state as { from?: { pathname: string } })?.from
       ?.pathname;
-    if (savedPath && savedPath !== "/") {
-      return savedPath;
-    }
-    // Otherwise redirect based on admin status
-    return isAdmin ? "/admin" : "/app";
+    return pathAfterLogin(savedPath, isAdmin);
   };
 
   const handleGoogleSuccess = async (
