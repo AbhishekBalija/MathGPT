@@ -8,7 +8,8 @@ import { errorLogs } from "../../../db/schema";
  * Matches `normalize` in solver/cache/solution-cache.ts: trim, collapse
  * whitespace, "−" becomes "-".
  */
-export const normalizedProblem = sql<string>`regexp_replace(replace(trim(${errorLogs.problemText}), '−', '-'), '\\s+', ' ', 'g')`;
+// Collapse first, then trim: Postgres trim() only strips spaces, not newlines or tabs
+export const normalizedProblem = sql<string>`trim(regexp_replace(replace(${errorLogs.problemText}, '−', '-'), '\\s+', ' ', 'g'))`;
 export const studentKey = sql<string>`coalesce(${errorLogs.userId}::text, '')`;
 
 export const failedRepository = {

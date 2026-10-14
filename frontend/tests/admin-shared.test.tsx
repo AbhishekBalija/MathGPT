@@ -75,6 +75,26 @@ describe("useAutoRefresh", () => {
   });
 });
 
+describe("useAutoRefresh with slow loads", () => {
+  it("never lets an older load overwrite a newer one", async () => {
+    setVisibility("visible");
+    let finishSlow: (value: string) => void = () => {};
+    const load = vi
+      .fn()
+      .mockImplementationOnce(() => new Promise<string>((resolve) => (finishSlow = resolve)))
+      .mockResolvedValueOnce("new");
+
+    const { result } = renderHook(() => useAutoRefresh(load, 60_000));
+    await act(async () => {
+      result.current.refresh();
+    });
+    expect(result.current.data).toBe("new");
+
+    await act(async () => finishSlow("old"));
+    expect(result.current.data).toBe("new");
+  });
+});
+
 describe("NeoStatus", () => {
   it.each([
     ["fine", "All fine"],

@@ -20,14 +20,29 @@ export function useAutoRefresh<T>(load: () => Promise<T>, intervalMs = 60_000): 
     loadRef.current = load;
   }, [load]);
 
+  // Only the newest load may update the screen, and none after the page closes
+  const latest = useRef(0);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
   const refresh = useCallback(() => {
+    const request = ++latest.current;
+    const isCurrent = () => mounted.current && request === latest.current;
     loadRef.current().then(
       (next) => {
+        if (!isCurrent()) return;
         setData(next);
         setError(null);
         setUpdatedAt(new Date());
       },
-      (failure: unknown) => setError(failure instanceof Error ? failure.message : "Couldn't load this"),
+      (failure: unknown) => {
+        if (isCurrent()) setError(failure instanceof Error ? failure.message : "Couldn't load this");
+      },
     );
   }, []);
 

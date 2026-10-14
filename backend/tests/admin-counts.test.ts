@@ -26,8 +26,8 @@ describe("GET /admin/counts", () => {
     const repeated = uniqueProblem(`integrate ${FAKE_SOLVER_FAILURE}`);
 
     await solve(accessToken, repeated);
-    // The same problem again, with extra spaces: still the same problem
-    await solve(accessToken, `  ${repeated.replace(" ", "   ")} `);
+    // The same problem again, with extra spaces and a pasted newline: still the same problem
+    await solve(accessToken, `  ${repeated.replace(" ", "   ")}\n`);
     await solve(accessToken, uniqueProblem(`solve ${FAKE_SOLVER_FAILURE}`));
 
     // Failures are logged in the background
