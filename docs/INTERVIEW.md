@@ -296,6 +296,50 @@ When the prompt changes, solutions written under the old prompt may not follow
 the new rules. Putting the version in the key means old entries are simply
 never found again, with no clean-up job.
 
+### Advanced: A library call froze the server on "(x+1)^5 = 32". Why, and how do you avoid it?
+
+To know whether the AI listed every root, we needed the equation's degree,
+and used mathjs `rationalize`. It expands polynomials in a way that grows
+exponentially with the power: `(x+1)^4` took 0.2 s and `(x+1)^5` ran past
+15 s. JavaScript runs one thing at a time, so a long synchronous call blocks
+every other request on that server, not just this one. The fix was a small
+function of our own: keep each polynomial as a list of coefficients, and
+multiply lists directly, with a cap on the degree (12). The lesson: anything
+that runs on user input needs a known upper bound on its work. Time it on
+the worst inputs you can think of, not just the usual ones.
+
+## Solving with AI
+
+### Intermediate: Why try the backup model only after the primary fails, instead of racing both?
+
+A race (`Promise.race` on two models) is faster when the primary is slow,
+but it pays for two answers on every problem, and our first version had a
+worse bug: a backup that failed fast rejected the race and threw away a
+primary that was still working. Sequential failover runs the backup only
+after the primary has failed or passed its time limit, so we pay for one
+answer in the normal case and a broken backup can never hurt a working
+primary. The cost is a slower answer on the rare failover.
+
+### Intermediate: Why check the model's JSON with zod and retry once?
+
+A model's reply is untrusted input, just like a request body. It can miss
+fields, add the wrong types, or break the JSON with LaTeX backslashes. The
+zod schema (`SolutionV2`) is the contract: the reply is parsed against it
+before anything is saved or shown, and the cache checks it again on the way
+out. A single retry fixes most bad replies, because they are random, not
+systematic. A second failure becomes a friendly error with no Credit spent,
+instead of a broken page or a retry loop that burns money.
+
+### Basic: Why must a migration only add things before the code that uses it ships?
+
+Production applies the migration first and the new code goes live a little
+later. In between, the old code runs against the new schema. Adding a
+nullable column or a new table is invisible to old code, so nothing breaks.
+Renaming or dropping a column would crash the old code the moment the
+migration runs. So: add first, ship the code, and remove the old thing in a
+later release once no running code needs it. That is how this redesign's
+four migrations went to production before the merge.
+
 ## Abuse guards
 
 ### Intermediate: Your robot check needs a secret. What happens if it is missing?
