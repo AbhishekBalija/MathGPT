@@ -45,11 +45,11 @@ Reply with this envelope:
         "block": { "type": "<block type>" }
       }
     ],
-    "answer": { "latex": "<answer in LaTeX>", "text": "<answer in words, if not a formula>", "sentence": "<conclusion sentence with units>", "unit": "<unit, if any>" },
+    "answer": { "latex": "<answer in LaTeX>", "text": "<the answer in words, only when it is not a formula or number>", "sentence": "<conclusion sentence with units>", "unit": "<unit, if any>" },
     "hint": "<one sentence nudging the student toward the first move, without giving the answer>"
   }
 }
-"board", "sections", "text" (in problem), "sentence" and "unit" are optional: leave them out when they do not apply. "problem" needs "latex" or "text". "answer" needs "latex" or "text".
+"board", "sections", "text" (in problem), "sentence" and "unit" are optional: leave them out when they do not apply. Never put the same answer in both "latex" and "text": for a formula or a number, give only "latex". "problem" needs "latex" or "text". "answer" needs "latex" or "text".
 
 BLOCK TYPES (put exactly one in each step's "block"):
 - {"type": "equation", "latex": "<LaTeX, may use \\\\begin{aligned} ... \\\\end{aligned}>"} for algebra, calculus and most steps.
@@ -86,7 +86,7 @@ HOW TO WRITE THE SOLUTION:
  * Part of every shared-cache key. Change it whenever the prompt changes, so
  * solutions written under an old prompt are never served again.
  */
-export const PROMPT_VERSION = "2026-10-14.2";
+export const PROMPT_VERSION = "2026-10-15.1";
 
 /**
  * For the second, independent check: a different model gives only the final
