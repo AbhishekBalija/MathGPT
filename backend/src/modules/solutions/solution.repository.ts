@@ -12,6 +12,7 @@ import { isUuid as isId } from "../../lib/ids";
 import type { DbExecutor } from "../../db/transaction";
 import { solutions, type SolutionRow } from "../../db/schema";
 import type { ProblemType, Solution } from "../../types/solve.types";
+import { solutionV2Schema, type SolutionV2Content } from "./solution-v2.schema";
 
 export type StoredSolution = SolutionRow;
 
@@ -20,6 +21,7 @@ export interface HistoryItem {
   problem: string;
   problemType: ProblemType;
   finalAnswer: string;
+  formatVersion: number;
   createdAt: Date;
 }
 
@@ -28,14 +30,32 @@ function toCountMap(rows: Array<{ problemType: string; count: number }>): Record
   return Object.fromEntries(rows.map((row) => [row.problemType, row.count]));
 }
 
+// How many schema problems go in the error. Enough to fix it, short enough for a log line.
+const MAX_LOGGED_ISSUES = 3;
+
+// The content, checked. A failure becomes a short message, not zod's full dump.
+function checkedContent(content: unknown): SolutionV2Content {
+  const parsed = solutionV2Schema.safeParse(content);
+  if (parsed.success) return parsed.data;
+  const issues = parsed.error.issues
+    .slice(0, MAX_LOGGED_ISSUES)
+    .map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`);
+  throw new Error(`Solution content is not valid: ${issues.join("; ")}`);
+}
+
 export const solutionRepository = {
-  /** Stores a Solution under the id and time the solver gave it. */
+  /**
+   * Stores a Solution under the id and time the solver gave it. If it has
+   * new-format content, the content is checked first and saved as version 2.
+   */
   async create(
     userId: string,
     solution: Solution,
     chatId?: string,
     executor: DbExecutor = db
   ): Promise<StoredSolution> {
+    // Throws if the content does not match the schema, so bad content is never saved
+    const content = solution.content ? checkedContent(solution.content) : null;
     const [row] = await executor
       .insert(solutions)
       .values({
@@ -47,6 +67,9 @@ export const solutionRepository = {
         steps: solution.steps,
         finalAnswer: solution.finalAnswer,
         summary: solution.summary,
+        content,
+        formatVersion: content ? 2 : 1,
+        cacheKey: solution.cacheKey ?? null,
         processingTimeMs: solution.processingTimeMs,
         inputTokens: solution.tokenUsage?.inputTokens ?? 0,
         outputTokens: solution.tokenUsage?.outputTokens ?? 0,
@@ -80,6 +103,7 @@ export const solutionRepository = {
         problem: solutions.problem,
         problemType: solutions.problemType,
         finalAnswer: solutions.finalAnswer,
+        formatVersion: solutions.formatVersion,
         createdAt: solutions.createdAt,
       })
       .from(solutions)

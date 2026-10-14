@@ -1,32 +1,39 @@
 import { describe, expect, it } from "vitest";
-import { FAKE_FINAL_ANSWER } from "./support/fake-math-solver";
+import {
+  FAKE_BROKEN_FORMAT,
+  FAKE_CONTENT,
+  FAKE_FINAL_ANSWER,
+} from "./support/fake-math-solver";
+import { solutionRepository } from "../src/modules/solutions/solution.repository";
 import { authedFetch, registerAdmin, registerVerifiedUser } from "./support/users";
+import { uniqueProblem } from "./support/problems";
 
-async function solve(accessToken: string, problem = "2x = 4") {
+async function solve(accessToken: string, problem = uniqueProblem()) {
   const res = await authedFetch(accessToken, "/api/solve", {
     method: "POST",
     body: { problem },
   });
   expect(res.status).toBe(200);
-  return (await res.json()).solution as { id: string; problem: string; createdAt: string };
+  return (await res.json()).solution as { id: string; createdAt: string };
 }
 
 describe("a User's Solutions", () => {
   it("can be opened and deleted with the ID that solving returned", async () => {
     const { accessToken } = await registerVerifiedUser();
-    const solution = await solve(accessToken);
+    const problem = uniqueProblem();
+    const solution = await solve(accessToken, problem);
 
     const opened = await authedFetch(accessToken, `/api/solution/${solution.id}`);
     expect(opened.status).toBe(200);
     const body = await opened.json();
     expect(body.solution).toMatchObject({
       id: solution.id,
-      problem: "2x = 4",
+      problem,
       finalAnswer: FAKE_FINAL_ANSWER,
+      formatVersion: 2,
       // Same moment the solve response reported
       createdAt: solution.createdAt,
     });
-    expect(body.solution.steps).toHaveLength(2);
 
     const deleted = await authedFetch(accessToken, `/api/solution/${solution.id}`, {
       method: "DELETE",
@@ -36,18 +43,114 @@ describe("a User's Solutions", () => {
     expect(reopened.status).toBe(404);
   });
 
+  it("saved in the new format come back with their content unchanged", async () => {
+    const { accessToken } = await registerVerifiedUser();
+    const solution = await solve(accessToken);
+
+    const res = await authedFetch(accessToken, `/api/solution/${solution.id}`);
+
+    const body = await res.json();
+    expect(body.solution.formatVersion).toBe(2);
+    expect(body.solution.content).toEqual(FAKE_CONTENT);
+    const history = await (await authedFetch(accessToken, "/api/history")).json();
+    expect(history.history[0].formatVersion).toBe(2);
+    // History stays light
+    expect(history.history[0].content).toBeUndefined();
+  });
+
+  it("saved in the old format come back as version 1 with their steps and no content", async () => {
+    const { accessToken } = await registerVerifiedUser();
+    // The solver no longer makes old-format solutions, so save one the way it used to be
+    const me = await (await authedFetch(accessToken, "/auth/me")).json();
+    const id = crypto.randomUUID();
+    await solutionRepository.create(me.user.id, {
+      id,
+      problem: "2x = 4",
+      problemType: "algebra",
+      steps: [
+        {
+          stepNumber: 1,
+          expression: "x = 2",
+          justification: "Divide both sides by 2",
+          explanation: "Dividing both sides by 2 leaves x on its own.",
+          status: "VERIFIED",
+        },
+        {
+          stepNumber: 2,
+          expression: "x = 2",
+          justification: "State the answer",
+          explanation: "This is the answer.",
+          status: "VERIFIED",
+        },
+      ],
+      finalAnswer: FAKE_FINAL_ANSWER,
+      summary: "Isolate x.",
+      processingTimeMs: 1,
+      createdAt: new Date().toISOString(),
+    });
+
+    const res = await authedFetch(accessToken, `/api/solution/${id}`);
+
+    const body = await res.json();
+    expect(body.solution.formatVersion).toBe(1);
+    expect(body.solution.content).toBeNull();
+    expect(body.solution.steps).toHaveLength(2);
+    const history = await (await authedFetch(accessToken, "/api/history")).json();
+    expect(history.history[0].formatVersion).toBe(1);
+  });
+
+  it("with broken new-format content are not saved", async () => {
+    const { accessToken } = await registerVerifiedUser();
+
+    const res = await authedFetch(accessToken, "/api/solve", {
+      method: "POST",
+      body: { problem: `2x = 4 ${FAKE_BROKEN_FORMAT}` },
+    });
+
+    expect(res.status).toBe(500);
+    const history = await (await authedFetch(accessToken, "/api/history")).json();
+    expect(history.history).toEqual([]);
+    // Nothing saved, so no Credit spent either
+    const profile = await (await authedFetch(accessToken, "/api/profile")).json();
+    expect(profile.dailyCredits).toMatchObject({ used: 0 });
+  });
+
+  it("explain broken content in a short message, at most 3 problems", async () => {
+    const broken = { ...FAKE_CONTENT, steps: [], hint: 5, answer: {}, header: {} } as never;
+
+    const error = await solutionRepository
+      .create("00000000-0000-0000-0000-000000000000", {
+        id: "00000000-0000-0000-0000-000000000001",
+        problem: "2x = 4",
+        problemType: "algebra",
+        steps: [],
+        finalAnswer: "",
+        summary: "",
+        content: broken,
+        processingTimeMs: 1,
+        createdAt: new Date().toISOString(),
+      })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(Error);
+    const message = (error as Error).message;
+    expect(message).toMatch(/^Solution content is not valid: /);
+    expect(message.split("; ").length).toBeLessThanOrEqual(3);
+    expect(message.length).toBeLessThan(400);
+  });
+
   it("show in History newest first", async () => {
     const { accessToken } = await registerVerifiedUser();
-    await solve(accessToken, "first problem");
-    await solve(accessToken, "second problem");
+    await solve(accessToken, "first problem: 2x = 4");
+    await solve(accessToken, "second problem: 3x = 9");
 
     const res = await authedFetch(accessToken, "/api/history");
 
     expect(res.status).toBe(200);
     const { history } = await res.json();
     expect(history.map((item: { problem: string }) => item.problem)).toEqual([
-      "second problem",
-      "first problem",
+      "second problem: 3x = 9",
+      "first problem: 2x = 4",
     ]);
   });
 

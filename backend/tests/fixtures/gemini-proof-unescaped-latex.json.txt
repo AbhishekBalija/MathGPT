@@ -1,0 +1,126 @@
+{
+  "problemType": "geometry",
+  "solution": {
+    "formatVersion": 2,
+    "header": {
+      "level": "class9-10",
+      "board": "CBSE",
+      "questionType": "Proof",
+      "method": {
+        "id": "isosceles-triangle-theorem-proof",
+        "label": "Proof using Congruence",
+        "alternatives": []
+      }
+    },
+    "problem": {
+      "latex": "Prove that the angles opposite to equal sides of a triangle are equal.",
+      "task": "Prove the Isosceles Triangle Theorem."
+    },
+    "sections": {
+      "given": "A triangle $ABC$ in which $AB = AC$.",
+      "toProve": "$\angle B = \angle C$."
+    },
+    "steps": [
+      {
+        "kind": "setup",
+        "reason": "Construction",
+        "why": "To prove the equality of angles, we often use congruence. By constructing an angle bisector, we create two triangles that we can attempt to prove congruent.",
+        "earnsMarks": true,
+        "block": {
+          "type": "text",
+          "text": "Consider a triangle $ABC$ where $AB = AC$. Draw the angle bisector of $\angle A$, let it meet $BC$ at point $D$. Thus, $AD$ bisects $\angle BAC$."
+        }
+      },
+      {
+        "kind": "reasoning",
+        "reason": "Identify triangles for congruence",
+        "why": "We will now examine the two triangles, $\triangle ABD$ and $\triangle ACD$, to find corresponding parts that are equal.",
+        "earnsMarks": false,
+        "block": {
+          "type": "text",
+          "text": "Now, consider $\triangle ABD$ and $\triangle ACD$."
+        }
+      },
+      {
+        "kind": "reasoning",
+        "reason": "List equal parts (Side)",
+        "why": "The problem statement provides that two sides of the triangle are equal, which is our starting point for proving congruence.",
+        "earnsMarks": true,
+        "block": {
+          "type": "statementReason",
+          "rows": [
+            {
+              "statement": "$AB = AC$",
+              "reason": "Given"
+            }
+          ]
+        }
+      },
+      {
+        "kind": "reasoning",
+        "reason": "List equal parts (Angle)",
+        "why": "We constructed $AD$ as the angle bisector of $\angle A$, which means it divides $\angle A$ into two equal angles.",
+        "earnsMarks": true,
+        "block": {
+          "type": "statementReason",
+          "rows": [
+            {
+              "statement": "$\angle BAD = \angle CAD$",
+              "reason": "By construction ($AD$ is the angle bisector of $\angle A$)"
+            }
+          ]
+        }
+      },
+      {
+        "kind": "reasoning",
+        "reason": "List equal parts (Side)",
+        "why": "The side $AD$ is common to both triangles, so its length is equal in both.",
+        "earnsMarks": true,
+        "block": {
+          "type": "statementReason",
+          "rows": [
+            {
+              "statement": "$AD = AD$",
+              "reason": "Common side"
+            }
+          ]
+        }
+      },
+      {
+        "kind": "reasoning",
+        "reason": "Prove congruence",
+        "why": "With two sides and the included angle of one triangle equal to the corresponding two sides and included angle of the other triangle, we can conclude that the triangles are congruent by the SAS criterion.",
+        "earnsMarks": true,
+        "block": {
+          "type": "statementReason",
+          "rows": [
+            {
+              "statement": "$\triangle ABD \cong \triangle ACD$",
+              "reason": "By SAS (Side-Angle-Side) congruence criterion"
+            }
+          ]
+        }
+      },
+      {
+        "kind": "conclusion",
+        "reason": "Conclusion by CPCTC",
+        "why": "Since the two triangles are congruent, their corresponding parts must be equal. This includes the angles opposite the equal sides.",
+        "earnsMarks": true,
+        "block": {
+          "type": "statementReason",
+          "rows": [
+            {
+              "statement": "$\angle B = \angle C$",
+              "reason": "Corresponding Parts of Congruent Triangles are Congruent (CPCTC)"
+            }
+          ]
+        }
+      }
+    ],
+    "answer": {
+      "latex": "\\angle B = \\angle C",
+      "sentence": "Thus, it is proven that the angles opposite to equal sides of a triangle are equal."
+    },
+    "hint": "Start by drawing the triangle and constructing an angle bisector to create two smaller triangles."
+  }
+}

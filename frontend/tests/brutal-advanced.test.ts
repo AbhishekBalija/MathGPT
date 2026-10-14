@@ -219,8 +219,6 @@ describe("🔄 CONCURRENT OPERATIONS - Race Condition Prevention", () => {
       globalLoading: false,
       solutionLoading: false,
       error: null,
-      sidebarOpen: false,
-      showAnswerPanel: false,
       historyLoaded: false,
       isProfileOpen: false,
     });
@@ -439,8 +437,6 @@ describe("⚡ PERFORMANCE - Stress Tests", () => {
       globalLoading: false,
       solutionLoading: false,
       error: null,
-      sidebarOpen: false,
-      showAnswerPanel: false,
       historyLoaded: false,
       isProfileOpen: false,
     });

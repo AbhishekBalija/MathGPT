@@ -17,6 +17,7 @@ export interface HistoryItem {
   finalAnswer: string;
   summary: string;
   stepsCount: number;
+  formatVersion?: number;
   createdAt: string;
 }
 
@@ -47,6 +48,22 @@ interface AppDataState {
   // Solution cache actions
   getCachedSolution: (solutionId: string) => FullSolution | null;
   fetchAndCacheSolution: (solutionId: string) => Promise<FullSolution | null>;
+}
+
+// The profile request that is still on its way, if any. Everything that asks
+// while it is running gets this same request, so one app load sends one
+// GET /api/profile instead of one per caller (React StrictMode also runs
+// every effect twice in development).
+let profileRequest: Promise<ProfileResponse> | null = null;
+let initRequest: Promise<void> | null = null;
+
+function fetchProfile(): Promise<ProfileResponse> {
+  if (!profileRequest) {
+    profileRequest = getUserProfile().finally(() => {
+      profileRequest = null;
+    });
+  }
+  return profileRequest;
 }
 
 export const useAppDataStore = create<AppDataState>((set, get) => ({
@@ -94,56 +111,62 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
   },
 
   // Initialize data on login - ONLY profile and history (lightweight)
-  initializeData: async () => {
-    const state = get();
-    if (state.isInitialized) return;
-
-    set({ profileLoading: true, historyLoading: true });
-
-    try {
-      // Fetch profile and history in parallel (just 2 calls)
-      const [profileResult, historyResult] = await Promise.allSettled([
-        getUserProfile(),
-        getUserHistory(),
-      ]);
-
-      set({
-        profile:
-          profileResult.status === "fulfilled" ? profileResult.value : null,
-        profileError:
-          profileResult.status === "rejected"
-            ? profileResult.reason?.message
-            : null,
-        profileLoading: false,
-
-        history:
-          historyResult.status === "fulfilled" ? historyResult.value : [],
-        historyError:
-          historyResult.status === "rejected"
-            ? historyResult.reason?.message
-            : null,
-        historyLoading: false,
-
-        isInitialized: true,
-        lastSyncAt: new Date(),
+  initializeData: () => {
+    if (get().isInitialized) return Promise.resolve();
+    // Already loading: wait for that load instead of starting another
+    if (!initRequest) {
+      initRequest = loadInitialData().finally(() => {
+        initRequest = null;
       });
+    }
+    return initRequest;
 
-      // NO solution pre-fetching - Motia can't handle multiple concurrent requests
-    } catch (error) {
-      set({
-        profileLoading: false,
-        historyLoading: false,
-        profileError:
-          error instanceof Error ? error.message : "Failed to load data",
-      });
+    async function loadInitialData() {
+      set({ profileLoading: true, historyLoading: true });
+
+      try {
+        // Fetch profile and history in parallel (just 2 calls)
+        const [profileResult, historyResult] = await Promise.allSettled([
+          fetchProfile(),
+          getUserHistory(),
+        ]);
+
+        set({
+          profile:
+            profileResult.status === "fulfilled" ? profileResult.value : null,
+          profileError:
+            profileResult.status === "rejected"
+              ? profileResult.reason?.message
+              : null,
+          profileLoading: false,
+
+          history:
+            historyResult.status === "fulfilled" ? historyResult.value : [],
+          historyError:
+            historyResult.status === "rejected"
+              ? historyResult.reason?.message
+              : null,
+          historyLoading: false,
+
+          isInitialized: true,
+          lastSyncAt: new Date(),
+        });
+      } catch (error) {
+        set({
+          profileLoading: false,
+          historyLoading: false,
+          profileError:
+            error instanceof Error ? error.message : "Failed to load data",
+        });
+      }
     }
   },
 
-  // Refresh profile only
+  // Refresh profile only (shares a request that is already running)
   refreshProfile: async () => {
     set({ profileLoading: true, profileError: null });
     try {
-      const profile = await getUserProfile();
+      const profile = await fetchProfile();
       set({ profile, profileLoading: false, lastSyncAt: new Date() });
     } catch (error) {
       set({
@@ -171,6 +194,8 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
 
   // Clear all data on logout
   clearData: () => {
+    profileRequest = null;
+    initRequest = null;
     set({
       profile: null,
       profileLoading: false,

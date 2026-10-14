@@ -5,6 +5,7 @@
  */
 
 import api from "./api";
+import type { SolutionContent } from "../features/solver/model/resolve";
 
 export interface HistoryItem {
   id: string;
@@ -14,6 +15,8 @@ export interface HistoryItem {
   finalAnswer: string;
   summary: string;
   stepsCount: number;
+  // 1 for old rows, 2 for typed-block solutions
+  formatVersion?: number;
   createdAt: string;
 }
 
@@ -55,6 +58,9 @@ export interface FullSolution {
   summary: string;
   processingTimeMs: number;
   createdAt: string;
+  // The typed blocks of a v2 solution. null for old rows.
+  formatVersion?: number;
+  content?: SolutionContent | null;
 }
 
 interface SolutionResponse {
@@ -94,6 +100,19 @@ export async function deleteSolution(solutionId: string): Promise<boolean> {
     return response.data.success;
   } catch (error) {
     console.error("Failed to delete solution:", error);
+    return false;
+  }
+}
+
+/**
+ * Report that a solution looks wrong. It is then never shared with other students.
+ */
+export async function reportSolution(solutionId: string): Promise<boolean> {
+  try {
+    const response = await api.post<{ success: boolean }>(`/api/solutions/${solutionId}/report`, {});
+    return response.data.success;
+  } catch (error) {
+    console.error("Failed to report solution:", error);
     return false;
   }
 }

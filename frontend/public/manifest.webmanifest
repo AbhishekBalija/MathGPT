@@ -1,14 +1,14 @@
 {
   "name": "NeoMath",
   "short_name": "NeoMath",
-  "description": "AI-powered math tutor with step-by-step solutions",
+  "description": "Stuck on a problem? See every step.",
   "dir": "auto",
   "lang": "en-US",
   "display": "standalone",
   "orientation": "any",
   "start_url": "/?homescreen=1",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "background_color": "#fff6fb",
+  "theme_color": "#fff6fb",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",

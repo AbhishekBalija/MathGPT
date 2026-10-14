@@ -12,6 +12,7 @@ import { logger } from "./lib/logger";
 import { requireEnv } from "./lib/env";
 import { initSentry } from "./lib/sentry";
 import { geminiMathSolver } from "./modules/ai/math-solver";
+import { createTurnstileCheck } from "./modules/auth/turnstile";
 import {
   createConsoleEmailSender,
   createResendEmailSender,
@@ -40,6 +41,7 @@ function chooseEmailSender(): EmailSender {
 const api = createApp({
   solver: geminiMathSolver,
   emailSender: chooseEmailSender(),
+  humanCheck: createTurnstileCheck(process.env),
 });
 
 // A thin outer app so this file is a real Express entry. Vercel sits in front

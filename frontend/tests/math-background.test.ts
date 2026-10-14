@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import Landing from "../src/pages/Landing";
 
 // Wave line colour MathBackground uses on a dark page
-const DARK_WAVE_STROKE = "rgba(140, 130, 150, 0.5)";
+const DARK_WAVE_STROKE = "rgba(175, 140, 165, 0.5)";
 
 afterEach(() => {
   localStorage.clear();

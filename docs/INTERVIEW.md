@@ -202,6 +202,31 @@ a Node API Bun has not implemented. Pinning `bson` to the version from the old
 lockfile fixed it. Lesson: caret ranges can pull in new behavior on a fresh
 install, and lockfiles are what make installs reproducible.
 
+## Frontend and design
+
+### Intermediate: Why is the logo an SVG instead of text in the logo font?
+
+The font (Honk) is a colour font: each letter is three layers filled with
+gradients, stored in the COLRv1 table. Not every browser supports COLRv1, and a
+text logo also waits for the font file to load. Copying the layers and
+gradients into a plain SVG ("baking" it) gives the same look everywhere, with
+no font download and no flash of a fallback font.
+
+### Intermediate: How does one component make the logo responsive?
+
+Every size in `Logo` is a multiple of one CSS length, the word's height. The
+caller passes `height="var(--logo-h)"` and sets the variable per breakpoint
+(`[--logo-h:24px] md:[--logo-h:30px]`). `calc()` then scales the word, places
+the mascot on the `h` and reserves space above it, so nothing is re-measured
+in JavaScript.
+
+### Basic: Why does the dark theme use a pinker text colour than the light one?
+
+Contrast. WCAG asks for at least 4.5:1 for normal text. The logo pink is about
+3.2:1 on white, so light mode uses a darker pink (4.9:1), and dark mode uses a
+lighter one (7.1:1 on near-black). The bright logo pink is kept for shapes,
+where the rule does not apply.
+
 ## Operations
 
 ### Intermediate: Production failed every long solve, but the same code worked locally. Why?
@@ -224,4 +249,122 @@ sends events in the background, so without waiting for `flush()` (inside
 Request bodies (passwords, the problems students type), headers (login tokens),
 cookies and user details. Sentry collects several of these by default, so we
 turn each one off and send only an opaque user id and an error code.
+
+## Checking AI answers
+
+### Intermediate: How do you check an AI's integral without solving it yourself?
+
+Differentiate the AI's answer and compare it with the integrand. Antiderivatives
+are hard to find but easy to check, and the "+ C" disappears when you
+differentiate. We compare at 12 random points instead of proving the two are
+equal symbolically, which is simpler and good enough: two different
+expressions almost never agree at 12 random points.
+
+### Advanced: The AI's answer is untrusted text. How do you run it as math safely?
+
+Never `eval` it and never call `mathjs.evaluate` on the string. Parse it into a
+tree first, then walk the tree and refuse it unless every node is on an
+allowlist (numbers, the one variable, `pi`, `e`, `+ - * / ^`, and a short list
+of functions like `sin` and `log`), it has at most 200 nodes and it is at most
+30 deep. Only then compile it and run it with a scope that holds just the
+variable. An allowlist is safer than a blocklist because anything new or
+unexpected is refused by default.
+
+### Intermediate: Why draw fresh random points on every check?
+
+A fixed list of points can be gamed: an answer can be wrong everywhere except
+at those points. Fresh points each time make that impossible to rely on.
+
+### Intermediate: How do you share AI answers between users without spreading a wrong one?
+
+Only share an answer after an independent check. First code: put the roots
+back in, or differentiate an integral. If code cannot check it, ask a model
+from a different company for just the final answer and share only if the two
+agree. Two models from one company can make the same mistake. Until then the
+answer stays private to the student who asked, and a report blocks it for good.
+
+### Intermediate: Why does the second model answer in plain text instead of JSON?
+
+LaTeX is full of backslashes, and models often forget to escape them in JSON.
+`"\frac{1}{3}"` written with one backslash is still valid JSON, because `\f` is
+the form-feed escape, so the answer silently turns into a control character
+plus "rac{1}{3}". For a one-line answer, plain text avoids the problem completely.
+
+### Basic: Why is a cache entry keyed on the prompt version?
+
+When the prompt changes, solutions written under the old prompt may not follow
+the new rules. Putting the version in the key means old entries are simply
+never found again, with no clean-up job.
+
+### Advanced: A library call froze the server on "(x+1)^5 = 32". Why, and how do you avoid it?
+
+To know whether the AI listed every root, we needed the equation's degree,
+and used mathjs `rationalize`. It expands polynomials in a way that grows
+exponentially with the power: `(x+1)^4` took 0.2 s and `(x+1)^5` ran past
+15 s. JavaScript runs one thing at a time, so a long synchronous call blocks
+every other request on that server, not just this one. The fix was a small
+function of our own: keep each polynomial as a list of coefficients, and
+multiply lists directly, with a cap on the degree (12). The lesson: anything
+that runs on user input needs a known upper bound on its work. Time it on
+the worst inputs you can think of, not just the usual ones.
+
+## Solving with AI
+
+### Intermediate: Why try the backup model only after the primary fails, instead of racing both?
+
+A race (`Promise.race` on two models) is faster when the primary is slow,
+but it pays for two answers on every problem, and our first version had a
+worse bug: a backup that failed fast rejected the race and threw away a
+primary that was still working. Sequential failover runs the backup only
+after the primary has failed or passed its time limit, so we pay for one
+answer in the normal case and a broken backup can never hurt a working
+primary. The cost is a slower answer on the rare failover.
+
+### Intermediate: Why check the model's JSON with zod and retry once?
+
+A model's reply is untrusted input, just like a request body. It can miss
+fields, add the wrong types, or break the JSON with LaTeX backslashes. The
+zod schema (`SolutionV2`) is the contract: the reply is parsed against it
+before anything is saved or shown, and the cache checks it again on the way
+out. A single retry fixes most bad replies, because they are random, not
+systematic. A second failure becomes a friendly error with no Credit spent,
+instead of a broken page or a retry loop that burns money.
+
+### Basic: Why must a migration only add things before the code that uses it ships?
+
+Production applies the migration first and the new code goes live a little
+later. In between, the old code runs against the new schema. Adding a
+nullable column or a new table is invisible to old code, so nothing breaks.
+Renaming or dropping a column would crash the old code the moment the
+migration runs. So: add first, ship the code, and remove the old thing in a
+later release once no running code needs it. That is how this redesign's
+four migrations went to production before the merge.
+
+## Abuse guards
+
+### Intermediate: Your robot check needs a secret. What happens if it is missing?
+
+It depends on where. Locally and in tests we skip the check, so nobody needs
+Cloudflare keys to work on the app. In production a missing secret refuses
+every sign-up ("fail closed"). Letting everyone through would quietly switch
+off the protection; refusing sign-ups is loud and gets fixed fast.
+
+### Basic: Why limit by IP address as well as by account?
+
+A per-account limit stops one account from overusing the AI, but one person
+can make many accounts. A per-IP limit caps what one machine can do across all
+its accounts. It has to be generous, because a whole school can share one IP.
+
+### Intermediate: How do you block "a@x.mailinator.com" as well as "a@mailinator.com"?
+
+Check the domain and every parent domain: x.mailinator.com, then
+mailinator.com. Comparing with `endsWith` would be wrong, because
+"schoolmailinator.com" ends with "mailinator.com" too.
+
+### Intermediate: Why run the second-model check only on the second ask?
+
+Sharing exists to save AI calls on repeated problems, but most problems are
+asked once. Checking every unchecked answer straight away would nearly double
+the cost of word problems and proofs for no benefit. Waiting for a second ask
+means we only pay for the check when sharing can actually pay it back.
 

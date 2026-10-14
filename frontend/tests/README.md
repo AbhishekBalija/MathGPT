@@ -78,13 +78,8 @@ Configured in `vitest.config.ts`:
 | `testTimeout` | 30000ms | Async operation tests             |
 | `globals`     | true    | No imports for describe/it/expect |
 
-## Sanitization Utility
+## Rendering safety
 
-All HTML rendering uses `src/utils/sanitize.ts`:
-
-```typescript
-import { sanitizeHtml, escapeHtml } from "../utils/sanitize";
-
-// Safe rendering
-dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
-```
+The app never renders AI or user text as raw HTML. Math goes through KaTeX
+(`src/features/solver/blocks/Math.tsx`) with `trust` off, so `\href` and
+HTML commands are refused; everything else is plain React text.

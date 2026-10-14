@@ -15,9 +15,17 @@ export interface UserStats {
   lastSolvedAt: string | null;
 }
 
+export interface DailyCredits {
+  used: number;
+  limit: number;
+  remaining: number;
+  resetsAt: string;
+}
+
 export interface ProfileResponse {
   user: UserProfile;
   stats: UserStats;
+  dailyCredits?: DailyCredits;
 }
 
 /**

@@ -25,6 +25,7 @@ export const historyRoute = route(async (req) => {
         problem: item.problem,
         problemType: item.problemType,
         finalAnswer: item.finalAnswer,
+        formatVersion: item.formatVersion,
         createdAt: item.createdAt.toISOString(),
       })),
     },

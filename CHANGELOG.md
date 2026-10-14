@@ -8,6 +8,18 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- "Something looks wrong? Tell us" under every answer: it reports the
+  solution (`POST /api/solutions/:id/report`, new `solution_reports` table,
+  migration `0007`) and blocks its shared-cache entry, so no other student
+  gets it (#53).
+
+- Shared solution cache (`solution_cache`, migration `0006`): a student asking
+  a problem someone already solved gets that solution with no AI call and no
+  Credit. Only answers that passed a check are shared: a code check
+  (`verifyAnswer`) first, otherwise a second model from a different maker
+  must give the same answer. A code-checked answer shows "Checked by putting
+  the answer back in." (#52)
+
 - Backend error alerts with Sentry (`@sentry/bun`, `backend/src/lib/sentry.ts`).
   Every failed solve and every unhandled error is reported, without problem
   text, request bodies, headers or cookies. Off unless `SENTRY_DSN` is set.
@@ -41,6 +53,32 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - `EMAIL_TRANSPORT=console` prints emails to the server log in development.
 
 ### Changed
+
+- The second-model check for answers code cannot check now runs only when
+  the same problem is asked a second time. Most problems are asked once, so
+  this avoids an extra AI call for them; repeated problems are still shared
+  from the third ask on, once a second model agrees.
+
+- Sign-in, sign-up and email verification share a new layout: a pink panel
+  with Neo on top of three steps (desktop) and the form on the right; on
+  phones the logo, Neo on his own, then the form. Google comes first, then
+  the email form, separated by a thin "or" line. Removed the "Remember me" box and the
+  "Forgot password?" link, which did nothing (password reset is tracked as
+  its own issue).
+
+- New brand: the NeoMath logo is the Honk wordmark with π-Neo sitting on
+  the 'h'. It is a baked SVG (no colour-font support needed), has a dark-mode
+  version with a white rim, and is used in the navbar, sidebar, sign-in pages
+  and admin. Neo replaces the 5.7 MB avatar image in the chat. New favicons,
+  home-screen icons and a link preview card (og:image). Accent colour is now
+  the logo pink, contrast-checked; dark mode uses warm blacks and a solid pink. See
+  docs/brand.md.
+
+- The landing waves are smoother: no stretching, softer curves that fade at
+  the edges, and a seamless symbol loop.
+
+- Removed unused decorative fonts (seven Google Fonts loaded on every page)
+  and unused images (about 8 MB).
 
 - Landing page touch-up: copy now only promises what the solver does (no
   "verified" or "no hallucinations" claims), one accent colour taken from the
@@ -84,6 +122,30 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- "Jump to answer" on a phone no longer pushes the whole app up and leaves
+  half the screen blank (the app wrapper is `overflow-clip`, which the
+  browser cannot scroll, instead of `overflow-hidden`).
+- The answer's "Checked by ..." and warning lines use the full width of the
+  answer box, so the Copy button no longer squeezes them.
+
+- The answer box no longer shows the answer twice ("x = 2 x = 2"): the text
+  line only appears next to the formula when it says something more, and the
+  prompt asks for it only when the answer is in words.
+
+- When code proves an AI answer wrong, the AI gets one more try with that
+  answer marked wrong. If the second answer is wrong too, the student sees
+  "This answer didn't pass our check. Please double-check it." instead of
+  a normal-looking answer. Only our code may write the answer's check line;
+  the AI's own "check" text is dropped.
+
+- `verifyAnswer` no longer passes an equation answer with a root missing
+  (for example only `x = -2` for `x^2 + 5x + 6 = 0`).
+
+- The solver only answers math: text with no math in it gets a 422
+  `NOT_MATH` without an AI call, and the AI can also reply "not math". A bare
+  expression such as `(log x)^2/x` is solved with its likely task instead of
+  being refused, and limits with "infinity" are no longer rejected (#54).
+
 - When both AI models fail, the admin error log now records what each model
   said (for example a 503 or a 404), instead of only "All models failed".
   Students still see the same generic message.
@@ -99,6 +161,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
   `PATCH /admin/errors/:id/resolve` now read query and path params correctly.
 
 ### Security
+
+- Sign-up abuse guards: disposable email domains are refused (CC0 list from
+  `disposable-email-domains`), a Cloudflare Turnstile check runs on the
+  sign-up form, sign-ups are limited to 20 per IP per hour (was 5, so a
+  school lab can sign up a class) and solves to 100 per IP per hour (#55).
 
 - Frontend Sentry no longer sends personal data (`sendDefaultPii: false`, so
   no IP addresses), records a screen replay only for visits that hit an error

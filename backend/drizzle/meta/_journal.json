@@ -36,6 +36,34 @@
       "when": 1791393330264,
       "tag": "0004_analytics_and_error_logs",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791563775890,
+      "tag": "0005_solution_content",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791920103352,
+      "tag": "0006_solution_cache",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791921606803,
+      "tag": "0007_solution_reports",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791923381569,
+      "tag": "0008_keep_reports",
+      "breakpoints": true
     }
   ]
 }

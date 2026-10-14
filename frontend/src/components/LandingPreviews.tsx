@@ -8,7 +8,7 @@ const renderMath = (latex: string) =>
   katex.renderToString(latex, { throwOnError: false, displayMode: false });
 
 const previewFrame =
-  "w-full h-full rounded-2xl bg-gray-50 dark:bg-[#15171c] p-5 sm:p-6 flex flex-col justify-center gap-3 overflow-hidden";
+  "w-full h-full rounded-2xl bg-gray-50 dark:bg-[#1c151c] p-5 sm:p-6 flex flex-col justify-center gap-3 overflow-hidden";
 
 const steps = [
   {
@@ -44,7 +44,7 @@ export const StepPreview = () => (
       {steps.map((step) => (
         <div
           key={step.number}
-          className="rounded-xl bg-white dark:bg-[#0f1115] border border-gray-100 dark:border-gray-800 px-4 py-3"
+          className="rounded-xl bg-white dark:bg-[#151015] border border-gray-100 dark:border-white/10 px-4 py-3"
         >
           <div className="flex items-center gap-3">
             <span className="w-6 h-6 shrink-0 rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-300 text-xs font-bold flex items-center justify-center">
@@ -104,14 +104,14 @@ export const SymbolBarPreview = () => (
         {row.map((symbol) => (
           <span
             key={symbol}
-            className="aspect-square rounded-lg bg-white dark:bg-[#0f1115] border border-gray-100 dark:border-gray-800 flex items-center justify-center font-serif text-lg text-gray-800 dark:text-gray-200"
+            className="aspect-square rounded-lg bg-white dark:bg-[#151015] border border-gray-100 dark:border-white/10 flex items-center justify-center font-serif text-lg text-gray-800 dark:text-gray-200"
           >
             {symbol}
           </span>
         ))}
       </div>
     ))}
-    <div className="mt-1 rounded-xl border border-brand-500/60 bg-white dark:bg-[#0f1115] px-4 py-3 text-sm text-gray-900 dark:text-white">
+    <div className="mt-1 rounded-xl border border-brand-500/60 bg-white dark:bg-[#151015] px-4 py-3 text-sm text-gray-900 dark:text-white">
       ∫ x² dx<span className="text-brand-500">|</span>
     </div>
   </div>
@@ -137,7 +137,7 @@ export const HistoryPreview = () => (
             key={item}
             className={
               group === "Today" && i === 0
-                ? "px-3 py-2 rounded-lg text-sm bg-white dark:bg-[#0f1115] border border-gray-100 dark:border-gray-800 text-gray-900 dark:text-white"
+                ? "px-3 py-2 rounded-lg text-sm bg-white dark:bg-[#151015] border border-gray-100 dark:border-white/10 text-gray-900 dark:text-white"
                 : "px-3 py-2 text-sm text-gray-600 dark:text-gray-400"
             }
           >
