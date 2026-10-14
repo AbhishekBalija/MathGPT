@@ -8,7 +8,10 @@ const AppLayout = () => {
   useDataSync();
 
   return (
-    <div className="relative overflow-hidden">
+    // overflow-clip, not overflow-hidden: a hidden box can still be scrolled
+    // by the browser, so "Jump to answer" (#answer) shifted the whole app up
+    // and left half the phone screen blank
+    <div className="relative overflow-clip">
       <LoadingOverlay />
       <ProfileModal />
       <SolverPage />

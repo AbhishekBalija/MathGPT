@@ -117,6 +117,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- "Jump to answer" on a phone no longer pushes the whole app up and leaves
+  half the screen blank (the app wrapper is `overflow-clip`, which the
+  browser cannot scroll, instead of `overflow-hidden`).
+- The answer's "Checked by ..." and warning lines use the full width of the
+  answer box, so the Copy button no longer squeezes them.
+
 - The answer box no longer shows the answer twice ("x = 2 x = 2"): the text
   line only appears next to the formula when it says something more, and the
   prompt asks for it only when the answer is in words.
