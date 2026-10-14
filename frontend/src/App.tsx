@@ -8,20 +8,11 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import VerifyEmail from "./pages/VerifyEmail";
-import Admin from "./pages/Admin";
 import AppLayout from "./pages/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
-import {
-  AdminLayout,
-  Dashboard,
-  Users,
-  Errors,
-  Reports,
-  Feedback,
-  Analytics,
-} from "./pages/Admin/index";
+import { adminRoutes } from "./pages/Admin/adminRoutes";
 import AnalyticsTracker from "./components/AnalyticsTracker";
 
 const App = () => {
@@ -42,24 +33,7 @@ const App = () => {
         />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
-        {/* Admin Routes with nested layout */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute adminOnly>
-              <Admin />
-            </ProtectedRoute>
-          }
-        >
-          <Route element={<AdminLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="users" element={<Users />} />
-            <Route path="errors" element={<Errors />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="feedback" element={<Feedback />} />
-            <Route path="analytics" element={<Analytics />} />
-          </Route>
-        </Route>
+        {adminRoutes()}
         <Route
           path="/app"
           element={
