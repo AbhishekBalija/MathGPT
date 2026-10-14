@@ -97,6 +97,19 @@ function summarizeIssues(error: z.ZodError): string {
   return lines.join("; ").slice(0, MAX_ERROR_SUMMARY);
 }
 
+// A proof often ends with only "Hence proved ..." in answer.sentence. That is
+// a fine answer, so it is used as answer.text instead of failing the format.
+function withSentenceAsAnswer(solution: unknown): unknown {
+  if (!solution || typeof solution !== "object") return solution;
+  const answer = (solution as { answer?: unknown }).answer;
+  if (!answer || typeof answer !== "object") return solution;
+  const { latex, text, sentence } = answer as { latex?: unknown; text?: unknown; sentence?: unknown };
+  if (latex !== undefined || text !== undefined || typeof sentence !== "string" || !sentence.trim()) {
+    return solution;
+  }
+  return { ...solution, answer: { ...answer, text: sentence } };
+}
+
 type Checked =
   | { ok: true; result: Pick<SolveResult, "content" | "problemType"> }
   | { ok: false; reason: string };
@@ -131,7 +144,7 @@ function checkOutput(text: string): Checked {
     return { ok: false, reason: 'The reply must be {"problemType": ..., "solution": {...}}.' };
   }
 
-  const parsed = solutionV2Schema.safeParse(envelope.data.solution);
+  const parsed = solutionV2Schema.safeParse(withSentenceAsAnswer(envelope.data.solution));
   if (!parsed.success) {
     return { ok: false, reason: summarizeIssues(parsed.error) };
   }
