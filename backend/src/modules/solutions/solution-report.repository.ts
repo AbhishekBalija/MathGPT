@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 import { db } from "../../db/client";
 import { isUuid } from "../../lib/ids";
 import { solutionCache, solutionReports, type CacheStatus } from "../../db/schema";
@@ -54,5 +54,15 @@ export const solutionReportRepository = {
       .from(solutionReports)
       .where(eq(solutionReports.id, id));
     return row ?? null;
+  },
+
+  /** Reports whose answer is still blocked from the shared cache. */
+  async countBlocked(): Promise<number> {
+    const [row] = await db
+      .select({ total: count() })
+      .from(solutionReports)
+      .innerJoin(solutionCache, eq(solutionCache.key, solutionReports.cacheKey))
+      .where(eq(solutionCache.status, "blocked"));
+    return row?.total ?? 0;
   },
 };
