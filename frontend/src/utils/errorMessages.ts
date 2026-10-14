@@ -132,6 +132,8 @@ export interface SolveError {
   // Sending the same text again cannot work (it is not math), so the page
   // offers "Edit problem" instead of "Try again"
   needsEdit?: true;
+  // Nothing to retry or edit (for example a saved solution that cannot be read)
+  noAction?: true;
 }
 
 // What we know about a failed /api/solve call. No `status` means no reply at all.

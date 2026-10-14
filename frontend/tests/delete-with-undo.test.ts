@@ -66,4 +66,18 @@ describe("useDeleteWithUndo", () => {
     await wait(6000);
     expect(commit).toHaveBeenCalledTimes(1);
   });
+
+  it("a failed first delete does not take away the second item's Undo", async () => {
+    // "a" fails to delete, "b" is still waiting for its Undo
+    const commit = vi.fn(async (id: string) => id !== "a");
+    const { result } = renderHook(() => useDeleteWithUndo(commit));
+    act(() => result.current.remove("a"));
+    act(() => result.current.remove("b"));
+    await wait(0);
+
+    expect(commit).toHaveBeenCalledWith("a");
+    // The failed item comes back, and the Undo for "b" stays
+    expect(result.current.hidden.has("a")).toBe(false);
+    expect(result.current.toast).toEqual({ kind: "undo", id: "b" });
+  });
 });

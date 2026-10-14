@@ -1,5 +1,7 @@
+import { isWholeNumber } from "./wholeNumber";
+
 function assertWhole(n: number): void {
-  if (!Number.isInteger(n) || n < 0) {
+  if (!isWholeNumber(n)) {
     throw new RangeError("numbers must be non-negative integers");
   }
 }

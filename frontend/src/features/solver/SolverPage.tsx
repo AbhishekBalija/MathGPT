@@ -356,6 +356,7 @@ export function SolverPage() {
                     retryAfter={solveError.retryAfter}
                     onRetry={retry}
                     onEdit={solveError.needsEdit ? focusComposer : undefined}
+                    noAction={solveError.noAction}
                   />
                 ) : null}
 

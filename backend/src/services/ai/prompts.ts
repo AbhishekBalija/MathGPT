@@ -26,7 +26,7 @@ Reply with this envelope:
     "formatVersion": 2,
     "header": {
       "level": "<class1-5 | class6-8 | class9-10 | class11-12 | college | grad>",
-      "board": "CBSE",
+      "board": "<CBSE, only for class 1 to 12; leave it out for college and grad>",
       "questionType": "<short name, e.g. Quadratic equation, Word problem, Long division>",
       "method": {
         "id": "<short-kebab-case-id, e.g. quadratic-formula>",
@@ -86,7 +86,7 @@ HOW TO WRITE THE SOLUTION:
  * Part of every shared-cache key. Change it whenever the prompt changes, so
  * solutions written under an old prompt are never served again.
  */
-export const PROMPT_VERSION = "2026-10-15.1";
+export const PROMPT_VERSION = "2026-10-15.2";
 
 /**
  * For the second, independent check: a different model gives only the final

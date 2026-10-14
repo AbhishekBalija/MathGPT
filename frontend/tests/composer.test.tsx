@@ -44,6 +44,15 @@ describe("Composer", () => {
     rerender(<Composer value="" onChange={() => {}} onSolve={() => {}} />);
     expect(el.style.height).toBe("44px");
   });
+  it("shows no Read as for a word problem with numbers in it", () => {
+    // In math italics the sentence would be hard to read
+    render(<Harness initial="A train goes 120 km in 3 hours" />);
+    expect(screen.queryByText("Read as")).toBeNull();
+  });
+  it("still shows Read as when function names are the only words", () => {
+    const { container } = render(<Harness initial="sin x + cos x + log x" />);
+    expect(container.querySelector(".katex")).toBeTruthy();
+  });
   it("shows no Read as for plain words", () => {
     render(<Harness initial="hello" />);
     expect(screen.queryByText("Read as")).toBeNull();

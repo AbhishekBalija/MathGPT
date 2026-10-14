@@ -92,8 +92,12 @@ describe("BlockView", () => {
     const { container } = render(
       <BlockView block={{ type: "longDivision", dividend: 412, divisor: 4 }} />,
     );
-    const zeroCells = [...container.querySelectorAll("[data-row]:not([data-row='q']):not([data-row='n'])")];
-    expect(zeroCells.some((el) => el.textContent === "0")).toBe(true);
+    // The "0" under the 1 (4 goes into 1 zero times) and the final remainder "0" are different rows
+    const zeroSubtract = container.querySelector('[data-kind="subtract"][data-row="2"][data-col="1"]');
+    const remainder = container.querySelector('[data-kind="remainder"][data-col="2"]');
+    expect(zeroSubtract?.textContent).toBe("0");
+    expect(remainder?.textContent).toBe("0");
+    expect(zeroSubtract).not.toBe(remainder);
   });
   it("shows HTML in text literally", () => {
     const { container } = render(<BlockView block={{ type: "text", text: "<b>hi</b>" }} />);
