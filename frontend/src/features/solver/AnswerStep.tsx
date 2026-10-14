@@ -4,6 +4,31 @@ import { InlineText } from "./blocks/InlineText";
 import { Math } from "./blocks/Math";
 import type { SolutionV2 } from "./model/solution";
 
+// "text" is for answers in words ("Yes, 7 is a prime number"). Models often
+// repeat the formula there too ("x = 2", "x equals 2", "angle B = angle C"),
+// so next to a formula the text only shows when it says something more.
+
+// Words that also appear in plain formulas, so they do not count as "words"
+const FORMULA_WORDS = new Set(["and", "sin", "cos", "tan", "sec", "csc", "cot", "log", "exp", "sqrt", "abs"]);
+
+// Both answers as bare plain text: no LaTeX commands, braces, spaces or $,
+// and "equals" read as "=", so copies of the formula compare equal
+function plainForm(answer: string): string {
+  return answer
+    .toLowerCase()
+    .replace(/\\text\{([^}]*)\}/g, "$1")
+    .replace(/\\(left|right)/g, "")
+    .replace(/\\/g, "")
+    .replace(/\bequals\b|\bis equal to\b/g, "=")
+    .replace(/[{}$\s]/g, "");
+}
+
+function showTextBesideFormula(text: string, latex: string): boolean {
+  if (plainForm(text) === plainForm(latex)) return false;
+  const words = text.toLowerCase().match(/[a-z]{3,}/g) ?? [];
+  return words.some((word) => !FORMULA_WORDS.has(word));
+}
+
 // The last step: a boxed conclusion with Copy. The check line only shows when the
 // solution has one, and the warning only when the server's check found it wrong.
 export function AnswerStep({ answer }: { answer: SolutionV2["answer"] }) {
@@ -37,7 +62,11 @@ export function AnswerStep({ answer }: { answer: SolutionV2["answer"] }) {
         <div className="mt-1 flex items-center gap-2 text-2xl">
           <span aria-hidden="true">∴</span>
           {answer.latex ? <Math latex={answer.latex} /> : null}
-          {answer.text ? <InlineText text={answer.text} /> : null}
+          {answer.text && (!answer.latex || showTextBesideFormula(answer.text, answer.latex)) ? (
+            <span data-testid="answer-text">
+              <InlineText text={answer.text} />
+            </span>
+          ) : null}
           {answer.unit ? <span className="text-lg">{answer.unit}</span> : null}
         </div>
         {answer.sentence ? (

@@ -117,6 +117,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- The answer box no longer shows the answer twice ("x = 2 x = 2"): the text
+  line only appears next to the formula when it says something more, and the
+  prompt asks for it only when the answer is in words.
+
 - When code proves an AI answer wrong, the AI gets one more try with that
   answer marked wrong. If the second answer is wrong too, the student sees
   "This answer didn't pass our check. Please double-check it." instead of
