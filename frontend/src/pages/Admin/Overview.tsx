@@ -44,7 +44,10 @@ export default function Overview() {
 
   // A service that is down wins Neo's line; otherwise the Overview's own
   const fromHealth = health.data ? healthLine(health.data) : null;
-  const neo = fromHealth?.state === "down" ? fromHealth : { state: data.status.state, ...neoLine(data) };
+  const neo =
+    fromHealth?.state === "down"
+      ? { ...fromHealth, text: "Open Health for what to do." }
+      : { state: data.status.state, ...neoLine(data) };
   // A refresh can drop the picked item (someone resolved it); then the panel closes
   const current = selected ? (data.needsYou.find((item) => item.kind === selected.kind && item.id === selected.id) ?? null) : null;
   const page = current ? ITEM_PAGES[current.kind] : null;
