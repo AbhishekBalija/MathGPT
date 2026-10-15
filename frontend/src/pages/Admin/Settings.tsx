@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import adminService, { type AdminSettings, type AdminSettingsResponse, type SettingChange } from "../../services/admin.service";
+import { useAppStatus } from "../../stores/appStatusStore";
 import { useAuthStore } from "../../stores/authStore";
 import { Card } from "./overview/cards";
 import { MUTED } from "./overview/styles";
@@ -67,6 +68,8 @@ export default function Settings() {
     try {
       show(await adminService.updateSettings(change));
       setConfirming(null);
+      // The nav's "Paused" tag and the Overview read this
+      void useAppStatus.getState().load();
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Couldn't save that");
     } finally {
@@ -186,7 +189,7 @@ export default function Settings() {
             </button>
           </div>
         ) : null}
-        {confirming === "maintenance" ? (
+        {confirming === "maintenance" && messageValid ? (
           <div className="px-4 pb-4">
             <ConfirmInline
               message="Turn on maintenance mode? Students can't solve until you turn it off."

@@ -7,6 +7,7 @@ vi.mock("../src/services/api", () => ({ default: { get: vi.fn(), post: vi.fn(), 
 import api from "../src/services/api";
 import * as adapter from "../src/features/solver/model/adapter";
 import { SolverPage } from "../src/features/solver/SolverPage";
+import { useAppStatus } from "../src/stores/appStatusStore";
 import { useAppDataStore } from "../src/stores/appDataStore";
 import { useChatStore, type Chat, type Solution } from "../src/stores/chatStore";
 import { SOLVE_ERROR_COPY } from "../src/utils/errorMessages";
@@ -284,6 +285,26 @@ describe("solving", () => {
     fireEvent.click(btn("Solve"));
     await waitFor(() => expect(post).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(document.querySelector("li")).not.toBe(firstStep));
+  });
+
+  it("shows the admin's pause in place of the composer, and brings the composer back when it ends", async () => {
+    useAppStatus.setState({ status: null });
+    let paused = true;
+    get.mockImplementation(async (url: string) => {
+      if (url === "/api/app-status") return { data: { maintenance: { on: paused, message: "Back at 6 pm." }, signupsOpen: true } };
+      return { data: { dailyCredits: { remaining: 3, limit: 5 } } };
+    });
+    await renderPage();
+
+    expect(await screen.findByText("Back at 6 pm.")).toBeTruthy();
+    expect(screen.queryByLabelText("Your math problem")).toBeNull();
+
+    // The admin turns it off; the student comes back to the tab
+    paused = false;
+    document.dispatchEvent(new Event("visibilitychange"));
+
+    expect(await screen.findByLabelText("Your math problem")).toBeTruthy();
+    useAppStatus.setState({ status: null });
   });
 
   it("asks for the free problems again after a solve and updates the line", async () => {

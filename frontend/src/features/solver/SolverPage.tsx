@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Menu, Plus, X } from "lucide-react";
 import Logo from "../../components/brand/Logo";
 import { solveProblem } from "../../services/solve.service";
+import authService from "../../services/auth.service";
 import { reportSolution } from "../../services/history.service";
 import { useAppDataStore } from "../../stores/appDataStore";
 import { useAppStatus } from "../../stores/appStatusStore";
@@ -75,10 +76,33 @@ export function SolverPage() {
   const isTeam = useAuthStore((s) => Boolean(s.user?.isTeam || s.user?.isAdmin));
   const maintenance = useAppStatus((s) => s.status?.maintenance);
   const loadAppStatus = useAppStatus((s) => s.load);
+  const pausedMessage = maintenance?.on && !isTeam ? maintenance.message : null;
+  // Check on load and whenever the tab comes back; while paused, also every
+  // 30 seconds, so the composer returns without a reload when solving resumes
   useEffect(() => {
     void loadAppStatus();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void loadAppStatus();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [loadAppStatus]);
-  const pausedMessage = maintenance?.on && !isTeam ? maintenance.message : null;
+  useEffect(() => {
+    if (!pausedMessage) return;
+    const timer = setInterval(() => void loadAppStatus(), 30_000);
+    return () => clearInterval(timer);
+  }, [pausedMessage, loadAppStatus]);
+
+  // Logins from before isTeam existed don't have it saved: ask once
+  const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
+  useEffect(() => {
+    if (!user || user.isTeam !== undefined) return;
+    authService.getCurrentUser().then(
+      ({ user: fresh }) => setUser({ ...user, isAdmin: fresh.isAdmin, isTeam: fresh.isTeam ?? false }),
+      () => {},
+    );
+  }, [user, setUser]);
   const setEmailVerified = useAuthStore((s) => s.setEmailVerified);
   const { history, isInitialized, historyLoading } = useAppDataStore();
 
@@ -412,7 +436,8 @@ export function SolverPage() {
         </div>
 
         <div ref={composerRef} className="shrink-0">
-          {isPhone ? (
+          {/* While solving is paused the notice shows on phones too, not only after a tap */}
+          {isPhone && !pausedMessage ? (
             <SlimComposer
               label={input.trim() || (activeSolution ? "Ask another problem" : "Type a problem")}
               onOpen={() => setPhoneInputOpen(true)}

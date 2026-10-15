@@ -64,6 +64,16 @@ describe("admin Settings", () => {
     await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ maintenance: { on: true, message: MESSAGE } }));
   });
 
+  it("can't confirm maintenance with an empty message", async () => {
+    renderSettings();
+    fireEvent.click(await screen.findByRole("switch", { name: "Maintenance mode" }));
+
+    fireEvent.change(screen.getByLabelText(/What students see/), { target: { value: "   " } });
+
+    expect(screen.queryByRole("button", { name: "Yes, pause solving" })).toBeNull();
+    expect(updateSettings).not.toHaveBeenCalled();
+  });
+
   it("turns maintenance off at once", async () => {
     getSettings.mockResolvedValue(response({ maintenance: { on: true, message: "Back at 6 pm." } }));
     renderSettings();

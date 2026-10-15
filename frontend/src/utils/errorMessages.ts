@@ -32,7 +32,7 @@ export interface SolveFailure {
 
 export const SOLVE_ERROR_COPY = {
   rateLimit: "That's 5 problems in a minute.",
-  dailyLimit: "You've used today's 5 free problems. Come back tomorrow.",
+  dailyLimit: "You've used today's free problems. Come back tomorrow.",
   paused: "Neo is taking a short break. Please try again in a little while.",
   unsolvable: "I couldn't read that problem. Try writing it like x^2 + 5x + 6 = 0.",
   notMath: "That doesn't look like a math problem. Try something like x^2 + 5x + 6 = 0.",

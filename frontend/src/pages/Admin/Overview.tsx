@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import adminService, { type AdminOverview } from "../../services/admin.service";
 import { AiUsageCard, BusinessCard, NumberRow, SolvesChart } from "./overview/OverviewCards";
@@ -25,7 +25,10 @@ export default function Overview() {
   const health = useAutoRefresh(adminService.getHealth);
   const [selected, setSelected] = useState<Item | null>(null);
   // Maintenance mode left on is easy to forget, so it shows in Neo's line
-  const { status: appStatus } = useAppStatus();
+  const { status: appStatus, load: loadAppStatus } = useAppStatus();
+  useEffect(() => {
+    void loadAppStatus();
+  }, [loadAppStatus]);
 
   if (!data) {
     return (
