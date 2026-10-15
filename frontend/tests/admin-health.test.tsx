@@ -61,7 +61,16 @@ describe("admin Health", () => {
     for (const name of ["API", "Database", "Gemini", "Backup model", "Email", "Robot check", "Error tracking"]) {
       expect(screen.getByRole("button", { name: new RegExp(name) })).toBeTruthy();
     }
+    // Something failed today and the Sentry key is missing
     expect(screen.getByText("Needs you")).toBeTruthy();
+  });
+
+  it("says a key is missing when nothing failed but a service has no key", async () => {
+    getHealth.mockResolvedValue(health({ solving: { ...health().solving, failed24h: 0 } }));
+    renderHealth();
+
+    expect(await screen.findByText("A key is missing.")).toBeTruthy();
+    expect(screen.getByText("Error tracking: key missing.")).toBeTruthy();
   });
 
   it("opens a service's runbook", async () => {
@@ -85,7 +94,9 @@ describe("admin Health", () => {
   });
 
   it("is all fine when everything is up and nothing failed today", async () => {
-    getHealth.mockResolvedValue(health({ solving: { ...health().solving, failed24h: 0 } }));
+    const allUp = health();
+    allUp.services = allUp.services.map((s) => (s.status === "key_missing" ? { ...s, status: "key_set" } : s));
+    getHealth.mockResolvedValue({ ...allUp, solving: { ...allUp.solving, failed24h: 0 } });
     renderHealth();
 
     expect(await screen.findByText("All fine")).toBeTruthy();

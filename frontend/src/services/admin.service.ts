@@ -111,6 +111,14 @@ export const adminService = {
   },
 
   /**
+   * Everything on the admin Overview, in one call
+   */
+  getOverview: async (): Promise<AdminOverview> => {
+    const response = await api.get<AdminOverview>("/admin/overview");
+    return response.data;
+  },
+
+  /**
    * The numbers next to Failed solves, Reports and Feedback in the nav
    */
   getCounts: async (): Promise<AdminCounts> => {
@@ -218,6 +226,35 @@ export interface AdminHealth {
     migrations: { applied: number; latest: string; pending: string[] };
     env: Array<{ name: string; set: boolean }>;
   };
+}
+
+// The admin Overview. Days are India days; student numbers leave out team accounts.
+export interface AdminOverview {
+  status: { state: "fine" | "attention" | "down"; failingSince: string | null };
+  numbers: {
+    solves: number;
+    solvesToday: number;
+    realStudents: number;
+    teamStudents: number;
+    activeThisWeek: number;
+    failedTries: number;
+    failedTries24h: number;
+    tries24h: number;
+  };
+  solvesPerDay: Array<{ day: string; count: number }>;
+  aiUsage: {
+    ai: number;
+    backup: number;
+    cache: number;
+    instant: number;
+    tokensToday: number;
+    avgTokensPerSolve: number;
+    limit: number | null;
+    resetsAt: string;
+  };
+  needsYou: Array<{ kind: "failed" | "report" | "feedback"; id: string; title: string; subtitle: string; at: string }>;
+  funnel: { signedUp: number; verified: number; solved: number; cameBack: number };
+  topTopics: Array<{ problemType: string; count: number }>;
 }
 
 // Nav counts. Failed solves count problems, not tries.

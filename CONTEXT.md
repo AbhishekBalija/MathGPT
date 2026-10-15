@@ -81,3 +81,7 @@ _Avoid_: Flag, complaint
 **Feedback**:
 A message from a User about the app itself (a Bug, an Idea or Other), not about one Solution. An Admin reads it and marks it done.
 _Avoid_: Report (that is about one Solution), ticket, support request
+
+**Team account**:
+One of our own accounts (the owner, a tester). Every Admin is one, and an Admin can mark any other User as one. Team accounts are left out of student and business numbers.
+_Avoid_: Internal user, staff

@@ -3,7 +3,8 @@ import ProtectedRoute from "../../components/ProtectedRoute";
 import Admin from "../Admin";
 import AdminShell from "./AdminShell";
 import Health from "./Health";
-import { Analytics, Dashboard, Errors, Feedback, Reports, Users } from "./index";
+import { Analytics, Errors, Feedback, Reports, Users } from "./index";
+import Overview from "./Overview";
 
 /**
  * Every admin address. Each list page also takes an item id
@@ -21,7 +22,7 @@ export function adminRoutes() {
       }
     >
       <Route element={<AdminShell />}>
-        <Route index element={<Dashboard />} />
+        <Route index element={<Overview />} />
         <Route path="health" element={<Health />} />
         <Route path="events" element={<Analytics />} />
         <Route path="failed/:id?" element={<Errors />} />

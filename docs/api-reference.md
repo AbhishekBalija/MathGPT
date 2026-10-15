@@ -734,6 +734,66 @@ Mark an error as resolved. **Requires admin.**
 
 ---
 
+### GET /admin/counts
+
+The numbers next to Failed solves, Reports and Feedback in the admin nav.
+**Requires admin.**
+
+```json
+{ "failedOpen": 5, "reportsBlocked": 1, "feedbackOpen": 0 }
+```
+
+`failedOpen` counts problems, not tries: the same problem retried by the same
+student (ignoring spacing) counts once.
+
+---
+
+### GET /admin/overview
+
+Everything on the admin Overview. **Requires admin.** Days are India days.
+Student and business numbers leave out team accounts (admins, and users marked
+as team).
+
+```json
+{
+  "status": { "state": "attention", "failingSince": null },
+  "numbers": { "solves": 12, "solvesToday": 7, "realStudents": 1, "teamStudents": 2, "activeThisWeek": 1, "failedTries": 8, "failedTries24h": 2, "tries24h": 9 },
+  "solvesPerDay": [{ "day": "2026-10-14", "count": 4 }],
+  "aiUsage": { "ai": 7, "backup": 0, "cache": 0, "instant": 0, "tokensToday": 23084, "avgTokensPerSolve": 2868, "limit": null, "resetsAt": "2026-10-15T07:00:00.000Z" },
+  "needsYou": [{ "kind": "failed", "id": "error_log_id", "title": "(logx)^2/x", "subtitle": "UNKNOWN_ERROR · 3 tries", "at": "2026-10-10T16:43:00.000Z" }],
+  "funnel": { "signedUp": 1, "verified": 1, "solved": 1, "cameBack": 1 },
+  "topTopics": [{ "problemType": "calculus_integral", "count": 2 }]
+}
+```
+
+- `status.state` is `down` while solving alerts are failing, `attention` when
+  `needsYou` has items, otherwise `fine`.
+- `solvesPerDay` is the last 7 days, oldest first, with zeros.
+- `aiUsage.backup` counts AI answers from any model other than the one that
+  wrote most of today's. `limit` comes from `AI_DAILY_LIMIT`, or `null`.
+  `resetsAt` is the next midnight in California, when Gemini's free tier
+  resets.
+- `needsYou` is the newest 8 open failed problems, blocked reports and open
+  feedback.
+
+---
+
+### PATCH /admin/users/:id/team
+
+Mark an account as team (yours or a tester's), so business numbers leave it
+out. **Requires admin.** Admins always stay team.
+
+**Body:** `{ "isTeam": true }`
+
+**Response (200):** `{ "id": "user_id", "isTeam": true }`
+
+| Status | Error          |
+| ------ | -------------- |
+| 400    | Body is invalid |
+| 404    | User not found |
+
+---
+
 ### GET /admin/reports
 
 "Something looks wrong" reports from students, newest first. **Requires admin.**

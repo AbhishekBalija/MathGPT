@@ -13,6 +13,8 @@ import { adminAnalyticsRoute } from "./analytics.route";
 import { adminCountsRoute } from "./counts.route";
 import { createAdminHealthRoute } from "./health/health.route";
 import type { HealthProbes } from "./health/probes";
+import { adminOverviewRoute } from "./overview/overview.route";
+import { adminTeamRoute } from "./team.route";
 import { adminDeleteUserRoute } from "./delete-user.route";
 import { adminFeedbackDoneRoute } from "./feedback-done.route";
 import { adminFeedbackRoute } from "./feedback.route";
@@ -32,6 +34,7 @@ export function createAdminRouter(healthProbes: HealthProbes): Router {
 
   admin.get("/counts", adminCountsRoute);
   admin.get("/health", createAdminHealthRoute(healthProbes));
+  admin.get("/overview", adminOverviewRoute);
   admin.get("/stats", adminStatsRoute);
   admin.get("/token-stats", adminTokenStatsRoute);
   admin.get("/analytics", adminAnalyticsRoute);
@@ -44,6 +47,7 @@ export function createAdminRouter(healthProbes: HealthProbes): Router {
   admin.get("/users", adminListUsersRoute);
   admin.put("/users/update-role", adminUpdateRolePutRoute);
   admin.patch("/users/:id/role", adminUpdateUserRoleRoute);
+  admin.patch("/users/:id/team", adminTeamRoute);
   admin.delete("/users/:id", adminDeleteUserRoute);
 
   return admin;

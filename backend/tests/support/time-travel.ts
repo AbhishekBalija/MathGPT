@@ -21,3 +21,8 @@ export async function moveRateLimitWindowsBack(email: string, seconds: number): 
     where key like '%:' || (select id::text from users where email = ${email.toLowerCase()})
   `);
 }
+
+/** Moves a Solution to another moment, to test India-time days. */
+export async function moveSolutionTo(solutionId: string, utcIso: string): Promise<void> {
+  await db.execute(sql`update solutions set created_at = ${utcIso}::timestamptz where id = ${solutionId}`);
+}
