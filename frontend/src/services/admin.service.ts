@@ -238,9 +238,11 @@ export const adminService = {
   /**
    * Get Feedback from Users, newest first. Done items only when asked for.
    */
-  getFeedback: async (params: { includeDone: boolean }): Promise<FeedbackResponse> => {
-    const query = params.includeDone ? "?includeDone=true" : "";
-    const response = await api.get<FeedbackResponse>(`/admin/feedback${query}`);
+  getFeedback: async (params: { includeDone: boolean; limit?: number }): Promise<FeedbackResponse> => {
+    const query = new URLSearchParams();
+    if (params.includeDone) query.append("includeDone", "true");
+    if (params.limit) query.append("limit", String(params.limit));
+    const response = await api.get<FeedbackResponse>(`/admin/feedback${query.size > 0 ? `?${query.toString()}` : ""}`);
     return response.data;
   },
 

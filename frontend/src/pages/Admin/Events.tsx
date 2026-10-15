@@ -30,8 +30,10 @@ function source(event: AnalyticsEvent): string {
 export default function Events() {
   const address = useListAddress(BASE, ALL);
   const eventName = address.filter === ALL ? undefined : address.filter;
-  const load = useCallback(() => adminService.getAnalytics(eventName), [eventName]);
-  const { data, error, refresh } = useAutoRefresh(load);
+  const load = useCallback(async () => ({ eventName, ...(await adminService.getAnalytics(eventName)) }), [eventName]);
+  const { data: loaded, error, refresh } = useAutoRefresh(load);
+  // Never show one filter's events under another
+  const data = loaded?.eventName === eventName ? loaded : null;
 
   // A new filter loads straight away (the first load already runs)
   const shownFilter = useRef(eventName);

@@ -29,7 +29,8 @@ function toStatus(value: string): FailedStatus {
 
 function FailedDetails({ group, onResolve }: { group: FailedDetail; onResolve: () => void }) {
   const latest = group.attempts.at(-1);
-  const details = latest?.details ?? null;
+  // The newest try that has details; very old tries have none
+  const details = [...group.attempts].reverse().find((attempt) => attempt.details !== null)?.details ?? null;
   return (
     <div>
       <Tag className={TAG.failed}>Failed solve · {plural(group.tries, "try", "tries")}</Tag>
@@ -96,8 +97,10 @@ function FailedDetails({ group, onResolve }: { group: FailedDetail; onResolve: (
 export default function FailedSolves() {
   const address = useListAddress(BASE, "open");
   const status = toStatus(address.filter);
-  const loadList = useCallback(() => adminService.getFailed(status), [status]);
-  const { data, error, refresh } = useAutoRefresh(loadList);
+  const loadList = useCallback(async () => ({ status, ...(await adminService.getFailed(status)) }), [status]);
+  const { data: loaded, error, refresh } = useAutoRefresh(loadList);
+  // Never show one filter's rows under another
+  const data = loaded?.status === status ? loaded : null;
   const selected = useItem(adminService.getFailedDetail, address.selectedId);
 
   // A new filter loads straight away (the first load already runs)

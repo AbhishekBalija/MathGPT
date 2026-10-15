@@ -108,6 +108,25 @@ describe("GET /admin/failed", () => {
   });
 });
 
+describe("deleted students", () => {
+  it("keeps two deleted students' failures of one problem apart", async () => {
+    const problem = uniqueProblem("integrate tan x");
+    for (let i = 0; i < 2; i++) {
+      const student = await registerVerifiedUser();
+      const studentId = (await (await authedFetch(student.accessToken, "/auth/me")).json()).user.id;
+      failNext(1);
+      await solve(student.accessToken, problem);
+      await groupFor(problem);
+      await authedFetch(adminToken, `/admin/users/${studentId}`, { method: "DELETE" });
+    }
+
+    await vi.waitFor(async () => {
+      const found = (await groups()).groups.filter((group) => group.problem === problem);
+      expect(found.map((group) => group.tries)).toEqual([1, 1]);
+    });
+  });
+});
+
 describe("GET /admin/failed/:id and resolving", () => {
   it("shows every try, and resolving the group resolves all of them", async () => {
     const { accessToken } = await registerVerifiedUser();

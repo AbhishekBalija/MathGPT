@@ -297,6 +297,20 @@ describe("Students", () => {
     });
     expect(service.setTeam).toHaveBeenCalledWith("s1", true);
   });
+
+  it("tapping again while it waits takes the change back", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderAt("/admin/students/s1", "students", <Students />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Mark as team" }));
+    fireEvent.click(screen.getByRole("button", { name: "Not team" }));
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+
+    expect(service.setTeam).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Mark as team" })).toBeTruthy();
+  });
 });
 
 describe("Events", () => {

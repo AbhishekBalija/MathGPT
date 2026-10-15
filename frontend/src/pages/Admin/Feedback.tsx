@@ -66,8 +66,8 @@ function FeedbackDetails({ item, onDone }: { item: FeedbackItem; onDone: () => v
 // What students tell us about the app.
 export default function Feedback() {
   const address = useListAddress(BASE, "open");
-  // Done items too, so every filter works from one load
-  const loadAll = useCallback(() => adminService.getFeedback({ includeDone: true }), []);
+  // Done items too, so every filter works from one load (the most the API gives)
+  const loadAll = useCallback(() => adminService.getFeedback({ includeDone: true, limit: 200 }), []);
   const { data, error } = useAutoRefresh(loadAll);
 
   // Saved as done, so it shows as done until the next load

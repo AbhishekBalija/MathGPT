@@ -134,8 +134,10 @@ export default function Students() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const loadList = useCallback(() => adminService.getUsers(1, 100, query || undefined), [query]);
-  const { data, error, refresh } = useAutoRefresh(loadList);
+  const loadList = useCallback(async () => ({ query, ...(await adminService.getUsers(1, 100, query || undefined)) }), [query]);
+  const { data: loaded, error, refresh } = useAutoRefresh(loadList);
+  // Never show one search's results under another
+  const data = loaded?.query === query ? loaded : null;
   const shownQuery = useRef(query);
   useEffect(() => {
     if (shownQuery.current === query) return;
@@ -167,6 +169,11 @@ export default function Students() {
   };
 
   const toggleTeam = (student: StudentDetail) => {
+    // Tapping again while the change waits takes it back
+    if (teamPending.has(student.id)) {
+      undo();
+      return;
+    }
     setTeamTarget((targets) => new Map(targets).set(student.id, !teamOf(student.id, student.isTeam)));
     remove(student.id);
   };
