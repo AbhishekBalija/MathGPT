@@ -30,7 +30,7 @@ describe("maintenance mode for an admin", () => {
     render(<Composer value="2x = 4" onChange={() => {}} onSolve={() => {}} maintenanceNotice="Back at 6 pm." />);
 
     const notice = screen.getByRole("status").textContent ?? "";
-    expect(notice).toContain("Maintenance mode is on. Students see:");
+    expect(notice).toContain("Maintenance mode is on. Everyone else sees your message:");
     expect(notice).toContain("Back at 6 pm.");
     expect(screen.getByRole("button", { name: "Solve" })).toBeTruthy();
   });

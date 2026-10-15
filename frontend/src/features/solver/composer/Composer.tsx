@@ -99,7 +99,7 @@ export function Composer({
       <div className="mx-auto max-w-[720px]">
         {maintenanceNotice ? (
           <p role="status" className="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-gray-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-gray-50">
-            <b className="font-semibold">Maintenance mode is on.</b> Students see: "{maintenanceNotice}" You can still solve because you're an admin.
+            <b className="font-semibold">Maintenance mode is on.</b> Everyone else sees your message: "{maintenanceNotice}" You can still solve because you're an admin.
           </p>
         ) : null}
         <ReadAs value={value} />
