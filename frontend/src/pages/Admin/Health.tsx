@@ -5,7 +5,8 @@ import { SERVICES } from "./health/runbooks";
 import { BarRow, Card } from "./overview/cards";
 import { MUTED } from "./overview/styles";
 import { formatAdminTime } from "./shared/formatAdminTime";
-import { NeoStatus, type NeoState } from "./shared/NeoStatus";
+import { healthLine } from "./health/healthLine";
+import { NeoStatus } from "./shared/NeoStatus";
 import { useAutoRefresh } from "./shared/useAutoRefresh";
 
 const BUTTON = "min-h-11 rounded-xl border border-gray-200 px-4 text-sm font-semibold hover:bg-gray-50 dark:border-white/10 dark:hover:bg-white/5";
@@ -19,27 +20,6 @@ const STATUS_LOOK: Record<Service["status"], { dot: string; label: string }> = {
   down: { dot: "bg-red-600 dark:bg-red-400", label: "Down" },
   key_missing: { dot: "bg-amber-600 dark:bg-amber-400", label: "Key missing" },
 };
-
-// Neo's line: a service that is down wins, then anything that needs a look
-function healthLine(health: AdminHealth): { state: NeoState; title: string; text: string } {
-  const down = health.services.filter((service) => service.status === "down");
-  if (down.length > 0) {
-    return {
-      state: "down",
-      title: `${down.map((service) => SERVICES[service.id].name).join(", ")} ${down.length === 1 ? "is" : "are"} down.`,
-      text: "Open the row below for what to do.",
-    };
-  }
-  const missing = health.services.filter((service) => service.status === "key_missing");
-  if (missing.length > 0 || health.solving.failed24h > 0) {
-    return {
-      state: "attention",
-      title: health.solving.failed24h > 0 ? `${health.solving.failed24h} failed in the last 24 hours.` : "A key is missing.",
-      text: missing.length > 0 ? `${missing.map((service) => SERVICES[service.id].name).join(", ")}: key missing.` : "Every service is up.",
-    };
-  }
-  return { state: "fine", title: "Everything is up.", text: "Nothing failed in the last 24 hours." };
-}
 
 function ServiceRow({ service, open, onToggle }: { service: Service; open: boolean; onToggle: () => void }) {
   const info = SERVICES[service.id];

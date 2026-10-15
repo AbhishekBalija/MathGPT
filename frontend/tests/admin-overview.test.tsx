@@ -3,8 +3,8 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Hoisted, because vi.mock runs before the rest of the file
-const { getOverview } = vi.hoisted(() => ({ getOverview: vi.fn() }));
-vi.mock("../src/services/admin.service", () => ({ default: { getOverview } }));
+const { getOverview, getHealth } = vi.hoisted(() => ({ getOverview: vi.fn(), getHealth: vi.fn() }));
+vi.mock("../src/services/admin.service", () => ({ default: { getOverview, getHealth } }));
 
 import Overview from "../src/pages/Admin/Overview";
 import type { AdminOverview } from "../src/services/admin.service";
@@ -33,7 +33,28 @@ function renderOverview() {
   );
 }
 
-beforeEach(() => getOverview.mockReset());
+const upServices = ["api", "database", "gemini", "backup", "email", "turnstile", "sentry"].map((id) => ({
+  id,
+  status: id === "backup" || id === "turnstile" || id === "sentry" ? "key_set" : "up",
+  ms: 10,
+  detail: null,
+}));
+
+function healthWith(services = upServices) {
+  return {
+    checkedAt: new Date().toISOString(),
+    services,
+    solving: { tries24h: 0, failed24h: 0, days: [], byCode: [] },
+    speed: { avgMs: 0, p90Ms: 0 },
+    live: { backendCommit: "local", migrations: { applied: 11, latest: "0010_admin_redesign", pending: [] }, env: [] },
+  };
+}
+
+beforeEach(() => {
+  getOverview.mockReset();
+  getHealth.mockReset();
+  getHealth.mockResolvedValue(healthWith());
+});
 afterEach(() => cleanup());
 
 describe("admin Overview", () => {
@@ -85,6 +106,25 @@ describe("admin Overview", () => {
 
     expect(await screen.findByText("Something is down")).toBeTruthy();
     expect(screen.getByText(`Solving is failing since ${formatAdminTime(since)}.`)).toBeTruthy();
+  });
+
+  it("puts a service that is down in Neo's line, even when nothing else needs you", async () => {
+    getOverview.mockResolvedValue(overview());
+    getHealth.mockResolvedValue(healthWith(upServices.map((s) => (s.id === "gemini" ? { ...s, status: "down", detail: "503" } : s))));
+    renderOverview();
+
+    expect(await screen.findByText("Something is down")).toBeTruthy();
+    expect(screen.getByText("Gemini is down.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open Health" }).getAttribute("href")).toBe("/admin/health");
+  });
+
+  it("still shows the rest when the health check fails", async () => {
+    getOverview.mockResolvedValue(overview());
+    getHealth.mockRejectedValue(new Error("offline"));
+    renderOverview();
+
+    expect(await screen.findByText("All fine")).toBeTruthy();
+    expect(await screen.findByText("Couldn't check services.")).toBeTruthy();
   });
 
   it("shows Couldn't load this with Retry when the overview fails", async () => {
