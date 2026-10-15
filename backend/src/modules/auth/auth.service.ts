@@ -34,6 +34,8 @@ export interface PublicUser {
   name: string;
   avatar?: string;
   isAdmin: boolean;
+  // One of our own accounts (admins too): can still solve in maintenance mode
+  isTeam: boolean;
   emailVerified: boolean;
 }
 
@@ -44,6 +46,7 @@ export function toPublicUser(user: User): PublicUser {
     name: user.name,
     avatar: user.avatarUrl ?? undefined,
     isAdmin: user.isAdmin,
+    isTeam: user.isTeam || user.isAdmin,
     emailVerified: user.emailVerifiedAt !== null,
   };
 }

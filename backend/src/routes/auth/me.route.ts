@@ -14,6 +14,7 @@ export const meRoute = route(async (req) => {
         name: user.name,
         avatar: user.avatarUrl ?? undefined,
         isAdmin: user.isAdmin,
+        isTeam: user.isTeam,
         emailVerified: user.emailVerified,
       },
     },
