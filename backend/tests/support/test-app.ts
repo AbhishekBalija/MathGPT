@@ -13,6 +13,18 @@ export const fakeMathSolver = createFakeMathSolver();
 export const fakeEmailSender = createFakeEmailSender();
 export const fakeHealthProbes = createFakeHealthProbes();
 
+// Keeps what solves reported, so tests can check the solve route calls the alerts
+export const recordingAlerts = {
+  failed: [] as string[],
+  succeeded: 0,
+  async onSolveFailed(code: string) {
+    recordingAlerts.failed.push(code);
+  },
+  async onSolveSucceeded() {
+    recordingAlerts.succeeded += 1;
+  },
+};
+
 /** Full URL for an API path, e.g. `apiUrl("/health")`. */
 export function apiUrl(path: string): string {
   const baseUrl = process.env.TEST_API_URL;

@@ -498,6 +498,22 @@ answers and cache hits do not use a Credit.
 
 ---
 
+## Internal Endpoints
+
+### GET or POST /internal/daily-summary
+
+Emails every Admin what came in over the last 24 hours: open failed problems with a try in that time, new reports and new feedback. Nothing is sent when nothing came in. Vercel's cron calls it daily at 03:30 UTC (09:00 India time).
+
+**Headers:** `Authorization: Bearer <CRON_SECRET>`. Without `CRON_SECRET` set on the server, it always answers 401.
+
+**Response (200):** `{ "sentTo": 2 }`
+
+| Status | Error       |
+| ------ | ----------- |
+| 401    | Not allowed |
+
+---
+
 ## Admin Endpoints
 
 > **Note**: All admin endpoints require a normal login with an Admin account (`isAdmin: true`): 401 without a login, 403 for non-Admins. There is no separate admin passcode.

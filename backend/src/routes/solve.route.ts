@@ -10,6 +10,7 @@
  */
 
 import { z, ZodError } from "zod";
+import type { SolveAlerts } from "../modules/alerts/solve-alerts";
 import { randomUUID } from "node:crypto";
 import {
   InvalidSolverOutputError,
@@ -101,7 +102,7 @@ const solveRequestSchema = z.object({
 });
 
 // POST /api/solve
-export function createSolveRoute(solver: MathSolver) {
+export function createSolveRoute(solver: MathSolver, alerts: SolveAlerts) {
   return route(async (req) => {
     const startTime = Date.now();
 
@@ -416,6 +417,8 @@ export function createSolveRoute(solver: MathSolver) {
       }
 
       trackSaved(userId, solution, content.steps.length, "ai", result.model ?? null);
+      // The AI answered, so if solving was failing it is back
+      runInBackground("solve-alert", () => alerts.onSolveSucceeded());
 
       // INCREMENT DAILY USAGE COUNTER (after successful solve)
       try {
@@ -547,6 +550,9 @@ export function createSolveRoute(solver: MathSolver) {
         processingTimeMs: Date.now() - startTime,
         userId,
       });
+
+      // Counts toward a "solving is failing" email (AI provider failures only)
+      runInBackground("solve-alert", () => alerts.onSolveFailed(errorCode));
 
       // Log the error for the admin dashboard without delaying the response
       runInBackground("problem-error", () =>
