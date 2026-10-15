@@ -6,10 +6,12 @@
  */
 
 import { createFakeEmailSender } from "./fake-email-sender";
+import { createFakeHealthProbes } from "./fake-health-probes";
 import { createFakeMathSolver } from "./fake-math-solver";
 
 export const fakeMathSolver = createFakeMathSolver();
 export const fakeEmailSender = createFakeEmailSender();
+export const fakeHealthProbes = createFakeHealthProbes();
 
 /** Full URL for an API path, e.g. `apiUrl("/health")`. */
 export function apiUrl(path: string): string {

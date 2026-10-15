@@ -11,6 +11,8 @@ import { adminErrorsRoute } from "./admin-errors.route";
 import { adminResolveErrorRoute } from "./admin-resolve-error.route";
 import { adminAnalyticsRoute } from "./analytics.route";
 import { adminCountsRoute } from "./counts.route";
+import { createAdminHealthRoute } from "./health/health.route";
+import type { HealthProbes } from "./health/probes";
 import { adminOverviewRoute } from "./overview/overview.route";
 import { adminTeamRoute } from "./team.route";
 import { adminDeleteUserRoute } from "./delete-user.route";
@@ -24,13 +26,14 @@ import { adminUpdateRolePutRoute } from "./update-role.route";
 import { adminUpdateUserRoleRoute } from "./update-user-role.route";
 import { adminListUsersRoute } from "./users.route";
 
-export function createAdminRouter(): Router {
+export function createAdminRouter(healthProbes: HealthProbes): Router {
   const admin = Router();
 
   // One check for the whole module: 401 without a login, 403 for non-Admins
   admin.use(requireUser, requireAdmin);
 
   admin.get("/counts", adminCountsRoute);
+  admin.get("/health", createAdminHealthRoute(healthProbes));
   admin.get("/overview", adminOverviewRoute);
   admin.get("/stats", adminStatsRoute);
   admin.get("/token-stats", adminTokenStatsRoute);

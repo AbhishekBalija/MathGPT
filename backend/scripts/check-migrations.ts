@@ -8,30 +8,11 @@
  * `bun run db:migrate` has been run against that database.
  */
 
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { Client } from "pg";
 
-interface JournalEntry {
-  tag: string;
-  when: number;
-}
-
-/** Tags of the migrations in the journal that the database has not applied. */
-export function findPendingMigrations(
-  journal: JournalEntry[],
-  appliedTimestamps: number[]
-): string[] {
-  // Drizzle records each applied migration with its journal timestamp
-  const applied = new Set(appliedTimestamps);
-  return journal.filter((entry) => !applied.has(entry.when)).map((entry) => entry.tag);
-}
-
-function readJournal(): JournalEntry[] {
-  const path = fileURLToPath(new URL("../drizzle/meta/_journal.json", import.meta.url));
-  const journal: { entries: JournalEntry[] } = JSON.parse(readFileSync(path, "utf8"));
-  return journal.entries;
-}
+// Shared with the admin Health screen, which shows the same check
+export { findPendingMigrations } from "../src/db/migrations-journal";
+import { findPendingMigrations, readJournal } from "../src/db/migrations-journal";
 
 async function readAppliedTimestamps(databaseUrl: string): Promise<number[]> {
   const client = new Client({ connectionString: databaseUrl });

@@ -8,6 +8,7 @@
 
 import express from "express";
 import { createApp } from "./create-app";
+import { createRealHealthProbes } from "./modules/admin/health/probes";
 import { logger } from "./lib/logger";
 import { requireEnv } from "./lib/env";
 import { initSentry } from "./lib/sentry";
@@ -42,6 +43,7 @@ const api = createApp({
   solver: geminiMathSolver,
   emailSender: chooseEmailSender(),
   humanCheck: createTurnstileCheck(process.env),
+  healthProbes: createRealHealthProbes(process.env),
 });
 
 // A thin outer app so this file is a real Express entry. Vercel sits in front

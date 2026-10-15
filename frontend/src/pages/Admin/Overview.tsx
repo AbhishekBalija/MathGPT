@@ -4,6 +4,8 @@ import adminService, { type AdminOverview } from "../../services/admin.service";
 import { AiUsageCard, BusinessCard, NumberRow, SolvesChart } from "./overview/OverviewCards";
 import { ITEM_PAGES } from "./overview/itemPages";
 import { NeedsYou } from "./overview/NeedsYou";
+import { HealthCard } from "./overview/HealthCard";
+import { healthLine } from "./health/healthLine";
 import { neoLine } from "./overview/neoLine";
 import { MUTED } from "./overview/styles";
 import { DetailsPanel } from "./shared/DetailsPanel";
@@ -18,6 +20,8 @@ const BUTTON = "min-h-11 rounded-xl border border-gray-200 px-4 text-sm font-sem
 // The admin home: is anything wrong, what needs me, and how is it going.
 export default function Overview() {
   const { data, error, updatedAt, refresh } = useAutoRefresh(adminService.getOverview);
+  // Loaded on its own, so a slow or failed health check never holds up the rest
+  const health = useAutoRefresh(adminService.getHealth);
   const [selected, setSelected] = useState<Item | null>(null);
 
   if (!data) {
@@ -38,7 +42,12 @@ export default function Overview() {
     );
   }
 
-  const line = neoLine(data);
+  // A service that is down wins Neo's line; otherwise the Overview's own
+  const fromHealth = health.data ? healthLine(health.data) : null;
+  const neo =
+    fromHealth?.state === "down"
+      ? { ...fromHealth, text: "Open Health for what to do." }
+      : { state: data.status.state, ...neoLine(data) };
   // A refresh can drop the picked item (someone resolved it); then the panel closes
   const current = selected ? (data.needsYou.find((item) => item.kind === selected.kind && item.id === selected.id) ?? null) : null;
   const page = current ? ITEM_PAGES[current.kind] : null;
@@ -58,7 +67,7 @@ export default function Overview() {
           </div>
         </div>
         <div className="order-1 lg:col-span-2">
-          <NeoStatus state={data.status.state} title={line.title} text={line.text} />
+          <NeoStatus state={neo.state} title={neo.title} text={neo.text} />
         </div>
         <div className="order-2 lg:order-5">
           <NeedsYou items={data.needsYou} selectedId={current?.id ?? null} onSelect={setSelected} />
@@ -68,6 +77,9 @@ export default function Overview() {
         </div>
         <div className="order-4 lg:col-span-2">
           <SolvesChart days={data.solvesPerDay} />
+        </div>
+        <div className="order-5 lg:order-6">
+          <HealthCard health={health.data} failed={health.error !== null} />
         </div>
         <div className="order-6">
           <AiUsageCard usage={data.aiUsage} />
