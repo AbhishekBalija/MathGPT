@@ -83,13 +83,22 @@ async function liveServices(probes: HealthProbes): Promise<ServiceStatus[]> {
   return services;
 }
 
+// When the database is down, the numbers are empty and the Database row says why
+async function orEmpty<T>(read: Promise<T>, empty: T): Promise<T> {
+  try {
+    return await read;
+  } catch {
+    return empty;
+  }
+}
+
 export async function buildHealthReport(probes: HealthProbes) {
   const now = new Date();
   const [services, solving, speed, applied] = await Promise.all([
     liveServices(probes),
-    healthRepository.solving(),
-    healthRepository.speed(),
-    healthRepository.appliedMigrations(),
+    orEmpty(healthRepository.solving(), { tries24h: 0, failed24h: 0, days: new Map(), byCode: [] }),
+    orEmpty(healthRepository.speed(), { avgMs: 0, p90Ms: 0 }),
+    orEmpty(healthRepository.appliedMigrations(), []),
   ]);
   const journal = readJournal();
 

@@ -1,4 +1,5 @@
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { healthRepository } from "../src/modules/admin/health/health.repository";
 import { resetHealthCache } from "../src/modules/admin/health/health.service";
 import { fakeHealthProbes } from "./support/test-app";
 import { authedFetch, registerAdmin } from "./support/users";
@@ -10,6 +11,7 @@ beforeAll(async () => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   fakeHealthProbes.setGemini("ok");
   resetHealthCache();
 });
@@ -83,5 +85,21 @@ describe("GET /admin/health", () => {
     await health();
 
     expect(fakeHealthProbes.geminiCalls - before).toBe(1);
+  });
+
+  it("still answers when the database is down, and says so", async () => {
+    const down = new Error("connect ECONNREFUSED");
+    vi.spyOn(healthRepository, "ping").mockRejectedValue(down);
+    vi.spyOn(healthRepository, "solving").mockRejectedValue(down);
+    vi.spyOn(healthRepository, "speed").mockRejectedValue(down);
+    vi.spyOn(healthRepository, "appliedMigrations").mockRejectedValue(down);
+
+    const body = await (await health()).json();
+
+    expect(service(body, "database")).toMatchObject({ status: "down", detail: "connect ECONNREFUSED" });
+    expect(body.solving.tries24h).toBe(0);
+    expect(body.solving.days).toHaveLength(7);
+    expect(body.speed).toEqual({ avgMs: 0, p90Ms: 0 });
+    expect(body.live.migrations.applied).toBe(0);
   });
 });

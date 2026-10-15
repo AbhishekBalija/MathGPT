@@ -55,6 +55,8 @@ export default function Health() {
   const { data, error, refresh } = useAutoRefresh(adminService.getHealth);
   const [open, setOpen] = useState<HealthServiceId | null>(null);
   const [copied, setCopied] = useState(false);
+  // Set when the browser won't let us copy, so the report shows to copy by hand
+  const [manualReport, setManualReport] = useState<string | null>(null);
 
   if (!data) {
     return (
@@ -80,9 +82,17 @@ export default function Health() {
   const codeTotal = solving.byCode.reduce((sum, code) => sum + code.count, 0);
 
   const copyReport = async () => {
-    await navigator.clipboard.writeText(buildHealthReport(data, FRONTEND_COMMIT));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const report = buildHealthReport(data, FRONTEND_COMMIT);
+    try {
+      // The clipboard is missing on non-https pages and can be blocked
+      if (!navigator.clipboard) throw new Error("No clipboard");
+      await navigator.clipboard.writeText(report);
+      setManualReport(null);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setManualReport(report);
+    }
   };
 
   return (
@@ -103,6 +113,20 @@ export default function Health() {
           </button>
         </div>
       </div>
+
+      {manualReport ? (
+        <label className="flex flex-col gap-1 text-sm">
+          <span className={MUTED}>Couldn't copy. Select this and copy it yourself.</span>
+          <textarea
+            readOnly
+            aria-label="Health report for Claude"
+            value={manualReport}
+            onFocus={(event) => event.currentTarget.select()}
+            rows={8}
+            className="rounded-xl border border-gray-200 bg-white p-3 font-mono text-xs dark:border-white/10 dark:bg-white/5"
+          />
+        </label>
+      ) : null}
 
       <NeoStatus state={line.state} title={line.title} text={line.text} />
 

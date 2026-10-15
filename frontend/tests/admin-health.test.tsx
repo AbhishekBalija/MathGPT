@@ -101,6 +101,16 @@ describe("admin Health", () => {
 
     expect(await screen.findByText("All fine")).toBeTruthy();
   });
+
+  it("shows the report to copy by hand when the clipboard is blocked", async () => {
+    getHealth.mockResolvedValue(health());
+    renderHealth();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Copy health report for Claude" }));
+
+    const box = (await screen.findByLabelText("Health report for Claude")) as HTMLTextAreaElement;
+    expect(box.value).toContain("Backend: c43d379");
+  });
 });
 
 describe("buildHealthReport", () => {

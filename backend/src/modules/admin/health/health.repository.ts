@@ -60,7 +60,15 @@ export const healthRepository = {
 
   /** When each applied migration was made, as Drizzle records it. */
   async appliedMigrations(): Promise<number[]> {
-    const found = await rows<{ created_at: string }>(sql`select created_at from drizzle.__drizzle_migrations`);
-    return found.map((row) => Number(row.created_at));
+    try {
+      const found = await rows<{ created_at: string }>(sql`select created_at from drizzle.__drizzle_migrations`);
+      return found.map((row) => Number(row.created_at));
+    } catch (error) {
+      // No migrations table yet means nothing has been applied
+      if (typeof error === "object" && error !== null && "code" in error && error.code === "42P01") {
+        return [];
+      }
+      throw error;
+    }
   },
 };
