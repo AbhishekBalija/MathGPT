@@ -37,4 +37,10 @@ export const SERVICES: Record<HealthServiceId, { name: string; what: string; run
     what: "Sentry",
     runbook: "Nothing breaks for students, but errors are not reported. Check SENTRY_DSN in Vercel.",
   },
+  uptime: {
+    name: "Uptime check",
+    what: "GitHub Actions, every 10 minutes",
+    runbook:
+      "It emails you when the site stops answering. If it is switched off, turn it back on: GitHub → Actions → Uptime check → Enable workflow. If its last check failed, open Vercel logs.",
+  },
 };

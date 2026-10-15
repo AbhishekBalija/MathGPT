@@ -4,10 +4,20 @@
  * AppServices so tests can use a fake instead.
  */
 
+// The outside uptime check (a GitHub Actions workflow): when it last ran, and whether it is on
+export interface UptimeCheck {
+  lastRunAt: string | null;
+  lastResult: "success" | "failure" | null;
+  enabled: boolean;
+}
+
 export interface HealthProbes {
   gemini(): Promise<void>;
   email(): Promise<void>;
+  github(): Promise<UptimeCheck>;
 }
+
+const UPTIME_WORKFLOW = "https://api.github.com/repos/AbhishekBalija/MathGPT/actions/workflows/uptime.yml";
 
 // Stops the request itself, not just the wait, so a hung service can't keep the function running
 const PROBE_TIMEOUT_MS = 3000;
@@ -39,6 +49,25 @@ export function createRealHealthProbes(env: NodeJS.ProcessEnv): HealthProbes {
         signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
       });
       await expectOk(response, "Resend");
+    },
+    // The repo is public, so this needs no token
+    async github() {
+      const headers = { Accept: "application/vnd.github+json" };
+      const signal = AbortSignal.timeout(PROBE_TIMEOUT_MS);
+      const workflow = await fetch(UPTIME_WORKFLOW, { headers, signal });
+      // Not merged yet, or renamed
+      if (workflow.status === 404) return { lastRunAt: null, lastResult: null, enabled: false };
+      await expectOk(workflow, "GitHub");
+      const { state } = (await workflow.json()) as { state: string };
+
+      const runs = await fetch(`${UPTIME_WORKFLOW}/runs?per_page=1&status=completed`, { headers, signal });
+      await expectOk(runs, "GitHub");
+      const { workflow_runs: [last] = [] } = (await runs.json()) as { workflow_runs?: Array<{ updated_at: string; conclusion: string | null }> };
+      return {
+        lastRunAt: last?.updated_at ?? null,
+        lastResult: last ? (last.conclusion === "success" ? "success" : "failure") : null,
+        enabled: state === "active",
+      };
     },
   };
 }

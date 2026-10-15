@@ -23,5 +23,6 @@ export function buildHealthReport(health: AdminHealth, frontendCommit: string): 
       migrations.pending.length > 0 ? `missing ${migrations.pending.join(", ")}` : "none missing"
     }`,
     `  Env not set: ${missingEnv.length > 0 ? missingEnv.join(", ") : "none"}`,
+    `  Uptime check: ${health.live.uptimeCheck.enabled ? "on" : "off"}, last ran ${health.live.uptimeCheck.lastRunAt ?? "never"}, ${health.live.uptimeCheck.lastResult ?? "no result"}`,
   ].join("\n");
 }

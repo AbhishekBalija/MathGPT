@@ -16,7 +16,7 @@ Authorization: Bearer <access_token>
 
 ### GET /health
 
-Check if the API is running.
+Checks that the API runs and the database answers (`select 1`, 3 second limit). The outside uptime check calls it every 10 minutes.
 
 **Response (200):**
 
@@ -26,6 +26,8 @@ Check if the API is running.
   "timestamp": "2025-12-22T00:00:00.000Z"
 }
 ```
+
+**Response (503):** `{ "status": "unhealthy", "timestamp": "..." }`, with no error details, since this endpoint is public.
 
 ---
 
@@ -817,7 +819,8 @@ not thrown.
   "live": {
     "backendCommit": "c43d379",
     "migrations": { "applied": 11, "latest": "0010_admin_redesign", "pending": [] },
-    "env": [{ "name": "JWT_SECRET", "set": true }]
+    "env": [{ "name": "JWT_SECRET", "set": true }],
+    "uptimeCheck": { "lastRunAt": "2026-10-15T09:20:00Z", "lastResult": "success", "enabled": true }
   }
 }
 ```
@@ -829,6 +832,7 @@ not thrown.
 - The live checks run at most once a minute; other requests in that minute
   get the same result.
 - `env` lists names only, never values.
+- `uptimeCheck` is the GitHub Actions "Uptime check" workflow, read from GitHub's public API at most every 10 minutes. The `uptime` service is `down` when the workflow is switched off, its last run is over 30 minutes old, or that run failed.
 
 ---
 

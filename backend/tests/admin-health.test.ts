@@ -13,6 +13,7 @@ beforeAll(async () => {
 afterEach(() => {
   vi.restoreAllMocks();
   fakeHealthProbes.setGemini("ok");
+  fakeHealthProbes.setUptime(fakeHealthProbes.recentUptimeRun());
   resetHealthCache();
 });
 
@@ -101,5 +102,29 @@ describe("GET /admin/health", () => {
     expect(body.solving.days).toHaveLength(7);
     expect(body.speed).toEqual({ avgMs: 0, p90Ms: 0 });
     expect(body.live.migrations.applied).toBe(0);
+  });
+
+  it("shows the outside uptime check as down when its last run is over 30 minutes old", async () => {
+    const lastRunAt = new Date(Date.now() - 45 * 60_000).toISOString();
+    fakeHealthProbes.setUptime({ lastRunAt, lastResult: "success", enabled: true });
+
+    const body = await (await health()).json();
+
+    expect(body.live.uptimeCheck).toEqual({ lastRunAt, lastResult: "success", enabled: true });
+    expect(service(body, "uptime")).toMatchObject({ status: "down" });
+    expect(service(body, "uptime")?.detail).toMatch(/45 minutes ago/);
+  });
+
+  it("shows the uptime check as down when GitHub switched it off", async () => {
+    fakeHealthProbes.setUptime({ ...fakeHealthProbes.recentUptimeRun(), enabled: false });
+
+    const body = await (await health()).json();
+
+    expect(service(body, "uptime")).toMatchObject({ status: "down", detail: "Switched off in GitHub" });
+  });
+
+  it("shows the uptime check as up after a recent passing run", async () => {
+    const body = await (await health()).json();
+    expect(service(body, "uptime")?.status).toBe("up");
   });
 });

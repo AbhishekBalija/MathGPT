@@ -1,0 +1,72 @@
+# Checks from outside that NeoMath answers, every 10 minutes, and emails the
+# owner when it doesn't. The backend's own alerts can't do this: if the
+# backend or the database is down, nothing inside it runs.
+#
+# It sends its own email (through Resend) because GitHub's failure emails go
+# to whoever last changed this file. The admin Health page shows when this
+# last ran: GitHub switches scheduled jobs off after 60 days with no repo
+# activity, and Health says so when that happens.
+#
+# Repo secrets it needs: RESEND_API, FROM_EMAIL, ALERT_TO (the owner's email).
+name: Uptime check
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      url_override:
+        description: "Check this URL instead, e.g. one that fails, to test the email"
+        required: false
+        default: ""
+
+permissions: {}
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check the API and the site
+        env:
+          URL_OVERRIDE: ${{ inputs.url_override }}
+        run: |
+          # One retry after 30 s, so a single slow cold start is not an alert
+          check() {
+            curl --fail --silent --show-error --max-time 15 --output /dev/null "$1" \
+              || { sleep 30; curl --fail --silent --show-error --max-time 15 --output /dev/null "$1"; }
+          }
+          if [ -n "$URL_OVERRIDE" ]; then
+            check "$URL_OVERRIDE"
+          else
+            check https://neomath-api.vercel.app/health
+            check https://neomath.vercel.app/
+          fi
+
+      - name: Email the owner
+        if: failure()
+        env:
+          RESEND_API: ${{ secrets.RESEND_API }}
+          FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
+          ALERT_TO: ${{ secrets.ALERT_TO }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          body=$(jq -n \
+            --arg from "$FROM_EMAIL" \
+            --arg to "$ALERT_TO" \
+            --arg run "$RUN_URL" \
+            '{
+              from: $from,
+              to: [$to],
+              subject: "NeoMath: the site is not answering",
+              html: ("<p><b>NeoMath did not answer the uptime check</b>, even after a retry.</p><p>Check the neomath-api logs in Vercel and Neon status. If it broke right after a merge, roll back to the last deploy.</p><p><a href=\"" + $run + "\">See this check on GitHub</a></p>")
+            }')
+          curl --fail --silent --show-error --max-time 15 \
+            -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API" \
+            -H "Content-Type: application/json" \
+            -d "$body"
