@@ -51,11 +51,12 @@ export const analyticsRepository = {
       .orderBy(desc(count()));
   },
 
-  async recentEvents(eventName: string, limit: number): Promise<AnalyticsEvent[]> {
+  /** Newest first, of one kind, or of every kind when no name is given. */
+  async recentEvents(eventName: string | undefined, limit: number): Promise<AnalyticsEvent[]> {
     return db
       .select()
       .from(analyticsEvents)
-      .where(eq(analyticsEvents.eventName, eventName))
+      .where(eventName ? eq(analyticsEvents.eventName, eventName) : undefined)
       .orderBy(desc(analyticsEvents.createdAt))
       .limit(limit);
   },

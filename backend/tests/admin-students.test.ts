@@ -79,3 +79,20 @@ describe("GET /admin/users", () => {
     expect(user.lastSolvedAt).toEqual(expect.any(String));
   });
 });
+
+describe("GET /admin/analytics", () => {
+  it("gives the newest events of every kind, or of one kind with ?event=", async () => {
+    const { accessToken } = await registerVerifiedUser();
+    await solve(accessToken, uniqueProblem("2x = 4"));
+
+    await vi.waitFor(async () => {
+      const saved = await (await authedFetch(adminToken, "/admin/analytics?event=solution_saved")).json();
+      expect(saved.recentEvents.length).toBeGreaterThan(0);
+      expect(saved.recentEvents.every((event: { eventName: string }) => event.eventName === "solution_saved")).toBe(true);
+    });
+    const none = await (await authedFetch(adminToken, "/admin/analytics?event=no_such_event")).json();
+    expect(none.recentEvents).toEqual([]);
+    const all = await authedFetch(adminToken, "/admin/analytics?event=bad%20name!");
+    expect(all.status).toBe(200);
+  });
+});

@@ -1,17 +1,21 @@
 /**
- * GET /admin/analytics - Analytics Events by type, plus recent saved Solutions.
- * Mounted behind requireUser and requireAdmin.
+ * GET /admin/analytics - Analytics Events by type, plus the newest events.
+ * Query: event=<name> for one kind only. Mounted behind requireUser and requireAdmin.
  */
 
-import { route } from "../../lib/http";
+import { z } from "zod";
+import { queryParam, route } from "../../lib/http";
 import { analyticsRepository } from "../analytics/analytics.repository";
 
 const RECENT_EVENTS = 50;
+// Event names are like "solution_saved"; anything else means every kind
+const eventSchema = z.string().regex(/^[a-z_]{1,64}$/).optional().catch(undefined);
 
-export const adminAnalyticsRoute = route(async () => {
+export const adminAnalyticsRoute = route(async (req) => {
+  const eventName = eventSchema.parse(queryParam(req, "event"));
   const [eventsByType, recentEvents] = await Promise.all([
     analyticsRepository.eventCountsByName(),
-    analyticsRepository.recentEvents("solution_saved", RECENT_EVENTS),
+    analyticsRepository.recentEvents(eventName, RECENT_EVENTS),
   ]);
 
   return {
