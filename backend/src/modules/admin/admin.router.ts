@@ -11,6 +11,8 @@ import { adminErrorsRoute } from "./admin-errors.route";
 import { adminResolveErrorRoute } from "./admin-resolve-error.route";
 import { adminAnalyticsRoute } from "./analytics.route";
 import { adminCountsRoute } from "./counts.route";
+import { adminOverviewRoute } from "./overview/overview.route";
+import { adminTeamRoute } from "./team.route";
 import { adminDeleteUserRoute } from "./delete-user.route";
 import { adminFeedbackDoneRoute } from "./feedback-done.route";
 import { adminFeedbackRoute } from "./feedback.route";
@@ -29,6 +31,7 @@ export function createAdminRouter(): Router {
   admin.use(requireUser, requireAdmin);
 
   admin.get("/counts", adminCountsRoute);
+  admin.get("/overview", adminOverviewRoute);
   admin.get("/stats", adminStatsRoute);
   admin.get("/token-stats", adminTokenStatsRoute);
   admin.get("/analytics", adminAnalyticsRoute);
@@ -41,6 +44,7 @@ export function createAdminRouter(): Router {
   admin.get("/users", adminListUsersRoute);
   admin.put("/users/update-role", adminUpdateRolePutRoute);
   admin.patch("/users/:id/role", adminUpdateUserRoleRoute);
+  admin.patch("/users/:id/team", adminTeamRoute);
   admin.delete("/users/:id", adminDeleteUserRoute);
 
   return admin;
