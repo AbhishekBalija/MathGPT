@@ -5,6 +5,11 @@ a new feature bumps the minor number (1.**2**.0), a fix bumps the patch number
 (1.2.**1**), and a change that breaks how people use the app bumps the major
 number (**2**.0.0). The frontend and backend share one version.
 
+## [1.3.2] - 2026-10-15
+
+### Fixed
+- The daily free limit now resets at midnight India time, not at 05:30 IST (midnight on the server's UTC clock), and the reset time students are told is right too (#106)
+
 ## [1.3.1] - 2026-10-15
 
 ### Fixed

@@ -5,6 +5,8 @@ export default defineConfig({
   envDir: false,
   test: {
     globals: true,
+    // Like Vercel. A laptop in India would otherwise hide day bugs (#106)
+    env: { TZ: "UTC" },
     include: ["tests/**/*.test.ts"],
     // Once per run: safety guard, fresh Postgres schema
     globalSetup: ["tests/support/global-setup.ts"],

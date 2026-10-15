@@ -42,7 +42,7 @@ One solved Problem counted against a user's free allowance.
 _Avoid_: Token, quota, request
 
 **Daily Limit**:
-The number of Credits a user may spend per calendar day before solving is blocked until tomorrow.
+The number of Credits (5) a user may spend per India day before solving is blocked until midnight India time. Cache and instant answers spend no Credit.
 
 **Rate Limit**:
 A short-window cap on how often an action may be repeated (solving, signing up, logging in), separate from the Daily Limit.

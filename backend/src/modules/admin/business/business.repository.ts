@@ -6,9 +6,7 @@
 
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../../db/client";
-
-// Same daily limit as the solve route
-const DAILY_FREE_LIMIT = 5;
+import { DAILY_FREE_LIMIT } from "../../users/daily-limit";
 
 const istDate = (column: string) => sql.raw(`(${column} at time zone 'Asia/Kolkata')::date`);
 const istWeek = (column: string) => sql.raw(`date_trunc('week', ${column} at time zone 'Asia/Kolkata')::date`);
