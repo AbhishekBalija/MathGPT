@@ -5,11 +5,10 @@
 
 import { pathParam, route } from "../../lib/http";
 import { isUuid } from "../../lib/ids";
+import { DAILY_FREE_LIMIT, usedToday } from "../users/daily-limit";
 import { userRepository } from "../users/user.repository";
 import { studentsRepository } from "./students/students.repository";
 
-// Same daily limit and reset rule as the solve and profile routes
-const DAILY_FREE_LIMIT = 5;
 
 const PROVIDER_NAMES: Record<string, string> = { email: "email", google: "Google" };
 
@@ -21,7 +20,6 @@ export const adminStudentDetailRoute = route(async (req) => {
   }
 
   const activity = await studentsRepository.activity(user.id);
-  const resetToday = new Date(user.lastCreditReset).toDateString() === new Date().toDateString();
 
   return {
     status: 200,
@@ -37,7 +35,7 @@ export const adminStudentDetailRoute = route(async (req) => {
       solves: activity.solves,
       failed: activity.failed,
       reports: activity.reports,
-      usedToday: resetToday ? user.dailyCreditsUsed : 0,
+      usedToday: usedToday(user),
       dailyLimit: DAILY_FREE_LIMIT,
       history: activity.history.map((item) => ({
         kind: item.kind,

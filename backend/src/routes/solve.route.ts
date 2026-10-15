@@ -10,6 +10,7 @@
  */
 
 import { z, ZodError } from "zod";
+import { DAILY_FREE_LIMIT, isNewDailyLimitDay, nextDailyLimitReset } from "../modules/users/daily-limit";
 import type { SolveAlerts } from "../modules/alerts/solve-alerts";
 import { randomUUID } from "node:crypto";
 import {
@@ -38,8 +39,6 @@ import { trySolveArithmetic } from "../modules/solver/instant/arithmetic";
 import { errorCodeFor } from "../modules/solver/error-code";
 import type { ErrorDetails } from "../db/schema";
 
-// Daily free limit for users
-const DAILY_FREE_LIMIT = 5;
 
 // Enough of a pasted worksheet for the admin to see what failed
 const MAX_LOGGED_PROBLEM = 2000;
@@ -287,18 +286,12 @@ export function createSolveRoute(solver: MathSolver, alerts: SolveAlerts) {
     try {
       const fullUser = await userRepository.findById(userId);
       if (fullUser) {
-        const today = new Date().toDateString();
-        const lastReset = fullUser.lastCreditReset
-          ? new Date(fullUser.lastCreditReset).toDateString()
-          : null;
-
-        // Reset daily counter if new day
-        if (today !== lastReset) {
+        // Reset the daily counter on a new India day
+        if (isNewDailyLimitDay(fullUser.lastCreditReset)) {
           await userRepository.resetDailyCredits(userId);
         } else if ((fullUser.dailyCreditsUsed || 0) >= DAILY_FREE_LIMIT) {
           // User has exceeded daily limit
-          const tomorrow = new Date();
-          tomorrow.setHours(24, 0, 0, 0);
+          const tomorrow = nextDailyLimitReset();
 
           logger.info("Daily limit exceeded", {
             userId,

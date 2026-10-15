@@ -4,8 +4,7 @@ import { userRepository } from "../modules/users/user.repository";
 import { route } from "../lib/http";
 import { logger } from "../lib/logger";
 
-// Daily free limit for users
-const DAILY_FREE_LIMIT = 5;
+import { DAILY_FREE_LIMIT, nextDailyLimitReset, usedToday } from "../modules/users/daily-limit";
 
 // GET /api/profile
 // Mounted behind requireUser
@@ -28,14 +27,9 @@ export const profileRoute = route(async (req) => {
     const stats = await solutionRepository.statsForUser(userId);
 
     // Step 5.5: Calculate daily credits
-    const today = new Date().toDateString();
-    const lastReset = user.lastCreditReset
-      ? new Date(user.lastCreditReset).toDateString()
-      : null;
-    const dailyUsed = today === lastReset ? user.dailyCreditsUsed || 0 : 0;
+    const dailyUsed = usedToday(user);
     const dailyRemaining = Math.max(0, DAILY_FREE_LIMIT - dailyUsed);
-    const tomorrow = new Date();
-    tomorrow.setHours(24, 0, 0, 0);
+    const tomorrow = nextDailyLimitReset();
 
     logger.info("Profile fetched successfully", {
       userId,
