@@ -27,6 +27,7 @@ const GROUPS: NavGroup[] = [
     label: "Watch",
     items: [
       { to: "/admin", label: "Overview" },
+      { to: "/admin/business", label: "Business" },
       { to: "/admin/health", label: "Health" },
       { to: "/admin/events", label: "Events" },
     ],

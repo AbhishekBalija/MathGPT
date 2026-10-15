@@ -47,9 +47,14 @@ export function NumberRow({ numbers }: { numbers: AdminOverview["numbers"] }) {
 }
 
 export function SolvesChart({ days }: { days: AdminOverview["solvesPerDay"] }) {
+  return <DayChart title="Solves per day" days={days} />;
+}
+
+// A bar per India day, for the last 7 days
+export function DayChart({ title, days }: { title: string; days: Array<{ day: string; count: number }> }) {
   const most = Math.max(1, ...days.map((day) => day.count));
   return (
-    <Card title="Solves per day" note="Last 7 days, India time">
+    <Card title={title} note="Last 7 days, India time">
       <div className="flex h-40 items-end gap-2 px-4 pb-4" role="list">
         {days.map((day) => (
           <div key={day.day} role="listitem" className="flex flex-1 flex-col items-center gap-1 text-xs">
@@ -107,41 +112,58 @@ export function AiUsageCard({ usage }: { usage: AdminOverview["aiUsage"] }) {
 }
 
 export function BusinessCard({ funnel, topics }: { funnel: AdminOverview["funnel"]; topics: AdminOverview["topTopics"] }) {
+  return (
+    <Card title="Business" note="Real students only">
+      <FunnelRows funnel={funnel} />
+      {topics.length > 0 ? (
+        <>
+          <h3 className="mt-2 border-t border-gray-200 px-4 pt-3 pb-1 text-sm font-semibold dark:border-white/10">Top topics</h3>
+          <TopicRows topics={topics} />
+        </>
+      ) : null}
+      <div className="h-2" />
+    </Card>
+  );
+}
+
+// Signed up, verified, solved, came back: each as a share of the step before
+export function FunnelRows({ funnel }: { funnel: AdminOverview["funnel"] }) {
   const steps = [
     { label: "Signed up", value: funnel.signedUp, of: funnel.signedUp },
     { label: "Verified email", value: funnel.verified, of: funnel.signedUp },
     { label: "Solved a problem", value: funnel.solved, of: funnel.verified },
     { label: "Came back another day", value: funnel.cameBack, of: funnel.solved },
   ];
+  if (funnel.signedUp === 0) {
+    return <p className={`px-4 pb-4 text-sm ${MUTED}`}>No real students yet.</p>;
+  }
+  return (
+    <>
+      {steps.map((step, index) => (
+        <BarRow
+          key={step.label}
+          label={step.label}
+          value={index === 0 ? String(step.value) : `${step.value} · ${percent(step.value, step.of)}`}
+          share={share(step.value, funnel.signedUp)}
+        />
+      ))}
+    </>
+  );
+}
+
+// What students ask about, as a share of all of it
+export function TopicRows({ topics }: { topics: AdminOverview["topTopics"] }) {
   const topicTotal = topics.reduce((sum, topic) => sum + topic.count, 0);
   return (
-    <Card title="Business" note="Real students only">
-      {funnel.signedUp === 0 ? (
-        <p className={`px-4 pb-4 text-sm ${MUTED}`}>No real students yet.</p>
-      ) : (
-        steps.map((step, index) => (
-          <BarRow
-            key={step.label}
-            label={step.label}
-            value={index === 0 ? String(step.value) : `${step.value} · ${percent(step.value, step.of)}`}
-            share={share(step.value, funnel.signedUp)}
-          />
-        ))
-      )}
-      {topics.length > 0 ? (
-        <>
-          <h3 className="mt-2 border-t border-gray-200 px-4 pt-3 pb-1 text-sm font-semibold dark:border-white/10">Top topics</h3>
-          {topics.map((topic) => (
-            <BarRow
-              key={topic.problemType}
-              label={TOPIC_LABELS[topic.problemType] ?? topic.problemType}
-              value={String(topic.count)}
-              share={share(topic.count, topicTotal)}
-            />
-          ))}
-        </>
-      ) : null}
-      <div className="h-2" />
-    </Card>
+    <>
+      {topics.map((topic) => (
+        <BarRow
+          key={topic.problemType}
+          label={TOPIC_LABELS[topic.problemType] ?? topic.problemType}
+          value={String(topic.count)}
+          share={share(topic.count, topicTotal)}
+        />
+      ))}
+    </>
   );
 }

@@ -7,6 +7,7 @@
 import { sql } from "drizzle-orm";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { db } from "../src/db/client";
+import { istWeekStart } from "../src/modules/admin/overview/ist";
 import { FAKE_SOLVER_FAILURE } from "./support/fake-math-solver";
 import { uniqueProblem } from "./support/problems";
 import { authedFetch, registerAdmin, registerVerifiedUser } from "./support/users";
@@ -115,5 +116,64 @@ describe("statistics", () => {
       );
       expect(saved?.count).toBeGreaterThanOrEqual(1);
     });
+  });
+});
+
+interface Business {
+  numbers: { students: number; activeThisWeek: number; activeRate: number; solvesPerActive: number; limitHits: number };
+  newPerDay: Array<{ day: string; count: number }>;
+  funnel: Record<string, number>;
+  cohorts: Array<{ weekStart: string; students: number; weeks: number[] }>;
+  cost: { tokensToday: number; avgTokensPerSolve: number };
+  topics: Array<{ problemType: string; count: number }>;
+  hiddenTeam: number;
+}
+
+async function business(includeTeam = false): Promise<Business> {
+  const res = await authedFetch(adminToken, `/admin/business${includeTeam ? "?includeTeam=true" : ""}`);
+  expect(res.status).toBe(200);
+  return res.json();
+}
+
+describe("GET /admin/business", () => {
+  it("leaves team accounts out unless asked, and says how many are hidden", async () => {
+    const { accessToken } = await registerVerifiedUser();
+    await solve(accessToken);
+    const before = await business();
+
+    await authedFetch(adminToken, `/admin/users/${await idOf(accessToken)}/team`, { method: "PATCH", body: { isTeam: true } });
+    const after = await business();
+    const withTeam = await business(true);
+
+    expect(after.hiddenTeam - before.hiddenTeam).toBe(1);
+    expect(before.numbers.students - after.numbers.students).toBe(1);
+    expect(withTeam.numbers.students).toBe(after.numbers.students + after.hiddenTeam);
+    expect(withTeam.funnel.signedUp).toBe(after.funnel.signedUp + after.hiddenTeam);
+  });
+
+  it("counts a student who used all 5 free problems today as a limit hit", async () => {
+    const before = await business();
+    const { accessToken } = await registerVerifiedUser();
+    for (let i = 0; i < 5; i++) expect((await solve(accessToken)).status).toBe(200);
+
+    // Saved events are recorded in the background
+    await vi.waitFor(async () => expect((await business()).numbers.limitHits - before.numbers.limitHits).toBe(1));
+  });
+
+  it("gives 6 signup weeks, newest first: week 0 is 100%, and an empty week has no numbers", async () => {
+    await registerVerifiedUser();
+    const data = await business();
+
+    expect(data.cohorts).toHaveLength(6);
+    expect(data.cohorts[0]?.weekStart).toBe(istWeekStart(new Date()));
+    expect(data.cohorts[0]?.weeks[0]).toBe(100);
+    for (const cohort of data.cohorts) {
+      if (cohort.students === 0) expect(cohort.weeks).toEqual([]);
+      for (const share of cohort.weeks) expect(Number.isFinite(share)).toBe(true);
+    }
+    expect(data.cohorts.some((cohort) => cohort.students === 0)).toBe(true);
+    expect(data.newPerDay).toHaveLength(7);
+    for (const value of Object.values(data.numbers)) expect(Number.isFinite(value)).toBe(true);
+    expect(Number.isFinite(data.cost.avgTokensPerSolve)).toBe(true);
   });
 });
