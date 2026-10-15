@@ -10,6 +10,7 @@ import { requireAdmin, requireUser } from "../auth/auth.middleware";
 import { adminErrorsRoute } from "./admin-errors.route";
 import { adminResolveErrorRoute } from "./admin-resolve-error.route";
 import { adminAnalyticsRoute } from "./analytics.route";
+import { adminBusinessRoute } from "./business/business.route";
 import { adminCountsRoute } from "./counts.route";
 import { adminFailedDetailRoute, adminFailedListRoute, adminFailedResolveRoute } from "./failed/failed.route";
 import { createAdminHealthRoute } from "./health/health.route";
@@ -38,6 +39,7 @@ export function createAdminRouter(healthProbes: HealthProbes): Router {
   admin.get("/counts", adminCountsRoute);
   admin.get("/health", createAdminHealthRoute(healthProbes));
   admin.get("/overview", adminOverviewRoute);
+  admin.get("/business", adminBusinessRoute);
   admin.get("/stats", adminStatsRoute);
   admin.get("/token-stats", adminTokenStatsRoute);
   admin.get("/analytics", adminAnalyticsRoute);

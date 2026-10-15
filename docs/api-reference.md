@@ -559,6 +559,34 @@ Query: `event=<name>` (for example `solution_saved`) for one kind only. Without 
 
 ---
 
+### GET /admin/business
+
+Real students, how many come back, what they ask and what it costs. Days and weeks are India time; weeks start on Monday. **Requires admin.**
+
+Query: `includeTeam=true` to count team accounts too (default: left out).
+
+**Response (200):**
+
+```json
+{
+  "numbers": { "students": 12, "activeThisWeek": 5, "activeRate": 42, "solvesPerActive": 3.4, "limitHits": 2 },
+  "newPerDay": [{ "day": "2026-10-15", "count": 1 }],
+  "funnel": { "signedUp": 12, "verified": 10, "solved": 8, "cameBack": 4 },
+  "cohorts": [{ "weekStart": "2026-10-12", "students": 3, "weeks": [100] }],
+  "cost": { "tokensToday": 28680, "avgTokensPerSolve": 2868 },
+  "topics": [{ "problemType": "calculus_integral", "count": 9 }],
+  "hiddenTeam": 2
+}
+```
+
+- `newPerDay`: the last 7 days, oldest first
+- `limitHits`: student-days with 5 or more AI or cache answers (the daily free limit)
+- `cohorts`: the last 6 signup weeks, newest first. `weeks[0]` is the signup week and always 100; `weeks[n]` is the percent of that week's students who solved something n weeks later, up to this week. A week with no sign-ups has `weeks: []`
+- `cost` counts every solve, team accounts too, since we pay for them all
+- `hiddenTeam`: how many team accounts exist
+
+---
+
 ### GET /admin/users
 
 List users with pagination and search. **Requires admin.**
