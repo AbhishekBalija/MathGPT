@@ -192,3 +192,29 @@ describe("settings on the Health report", () => {
     expect(health.live.settings.recentChanges[0].by).toBeUndefined();
   });
 });
+
+describe("the 15-second copy", () => {
+  it("never keeps an older read that finishes after a save", { timeout: 10000 }, async () => {
+    const { getSettings, resetSettingsCache, updateSettings } = await import("../src/modules/settings/settings");
+    const { settingsRepository } = await import("../src/modules/settings/settings.repository");
+    const realRead = settingsRepository.readAll.bind(settingsRepository);
+    let finishSlowRead: () => void = () => {};
+    const slowReadMayFinish = new Promise<void>((resolve) => (finishSlowRead = resolve));
+    // The first read gets the old values but answers late
+    vi.spyOn(settingsRepository, "readAll").mockImplementationOnce(async () => {
+      const old = await realRead();
+      await slowReadMayFinish;
+      return old;
+    });
+
+    // Sign-ups read the settings too, so start with nothing kept
+    resetSettingsCache();
+    const slow = getSettings();
+    const adminId = await idOf(admin.accessToken);
+    await updateSettings({ dailyLimit: 9 }, adminId);
+    finishSlowRead();
+    await slow;
+
+    expect((await getSettings()).dailyLimit).toBe(9);
+  });
+});

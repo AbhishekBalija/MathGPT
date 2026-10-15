@@ -37,10 +37,13 @@ const CACHE_MS = 15_000;
 const KEYS = Object.keys(SETTING_SCHEMAS) as SettingKey[];
 
 let cached: { at: number; settings: Settings } | null = null;
+// Goes up on every save, so a read that started before a save is never kept
+let version = 0;
 
 /** Forgets the kept settings, so the next read goes to the database. */
 export function resetSettingsCache(): void {
   cached = null;
+  version += 1;
 }
 
 function fromStored(stored: Map<string, unknown>): Settings {
@@ -54,8 +57,9 @@ function fromStored(stored: Map<string, unknown>): Settings {
 
 export async function getSettings(): Promise<Settings> {
   if (cached && Date.now() - cached.at < CACHE_MS) return cached.settings;
+  const startedAt = version;
   const settings = fromStored(await settingsRepository.readAll());
-  cached = { at: Date.now(), settings };
+  if (version === startedAt) cached = { at: Date.now(), settings };
   return settings;
 }
 
