@@ -145,6 +145,7 @@ export default function Health() {
               ))}
             </div>
             <p className={`px-4 pt-1.5 pb-2 text-xs ${MUTED}`}>Last 7 days: green no failures, amber some, red most, grey no solves</p>
+            {solving.byCode.length > 0 ? <h3 className="px-4 pt-1 pb-1 text-xs font-semibold">Failures this week, by error</h3> : null}
             {solving.byCode.map((code) => (
               <BarRow key={code.errorCode} label={code.errorCode} value={String(code.count)} share={(code.count / codeTotal) * 100} />
             ))}
