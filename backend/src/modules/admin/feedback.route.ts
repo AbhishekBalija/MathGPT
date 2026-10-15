@@ -1,6 +1,6 @@
 /**
  * GET /admin/feedback - Feedback from Users, newest first, with the
- * sender's email. Query: includeDone=true, limit.
+ * sender's name, id and email. Query: includeDone=true, limit.
  * Mounted behind requireUser and requireAdmin.
  */
 

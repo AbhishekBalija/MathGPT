@@ -37,7 +37,8 @@ describe("Feedback", () => {
 
     expect(res.status).toBe(201);
     const item = (await listFeedback()).find((f) => f.message === message);
-    expect(item).toMatchObject({ kind: "idea", message, page: "/app", email: student.email, done: false });
+    expect(item).toMatchObject({ kind: "idea", message, page: "/app", email: student.email, name: "Test User", done: false });
+    expect(item?.userId).toEqual(expect.any(String));
   });
 
   it("attaches the Solution the student had open", async () => {
