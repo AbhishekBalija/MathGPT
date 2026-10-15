@@ -748,6 +748,40 @@ student (ignoring spacing) counts once.
 
 ---
 
+### GET /admin/health
+
+Every service checked live, solving over the last week, speed, and what is
+deployed. **Requires admin.** Always 200: a service that is down is reported,
+not thrown.
+
+```json
+{
+  "checkedAt": "2026-10-14T17:20:00.000Z",
+  "services": [
+    { "id": "database", "status": "up", "ms": 38, "detail": null },
+    { "id": "gemini", "status": "down", "ms": null, "detail": "gemini timed out after 3000ms" },
+    { "id": "sentry", "status": "key_set", "ms": null, "detail": null }
+  ],
+  "solving": { "tries24h": 9, "failed24h": 2, "days": [{ "day": "2026-10-14", "tries": 6, "failed": 2 }], "byCode": [{ "errorCode": "AI_TIMEOUT", "count": 2 }] },
+  "speed": { "avgMs": 8724, "p90Ms": 14298 },
+  "live": {
+    "backendCommit": "c43d379",
+    "migrations": { "applied": 11, "latest": "0010_admin_redesign", "pending": [] },
+    "env": [{ "name": "JWT_SECRET", "set": true }]
+  }
+}
+```
+
+- `services` are `api`, `database` (runs `select 1`), `gemini` (lists models,
+  which uses no daily solves) and `email` (reads the Resend domains), each
+  with a 3 second limit. `backup`, `turnstile` and `sentry` only check that
+  their key is set (`key_set` or `key_missing`).
+- The live checks run at most once a minute; other requests in that minute
+  get the same result.
+- `env` lists names only, never values.
+
+---
+
 ### GET /admin/overview
 
 Everything on the admin Overview. **Requires admin.** Days are India days.
