@@ -5,6 +5,11 @@ a new feature bumps the minor number (1.**2**.0), a fix bumps the patch number
 (1.2.**1**), and a change that breaks how people use the app bumps the major
 number (**2**.0.0). The frontend and backend share one version.
 
+## [1.3.1] - 2026-10-15
+
+### Fixed
+- Health showed Email as down with a send-only Resend key, which can send but can't list domains. It now shows as up
+
 ## [1.3.0] - 2026-10-15
 
 The last step of the admin redesign.
