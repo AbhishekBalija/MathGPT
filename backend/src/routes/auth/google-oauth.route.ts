@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AuthService } from "../../modules/auth/auth.service";
+import { getSettings, SIGNUPS_PAUSED_MESSAGE } from "../../modules/settings/settings";
 import { routeWithBody } from "../../lib/http";
 import { logger } from "../../lib/logger";
 import { runInBackground } from "../../lib/background";
@@ -19,8 +20,11 @@ export function createGoogleOAuthRoute(emailSender: EmailSender) {
     logger.info("Google OAuth login attempt");
 
     // Step 3: Call the service to handle Google OAuth
-    const result = await AuthService.googleLogin(idToken);
+    const result = await AuthService.googleLogin(idToken, (await getSettings()).signupsOpen);
 
+    if (!result.success && result.error === "signups_paused") {
+      return { status: 403, body: { error: SIGNUPS_PAUSED_MESSAGE, code: "SIGNUPS_PAUSED" } };
+    }
     if (!result.success) {
       logger.warn("Google OAuth failed", { reason: result.error });
       return {

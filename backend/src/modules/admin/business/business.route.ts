@@ -6,6 +6,7 @@
 
 import { queryParam, route } from "../../../lib/http";
 import { emptyRate, istDay, istWeekStart } from "../overview/ist";
+import { getSettings } from "../../settings/settings";
 import { businessRepository } from "./business.repository";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -20,7 +21,7 @@ export const adminBusinessRoute = route(async (req) => {
   const weekStarts = Array.from({ length: COHORT_WEEKS }, (_, index) => istWeekStart(new Date(now.getTime() - index * WEEK_MS)));
 
   const [numbers, newByDay, funnel, cohorts, cost, topics] = await Promise.all([
-    businessRepository.numbers(includeTeam),
+    getSettings().then((settings) => businessRepository.numbers(includeTeam, settings.dailyLimit)),
     businessRepository.newByDay(includeTeam),
     businessRepository.funnel(includeTeam),
     businessRepository.cohorts(includeTeam, weekStarts.at(-1) ?? istWeekStart(now)),

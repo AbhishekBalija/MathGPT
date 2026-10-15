@@ -42,7 +42,15 @@ One solved Problem counted against a user's free allowance.
 _Avoid_: Token, quota, request
 
 **Daily Limit**:
-The number of Credits (5) a user may spend per India day before solving is blocked until midnight India time. Cache and instant answers spend no Credit.
+The number of Credits a user may spend per India day before solving is blocked until midnight India time: 5 unless an Admin changes it in Settings. Admins have none. Cache and instant answers spend no Credit.
+
+**Setting**:
+A value an Admin changes from the Settings page with no deploy: the Daily Limit, whether new sign-ups are open, and maintenance mode. Every change is logged with who made it.
+_Avoid_: Config, flag
+
+**Maintenance mode**:
+A Setting that pauses solving for students and shows them an Admin's message. Admins and team accounts can still solve. Logging in and opening saved Solutions still work.
+_Avoid_: Downtime, outage
 
 **Rate Limit**:
 A short-window cap on how often an action may be repeated (solving, signing up, logging in), separate from the Daily Limit.

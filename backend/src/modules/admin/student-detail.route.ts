@@ -5,7 +5,8 @@
 
 import { pathParam, route } from "../../lib/http";
 import { isUuid } from "../../lib/ids";
-import { DAILY_FREE_LIMIT, usedToday } from "../users/daily-limit";
+import { getSettings } from "../settings/settings";
+import { limitFor, usedToday } from "../users/daily-limit";
 import { userRepository } from "../users/user.repository";
 import { studentsRepository } from "./students/students.repository";
 
@@ -36,7 +37,8 @@ export const adminStudentDetailRoute = route(async (req) => {
       failed: activity.failed,
       reports: activity.reports,
       usedToday: usedToday(user),
-      dailyLimit: DAILY_FREE_LIMIT,
+      // Null for admins, who have no limit
+      dailyLimit: limitFor(user, await getSettings()),
       history: activity.history.map((item) => ({
         kind: item.kind,
         title: item.kind === "joined" ? `Joined with ${PROVIDER_NAMES[item.title] ?? item.title}` : item.title,

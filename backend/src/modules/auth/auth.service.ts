@@ -34,6 +34,8 @@ export interface PublicUser {
   name: string;
   avatar?: string;
   isAdmin: boolean;
+  // One of our own accounts (admins too): can still solve in maintenance mode
+  isTeam: boolean;
   emailVerified: boolean;
 }
 
@@ -44,6 +46,7 @@ export function toPublicUser(user: User): PublicUser {
     name: user.name,
     avatar: user.avatarUrl ?? undefined,
     isAdmin: user.isAdmin,
+    isTeam: user.isTeam || user.isAdmin,
     emailVerified: user.emailVerifiedAt !== null,
   };
 }
@@ -135,7 +138,8 @@ export const AuthService = {
     };
   },
 
-  async googleLogin(idToken: string) {
+  /** `allowNewAccounts` is false while an admin has paused sign-ups. */
+  async googleLogin(idToken: string, allowNewAccounts = true) {
     let payload;
     try {
       const ticket = await googleClient.verifyIdToken({
@@ -166,12 +170,18 @@ export const AuthService = {
       return { success: false as const, error: "Google has not verified this email address" };
     }
 
-    const result = await findOrCreateGoogleUser({
-      googleId,
-      email: normalizeEmail(email),
-      name: name || email.split("@")[0] || "there",
-      avatarUrl: picture,
-    });
+    const result = await findOrCreateGoogleUser(
+      {
+        googleId,
+        email: normalizeEmail(email),
+        name: name || email.split("@")[0] || "there",
+        avatarUrl: picture,
+      },
+      allowNewAccounts
+    );
+    if (result === "signups_paused") {
+      return { success: false as const, error: "signups_paused" as const };
+    }
     if (!result) {
       return {
         success: false as const,
@@ -221,12 +231,15 @@ interface GoogleProfile {
  * different Google account; that link is never replaced.
  */
 async function findOrCreateGoogleUser(
-  profile: GoogleProfile
-): Promise<{ user: User; isNewUser: boolean } | null> {
+  profile: GoogleProfile,
+  allowNewAccounts: boolean
+): Promise<{ user: User; isNewUser: boolean } | null | "signups_paused"> {
   const existing = await findExistingGoogleUser(profile);
   if (existing !== undefined) {
     return existing && { user: existing, isNewUser: false };
   }
+  // Existing students still sign in; only new accounts wait
+  if (!allowNewAccounts) return "signups_paused";
 
   try {
     // Google has already confirmed this email, so the User starts verified

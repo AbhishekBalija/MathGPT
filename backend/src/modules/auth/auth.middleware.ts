@@ -18,6 +18,8 @@ export interface CurrentUser {
   name: string;
   avatarUrl: string | null;
   isAdmin: boolean;
+  // One of our own accounts; can still solve in maintenance mode
+  isTeam: boolean;
   emailVerified: boolean;
 }
 
@@ -50,6 +52,7 @@ export async function authenticate(req: Request): Promise<CurrentUser | null> {
     name: user.name,
     avatarUrl: user.avatarUrl,
     isAdmin: user.isAdmin,
+    isTeam: user.isTeam || user.isAdmin,
     emailVerified: user.emailVerifiedAt !== null,
   };
 }

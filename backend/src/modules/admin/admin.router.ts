@@ -12,6 +12,7 @@ import { adminResolveErrorRoute } from "./admin-resolve-error.route";
 import { adminAnalyticsRoute } from "./analytics.route";
 import { adminBusinessRoute } from "./business/business.route";
 import { adminCountsRoute } from "./counts.route";
+import { adminGetSettingsRoute, adminUpdateSettingsRoute } from "../settings/settings.route";
 import { adminFailedDetailRoute, adminFailedListRoute, adminFailedResolveRoute } from "./failed/failed.route";
 import { createAdminHealthRoute } from "./health/health.route";
 import type { HealthProbes } from "./health/probes";
@@ -40,6 +41,8 @@ export function createAdminRouter(healthProbes: HealthProbes): Router {
   admin.get("/health", createAdminHealthRoute(healthProbes));
   admin.get("/overview", adminOverviewRoute);
   admin.get("/business", adminBusinessRoute);
+  admin.get("/settings", adminGetSettingsRoute);
+  admin.patch("/settings", adminUpdateSettingsRoute);
   admin.get("/stats", adminStatsRoute);
   admin.get("/token-stats", adminTokenStatsRoute);
   admin.get("/analytics", adminAnalyticsRoute);

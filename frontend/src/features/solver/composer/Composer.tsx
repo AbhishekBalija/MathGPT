@@ -9,7 +9,8 @@ interface ComposerProps {
   onSolve: (problem: string, view: "all" | "hint") => void;
   disabled?: boolean;
   // Free problems left today. The line is hidden when this is undefined.
-  remaining?: number;
+  // null for admins, who have no daily limit
+  remaining?: number | null;
 }
 
 const DAILY_LIMIT = 5;
@@ -122,7 +123,7 @@ export function Composer({
           </div>
         </div>
         {keypadOpen && <Keypad onInsert={insertAtCursor} />}
-        {remaining !== undefined && (
+        {remaining !== undefined && remaining !== null && (
           <p className="mt-2 px-1 text-xs text-gray-600 dark:text-gray-400">
             {freeLine(remaining)}
           </p>
