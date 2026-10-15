@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { useAuthStore } from "../stores/authStore";
-import { useRef, useState, type FormEvent } from "react";
+import { useAppStatus } from "../stores/appStatusStore";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import axios from "axios";
 import AuthLayout from "../components/auth/AuthLayout";
@@ -15,6 +16,12 @@ import { Check, Circle } from "lucide-react";
 const Register = () => {
   const navigate = useNavigate();
   const { loginWithGoogle, registerWithEmail, isLoading } = useAuthStore();
+  // An admin can pause new accounts from Settings
+  const { status: appStatus, load: loadAppStatus } = useAppStatus();
+  useEffect(() => {
+    void loadAppStatus();
+  }, [loadAppStatus]);
+  const signupsPaused = appStatus?.signupsOpen === false;
   const googleWidth = useGoogleButtonWidth();
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -101,14 +108,18 @@ const Register = () => {
       <p className={ui.subheading}>Free while in beta. Takes a minute.</p>
 
       <div className="mt-7 space-y-4">
-        {error && (
+        {signupsPaused ? (
+          <div role="status" className={ui.errorBox}>
+            New sign-ups are paused for now. If you already have an account, log in.
+          </div>
+        ) : error ? (
           <div role="alert" className={ui.errorBox}>
             {error}
           </div>
-        )}
+        ) : null}
 
         {/* Only when Google sign-in is set up: the button crashes the page otherwise */}
-        {isGoogleSignInEnabled() ? (
+        {isGoogleSignInEnabled() && !signupsPaused ? (
           <>
             <div className="flex justify-center">
               <GoogleLogin
@@ -213,7 +224,7 @@ const Register = () => {
           ) : null}
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || signupsPaused}
             className={`${ui.primaryButton} !mt-5`}
           >
             {isLoading ? "Creating account..." : "Create account"}

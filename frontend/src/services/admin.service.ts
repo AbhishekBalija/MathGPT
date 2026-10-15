@@ -132,6 +132,22 @@ export const adminService = {
   },
 
   /**
+   * The daily limit, sign-ups and maintenance mode, with the newest changes
+   */
+  getSettings: async (): Promise<AdminSettingsResponse> => {
+    const response = await api.get<AdminSettingsResponse>("/admin/settings");
+    return response.data;
+  },
+
+  /**
+   * Change any setting; only real changes are saved and logged
+   */
+  updateSettings: async (change: Partial<AdminSettings>): Promise<AdminSettingsResponse> => {
+    const response = await api.patch<AdminSettingsResponse>("/admin/settings", change);
+    return response.data;
+  },
+
+  /**
    * The numbers next to Failed solves, Reports and Feedback in the nav
    */
   getCounts: async (): Promise<AdminCounts> => {
@@ -290,6 +306,11 @@ export interface AdminHealth {
     env: Array<{ name: string; set: boolean }>;
     // The outside check in GitHub Actions that emails you when the site is down
     uptimeCheck: { lastRunAt: string | null; lastResult: "success" | "failure" | null; enabled: boolean };
+    // Current admin Settings and the newest changes, without who made them
+    settings: {
+      current: AdminSettings;
+      recentChanges: Array<{ key: string; oldValue: unknown; newValue: unknown; changedAt: string }>;
+    };
   };
 }
 
@@ -332,6 +353,29 @@ export interface AdminBusiness {
   cost: { tokensToday: number; avgTokensPerSolve: number };
   topics: Array<{ problemType: string; count: number }>;
   hiddenTeam: number;
+}
+
+// Admin Settings. Changes apply within 15 seconds.
+export interface AdminSettings {
+  dailyLimit: number;
+  signupsOpen: boolean;
+  maintenance: { on: boolean; message: string };
+}
+
+export interface SettingChange {
+  id: string;
+  key: keyof AdminSettings;
+  oldValue: unknown;
+  newValue: unknown;
+  changedAt: string;
+  // Null once that admin's account is deleted
+  by: { id: string; name: string } | null;
+}
+
+export interface AdminSettingsResponse {
+  settings: AdminSettings;
+  // Newest first, at most 20
+  changes: SettingChange[];
 }
 
 // Nav counts. Failed solves count problems, not tries.

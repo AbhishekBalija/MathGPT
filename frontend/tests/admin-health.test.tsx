@@ -38,6 +38,10 @@ function health(overrides: Partial<AdminHealth> = {}): AdminHealth {
         { name: "SENTRY_DSN", set: false },
       ],
       uptimeCheck: { lastRunAt: "2026-10-14T17:15:00.000Z", lastResult: "success", enabled: true },
+      settings: {
+        current: { dailyLimit: 6, signupsOpen: true, maintenance: { on: false, message: "Back soon." } },
+        recentChanges: [{ key: "dailyLimit", oldValue: 5, newValue: 6, changedAt: "2026-10-15T11:10:00.000Z" }],
+      },
     },
     ...overrides,
   };
@@ -140,6 +144,8 @@ describe("buildHealthReport", () => {
     expect(report).toContain("Migrations: 11 applied, latest 0010_admin_redesign, none missing");
     expect(report).toContain("Env not set: SENTRY_DSN");
     expect(report).toContain("Uptime check: on, last ran 2026-10-14T17:15:00.000Z, success");
+    expect(report).toContain("Settings: 6 free problems a day, sign-ups open, maintenance off");
+    expect(report).toContain("  dailyLimit: 5 -> 6 at 2026-10-15T11:10:00.000Z");
     expect(report).not.toMatch(/@/);
   });
 });

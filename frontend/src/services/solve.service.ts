@@ -46,6 +46,8 @@ interface ErrorBody {
   retryAfter?: number;
   resetAt?: string;
   dailyLimit?: number;
+  // The admin's maintenance message (503 MAINTENANCE)
+  message?: string;
 }
 
 /**
@@ -98,6 +100,7 @@ export async function solveProblem(request: SolveRequest): Promise<SolveResult> 
       retryAfter: body.retryAfter,
       resetAt: body.resetAt,
       dailyLimit: body.dailyLimit,
+      message: body.message,
     };
 
     if (body.code === "EMAIL_NOT_VERIFIED") {

@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Menu, Plus, X } from "lucide-react";
 import Logo from "../../components/brand/Logo";
 import { solveProblem } from "../../services/solve.service";
+import authService from "../../services/auth.service";
 import { reportSolution } from "../../services/history.service";
 import { useAppDataStore } from "../../stores/appDataStore";
+import { useAppStatus } from "../../stores/appStatusStore";
 import { useAuthStore } from "../../stores/authStore";
 import { useChatStore, type Chat } from "../../stores/chatStore";
 import { toSolveError } from "../../utils/errorMessages";
@@ -70,6 +72,37 @@ export function SolverPage() {
   const view = useChatStore((s) => s.view);
 
   const emailVerified = useAuthStore((s) => s.user?.emailVerified);
+  // Team accounts (admins too) can still solve while an admin has paused solving
+  const isTeam = useAuthStore((s) => Boolean(s.user?.isTeam || s.user?.isAdmin));
+  const maintenance = useAppStatus((s) => s.status?.maintenance);
+  const loadAppStatus = useAppStatus((s) => s.load);
+  const pausedMessage = maintenance?.on && !isTeam ? maintenance.message : null;
+  // Check on load and whenever the tab comes back; while paused, also every
+  // 30 seconds, so the composer returns without a reload when solving resumes
+  useEffect(() => {
+    void loadAppStatus();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void loadAppStatus();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [loadAppStatus]);
+  useEffect(() => {
+    if (!pausedMessage) return;
+    const timer = setInterval(() => void loadAppStatus(), 30_000);
+    return () => clearInterval(timer);
+  }, [pausedMessage, loadAppStatus]);
+
+  // Logins from before isTeam existed don't have it saved: ask once
+  const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
+  useEffect(() => {
+    if (!user || user.isTeam !== undefined) return;
+    authService.getCurrentUser().then(
+      ({ user: fresh }) => setUser({ ...user, isAdmin: fresh.isAdmin, isTeam: fresh.isTeam ?? false }),
+      () => {},
+    );
+  }, [user, setUser]);
   const setEmailVerified = useAuthStore((s) => s.setEmailVerified);
   const { history, isInitialized, historyLoading } = useAppDataStore();
 
@@ -104,6 +137,7 @@ export function SolverPage() {
 
   // Free problems left today, from the shared profile. Asked again after every solve.
   const remaining = useAppDataStore((s) => s.profile?.dailyCredits?.remaining);
+  const dailyLimit = useAppDataStore((s) => s.profile?.dailyCredits?.limit);
   const hasProfile = useAppDataStore((s) => s.profile !== null);
   useEffect(() => {
     // Usually already loading from the app start; this joins that request
@@ -210,8 +244,10 @@ export function SolverPage() {
 
       // The problem stays in the field and in pendingProblem, so nothing is lost
       after.setSolveError(toSolveError(result.failure ?? { status: 500 }));
+      // Solving was paused since the page loaded: show the message in the composer too
+      if (result.failure?.code === "MAINTENANCE") void loadAppStatus();
     },
-    [emailVerified, navigate, setEmailVerified],
+    [emailVerified, navigate, setEmailVerified, loadAppStatus],
   );
 
   function cancelSolve() {
@@ -295,6 +331,8 @@ export function SolverPage() {
       onSolve={(problem, nextView) => void solve(problem, nextView)}
       disabled={isLoading || solutionLoading}
       remaining={remaining}
+      limit={dailyLimit}
+      pausedMessage={pausedMessage}
     />
   );
 
@@ -398,7 +436,8 @@ export function SolverPage() {
         </div>
 
         <div ref={composerRef} className="shrink-0">
-          {isPhone ? (
+          {/* While solving is paused the notice shows on phones too, not only after a tap */}
+          {isPhone && !pausedMessage ? (
             <SlimComposer
               label={input.trim() || (activeSolution ? "Ask another problem" : "Type a problem")}
               onOpen={() => setPhoneInputOpen(true)}

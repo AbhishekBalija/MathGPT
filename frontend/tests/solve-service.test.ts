@@ -43,7 +43,7 @@ describe("solveProblem failures", () => {
       response: { status: 429, data: { error: "Daily limit", resetAt: "2026-10-10T00:00:00.000Z", dailyLimit: 5 } },
     });
     const result = await solveProblem({ problem: "x+1=2" });
-    expect(toSolveError(result.failure ?? {}).message).toBe(SOLVE_ERROR_COPY.dailyLimit);
+    expect(toSolveError(result.failure ?? {}).message).toBe("You've used today's 5 free problems. Come back tomorrow.");
   });
 
   it("treats no reply as a network failure", async () => {

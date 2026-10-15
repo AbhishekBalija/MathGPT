@@ -7,6 +7,7 @@ vi.mock("../src/services/api", () => ({ default: { get: vi.fn(), post: vi.fn(), 
 import api from "../src/services/api";
 import * as adapter from "../src/features/solver/model/adapter";
 import { SolverPage } from "../src/features/solver/SolverPage";
+import { useAppStatus } from "../src/stores/appStatusStore";
 import { useAppDataStore } from "../src/stores/appDataStore";
 import { useChatStore, type Chat, type Solution } from "../src/stores/chatStore";
 import { SOLVE_ERROR_COPY } from "../src/utils/errorMessages";
@@ -105,7 +106,7 @@ const field = () => screen.getByLabelText("Your math problem") as HTMLTextAreaEl
 beforeEach(() => {
   get.mockReset();
   post.mockReset();
-  get.mockResolvedValue({ data: { dailyCredits: { remaining: 3 } } });
+  get.mockResolvedValue({ data: { dailyCredits: { remaining: 3, limit: 5 } } });
   useAppDataStore.getState().clearData();
   useChatStore.setState({
     chats: [],
@@ -286,18 +287,42 @@ describe("solving", () => {
     await waitFor(() => expect(document.querySelector("li")).not.toBe(firstStep));
   });
 
+  it("shows the admin's pause in place of the composer, and brings the composer back when it ends", async () => {
+    useAppStatus.setState({ status: null });
+    let paused = true;
+    get.mockImplementation(async (url: string) => {
+      if (url === "/api/app-status") return { data: { maintenance: { on: paused, message: "Back at 6 pm." }, signupsOpen: true } };
+      return { data: { dailyCredits: { remaining: 3, limit: 5 } } };
+    });
+    await renderPage();
+
+    expect(await screen.findByText("Back at 6 pm.")).toBeTruthy();
+    expect(screen.queryByLabelText("Your math problem")).toBeNull();
+
+    // The admin turns it off; the student comes back to the tab
+    paused = false;
+    document.dispatchEvent(new Event("visibilitychange"));
+
+    expect(await screen.findByLabelText("Your math problem")).toBeTruthy();
+    useAppStatus.setState({ status: null });
+  });
+
   it("asks for the free problems again after a solve and updates the line", async () => {
     get.mockReset();
-    get
-      .mockResolvedValueOnce({ data: { dailyCredits: { remaining: 3 } } })
-      .mockResolvedValue({ data: { dailyCredits: { remaining: 2 } } });
+    // The page also asks whether solving is paused; only profile reads count here
+    let profileReads = 0;
+    get.mockImplementation(async (url: string) => {
+      if (url === "/api/app-status") return { data: { maintenance: { on: false, message: "" }, signupsOpen: true } };
+      profileReads += 1;
+      return { data: { dailyCredits: { remaining: profileReads === 1 ? 3 : 2, limit: 5 } } };
+    });
     post.mockResolvedValue(apiSolution("s1"));
     await renderPage();
     expect(screen.getByText("3 of 5 free problems left today")).toBeTruthy();
     fireEvent.change(field(), { target: { value: "x + 1 = 2" } });
     fireEvent.click(btn("Solve"));
     await waitFor(() => expect(screen.getByText("2 of 5 free problems left today")).toBeTruthy());
-    expect(get).toHaveBeenCalledTimes(2);
+    expect(profileReads).toBe(2);
   });
 
   describe("with a solution on screen", () => {
@@ -407,7 +432,7 @@ describe("typed-block solutions", () => {
               solution: { ...oldSolution("old-sol", "x + 1 = 2"), createdAt: new Date().toISOString(), formatVersion: 1, content: null },
             },
           }
-        : { data: { dailyCredits: { remaining: 3 } } },
+        : { data: { dailyCredits: { remaining: 3, limit: 5 } } },
     );
     await renderPage();
     fireEvent.click(btn("x + 1 = 2"));
@@ -432,7 +457,7 @@ describe("typed-block solutions", () => {
               },
             },
           }
-        : { data: { dailyCredits: { remaining: 3 } } },
+        : { data: { dailyCredits: { remaining: 3, limit: 5 } } },
     );
     await renderPage();
     fireEvent.click(btn("156 / 4"));

@@ -8,17 +8,21 @@ interface ComposerProps {
   onChange: (value: string) => void;
   onSolve: (problem: string, view: "all" | "hint") => void;
   disabled?: boolean;
-  // Free problems left today. The line is hidden when this is undefined.
-  // null for admins, who have no daily limit
+  // Free problems left today, and today's limit (from admin Settings).
+  // The line is hidden when unknown. Both are null for admins: no limit.
   remaining?: number | null;
+  limit?: number | null;
+  // Set while an admin has paused solving: shown in place of the input
+  pausedMessage?: string | null;
 }
 
-const DAILY_LIMIT = 5;
 const MAX_FIELD_HEIGHT = 128;
 
-function freeLine(remaining: number): string {
+function freeLine(remaining: number | null | undefined, limit: number | null | undefined): string | null {
+  if (limit === null) return "No daily limit (admin)";
+  if (remaining === undefined || remaining === null || limit === undefined) return null;
   if (remaining <= 0) return "No free problems left today. Come back tomorrow.";
-  return `${remaining} of ${DAILY_LIMIT} free problems left today`;
+  return `${remaining} of ${limit} free problems left today`;
 }
 
 export function Composer({
@@ -27,6 +31,8 @@ export function Composer({
   onSolve,
   disabled = false,
   remaining,
+  limit,
+  pausedMessage,
 }: ComposerProps) {
   const [keypadOpen, setKeypadOpen] = useState(false);
   const fieldRef = useRef<HTMLTextAreaElement>(null);
@@ -67,6 +73,22 @@ export function Composer({
       field?.focus();
       field?.setSelectionRange(start + text.length, start + text.length);
     });
+  }
+
+  const line = freeLine(remaining, limit);
+
+  if (pausedMessage) {
+    return (
+      <div className="border-t border-gray-200 px-3 pb-4 pt-3 dark:border-white/10 md:px-6">
+        <div
+          role="status"
+          className="mx-auto flex max-w-[720px] items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-gray-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-gray-50"
+        >
+          <img src="/brand/neo.svg" alt="" className="size-10 shrink-0" />
+          <p>{pausedMessage}</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -123,11 +145,7 @@ export function Composer({
           </div>
         </div>
         {keypadOpen && <Keypad onInsert={insertAtCursor} />}
-        {remaining !== undefined && remaining !== null && (
-          <p className="mt-2 px-1 text-xs text-gray-600 dark:text-gray-400">
-            {freeLine(remaining)}
-          </p>
-        )}
+        {line && <p className="mt-2 px-1 text-xs text-gray-600 dark:text-gray-400">{line}</p>}
       </div>
     </div>
   );

@@ -5,6 +5,17 @@ a new feature bumps the minor number (1.**2**.0), a fix bumps the patch number
 (1.2.**1**), and a change that breaks how people use the app bumps the major
 number (**2**.0.0). The frontend and backend share one version.
 
+## [1.4.0] - 2026-10-15
+
+### Added
+- Admin **Settings** page (under Control): free problems per day (1 to 50), new sign-ups on or off, and maintenance mode with a message. Changes apply within 15 seconds with no deploy, and every change is logged with who made it (#119)
+- In maintenance mode students see the admin's message in place of the Solve button; admins and team accounts can still solve. The Overview and the nav show when something is paused
+- While sign-ups are paused the sign-up page says so, and new email or Google accounts are refused; existing students still log in
+- Admins have no daily limit ("No daily limit (admin)")
+
+### Changed
+- The free-problems line and the daily-limit message use the real limit from Settings, not a fixed 5
+
 ## [1.3.2] - 2026-10-15
 
 ### Fixed

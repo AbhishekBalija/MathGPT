@@ -26,11 +26,14 @@ export interface SolveFailure {
   /** Set by the server only for the daily limit (429 without a code). */
   resetAt?: string;
   dailyLimit?: number;
+  // The admin's message while solving is paused (503 MAINTENANCE)
+  message?: string;
 }
 
 export const SOLVE_ERROR_COPY = {
   rateLimit: "That's 5 problems in a minute.",
-  dailyLimit: "You've used today's 5 free problems. Come back tomorrow.",
+  dailyLimit: "You've used today's free problems. Come back tomorrow.",
+  paused: "Neo is taking a short break. Please try again in a little while.",
   unsolvable: "I couldn't read that problem. Try writing it like x^2 + 5x + 6 = 0.",
   notMath: "That doesn't look like a math problem. Try something like x^2 + 5x + 6 = 0.",
   login: "Please log in again.",
@@ -46,7 +49,11 @@ export function toSolveError(failure: SolveFailure): SolveError {
 
   if (status === 429) {
     const isDaily = failure.resetAt !== undefined || failure.dailyLimit !== undefined || code === "DAILY_LIMIT";
-    if (isDaily) return { message: SOLVE_ERROR_COPY.dailyLimit };
+    if (isDaily) {
+      // The limit is set in admin Settings, so name the real number
+      const message = failure.dailyLimit === undefined ? SOLVE_ERROR_COPY.dailyLimit : `You've used today's ${failure.dailyLimit} free problems. Come back tomorrow.`;
+      return { message };
+    }
     return { message: SOLVE_ERROR_COPY.rateLimit, retryAfter };
   }
 
@@ -60,6 +67,9 @@ export function toSolveError(failure: SolveFailure): SolveError {
   if (status === 403) {
     return { message: code === "EMAIL_NOT_VERIFIED" ? SOLVE_ERROR_COPY.verifyEmail : SOLVE_ERROR_COPY.login };
   }
+
+  // An admin paused solving: their message, and nothing to retry yet
+  if (code === "MAINTENANCE") return { message: failure.message || SOLVE_ERROR_COPY.paused, noAction: true };
 
   // 5xx and anything unknown: not the student's fault
   return { message: SOLVE_ERROR_COPY.serverTrouble };

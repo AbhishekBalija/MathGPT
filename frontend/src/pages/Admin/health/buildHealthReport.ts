@@ -7,6 +7,7 @@ export function buildHealthReport(health: AdminHealth, frontendCommit: string): 
   );
   const { migrations } = health.live;
   const missingEnv = health.live.env.filter((entry) => !entry.set).map((entry) => entry.name);
+  const { current: settings, recentChanges } = health.live.settings;
 
   return [
     `## NeoMath health ${health.checkedAt}`,
@@ -24,5 +25,10 @@ export function buildHealthReport(health: AdminHealth, frontendCommit: string): 
     }`,
     `  Env not set: ${missingEnv.length > 0 ? missingEnv.join(", ") : "none"}`,
     `  Uptime check: ${health.live.uptimeCheck.enabled ? "on" : "off"}, last ran ${health.live.uptimeCheck.lastRunAt ?? "never"}, ${health.live.uptimeCheck.lastResult ?? "no result"}`,
+    `Settings: ${settings.dailyLimit} free problems a day, sign-ups ${settings.signupsOpen ? "open" : "paused"}, maintenance ${settings.maintenance.on ? "on" : "off"}`,
+    "Recent setting changes:",
+    ...(recentChanges.length > 0
+      ? recentChanges.map((change) => `  ${change.key}: ${JSON.stringify(change.oldValue)} -> ${JSON.stringify(change.newValue)} at ${change.changedAt}`)
+      : ["  none"]),
   ].join("\n");
 }

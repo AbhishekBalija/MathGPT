@@ -4,6 +4,7 @@ import { LogOut, Moon, Sun } from "lucide-react";
 import Logo from "../../components/brand/Logo";
 import adminService, { type AdminCounts } from "../../services/admin.service";
 import { useAdminStore } from "../../stores/adminStore";
+import { useAppStatus } from "../../stores/appStatusStore";
 import { useAuthStore } from "../../stores/authStore";
 import { useThemeStore } from "../../stores/themeStore";
 
@@ -13,6 +14,8 @@ interface NavItem {
   to: string;
   label: string;
   count?: CountKey;
+  // Shows "Paused" while maintenance is on or sign-ups are paused
+  showsPause?: boolean;
 }
 
 interface NavGroup {
@@ -45,6 +48,10 @@ const GROUPS: NavGroup[] = [
     label: "People",
     items: [{ to: "/admin/students", label: "Students" }],
   },
+  {
+    label: "Control",
+    items: [{ to: "/admin/settings", label: "Settings", showsPause: true }],
+  },
 ];
 
 const LINK =
@@ -61,6 +68,7 @@ export default function AdminNav() {
   const { user, logout } = useAuthStore();
   const { clearAdminData } = useAdminStore();
   const { isDark, toggleTheme } = useThemeStore();
+  const { status: appStatus, load: loadAppStatus } = useAppStatus();
 
   // Fresh counts on every page change, so a resolved item drops off straight away
   useEffect(() => {
@@ -69,10 +77,12 @@ export default function AdminNav() {
       .getCounts()
       .then((next) => current && setCounts(next))
       .catch(() => current && setCounts(null));
+    // And whether something is paused, for the tag next to Settings
+    void loadAppStatus();
     return () => {
       current = false;
     };
-  }, [pathname]);
+  }, [pathname, loadAppStatus]);
 
   const handleLogout = async () => {
     clearAdminData();
@@ -107,6 +117,9 @@ export default function AdminNav() {
                   className={({ isActive }) => `${LINK} ${isActive ? ACTIVE : IDLE}`}
                 >
                   <span>{item.label}</span>
+                  {item.showsPause && appStatus && (appStatus.maintenance.on || !appStatus.signupsOpen) ? (
+                    <span className="rounded-md bg-amber-100 px-1.5 text-xs font-semibold text-amber-700 dark:bg-amber-400/15 dark:text-amber-400">Paused</span>
+                  ) : null}
                   {count !== null && count !== undefined ? (
                     <span
                       className={`rounded-md px-1.5 text-xs font-semibold ${
