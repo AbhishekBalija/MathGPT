@@ -48,6 +48,12 @@ export function createRealHealthProbes(env: NodeJS.ProcessEnv): HealthProbes {
         headers: { Authorization: `Bearer ${key}` },
         signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
       });
+      // A send-only key may not list domains, so Resend answers 401
+      // "restricted_api_key". The key is still valid and email still sends.
+      if (response.status === 401) {
+        const body = (await response.json().catch(() => ({}))) as { name?: string };
+        if (body.name === "restricted_api_key") return;
+      }
       await expectOk(response, "Resend");
     },
     // The repo is public, so a token is optional. With GITHUB_TOKEN set the
