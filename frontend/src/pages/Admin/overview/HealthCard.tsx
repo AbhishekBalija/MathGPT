@@ -9,6 +9,7 @@ const DOTS: Record<AdminHealth["services"][number]["status"], string> = {
   key_set: "bg-emerald-600 dark:bg-emerald-400",
   down: "bg-red-600 dark:bg-red-400",
   key_missing: "bg-amber-600 dark:bg-amber-400",
+  unknown: "bg-gray-400 dark:bg-gray-500",
 };
 
 // A short version of the Health screen for the Overview

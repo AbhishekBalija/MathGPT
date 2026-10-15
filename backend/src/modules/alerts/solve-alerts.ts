@@ -27,6 +27,11 @@ interface Options {
 
 export function createSolveAlerts(emailSender: EmailSender, { env, kind = "solving", origin }: Options): SolveAlerts {
   async function handle(event: AlertEvent): Promise<void> {
+    // Most solves work: skip the lock when a success would change nothing
+    if (event.kind === "succeeded") {
+      const current = await alertRepository.read(kind);
+      if (!current || (current.status === "ok" && current.consecutive === 0)) return;
+    }
     const send = await alertRepository.update(kind, (record) => {
       const next = nextAlert(record, event, Date.now());
       return { record: next.record, result: next.send };
@@ -40,8 +45,14 @@ export function createSolveAlerts(emailSender: EmailSender, { env, kind = "solvi
     const draft = send === "failing" && event.kind === "failed" ? failingEmail(event.code, origin) : recoveredEmail(origin);
     const admins = await userRepository.adminEmails();
     // One admin's bad address must not stop the others getting it
-    await Promise.allSettled(admins.map((to) => emailSender.send({ ...draft, to })));
-    logger.info("Alert emailed", { kind, send, admins: admins.length });
+    const results = await Promise.allSettled(admins.map((to) => emailSender.send({ ...draft, to })));
+    const failed = results.filter((result) => result.status === "rejected").length;
+    if (failed > 0 && failed === results.length) {
+      // Nobody got it, and the next try is 30 minutes away: make sure Sentry hears of it
+      logger.error("Alert email could not be sent to anyone", { kind, send, admins: admins.length });
+      return;
+    }
+    logger.info("Alert emailed", { kind, send, admins: admins.length, failed });
   }
 
   return {

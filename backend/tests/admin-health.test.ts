@@ -104,15 +104,15 @@ describe("GET /admin/health", () => {
     expect(body.live.migrations.applied).toBe(0);
   });
 
-  it("shows the outside uptime check as down when its last run is over 30 minutes old", async () => {
-    const lastRunAt = new Date(Date.now() - 45 * 60_000).toISOString();
+  it("shows the outside uptime check as down when its last run is over an hour old", async () => {
+    const lastRunAt = new Date(Date.now() - 75 * 60_000).toISOString();
     fakeHealthProbes.setUptime({ lastRunAt, lastResult: "success", enabled: true });
 
     const body = await (await health()).json();
 
     expect(body.live.uptimeCheck).toEqual({ lastRunAt, lastResult: "success", enabled: true });
     expect(service(body, "uptime")).toMatchObject({ status: "down" });
-    expect(service(body, "uptime")?.detail).toMatch(/45 minutes ago/);
+    expect(service(body, "uptime")?.detail).toMatch(/75 minutes ago/);
   });
 
   it("shows the uptime check as down when GitHub switched it off", async () => {
@@ -126,5 +126,22 @@ describe("GET /admin/health", () => {
   it("shows the uptime check as up after a recent passing run", async () => {
     const body = await (await health()).json();
     expect(service(body, "uptime")?.status).toBe("up");
+  });
+
+  it("says the uptime check is not set up yet before it has ever run", async () => {
+    fakeHealthProbes.setUptime({ lastRunAt: null, lastResult: null, enabled: false });
+
+    const body = await (await health()).json();
+
+    expect(service(body, "uptime")).toMatchObject({ status: "unknown", detail: "Waiting for its first run" });
+  });
+
+  it("says unknown, not down, when GitHub can't be asked", async () => {
+    vi.spyOn(fakeHealthProbes, "github").mockRejectedValueOnce(new Error("GitHub answered 403"));
+
+    const body = await (await health()).json();
+
+    expect(service(body, "uptime")).toMatchObject({ status: "unknown", detail: "Couldn't ask GitHub" });
+    expect(body.live.uptimeCheck.enabled).toBe(false);
   });
 });

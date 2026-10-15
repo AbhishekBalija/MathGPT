@@ -14,8 +14,10 @@ const CHECK_TIMEOUT_MS = 3000;
 const CACHE_MS = 60_000;
 // GitHub allows 60 calls an hour without a token, so ask it at most every 10 minutes
 const UPTIME_CACHE_MS = 10 * 60_000;
-// The workflow runs every 10 minutes; GitHub often starts it late
-const UPTIME_STALE_MS = 30 * 60_000;
+// After GitHub could not be asked, try again sooner
+const UPTIME_RETRY_MS = 60_000;
+// The workflow runs every 15 minutes, and GitHub often starts it late or skips one
+const UPTIME_STALE_MS = 60 * 60_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // What the API needs to run, by name. The values are never read out.
@@ -37,7 +39,8 @@ export type ServiceId = "api" | "database" | "gemini" | "backup" | "email" | "tu
 
 export interface ServiceStatus {
   id: ServiceId;
-  status: "up" | "down" | "key_set" | "key_missing";
+  // "unknown" when we could not find out, which is not the same as down
+  status: "up" | "down" | "key_set" | "key_missing" | "unknown";
   ms: number | null;
   detail: string | null;
 }
@@ -53,7 +56,8 @@ export function resetHealthCache(): void {
 
 // Null when GitHub could not be asked
 async function uptimeCheck(probes: HealthProbes): Promise<UptimeCheck | null> {
-  if (uptimeCached && Date.now() - uptimeCached.at < UPTIME_CACHE_MS) {
+  const keepFor = uptimeCached?.check ? UPTIME_CACHE_MS : UPTIME_RETRY_MS;
+  if (uptimeCached && Date.now() - uptimeCached.at < keepFor) {
     return uptimeCached.check;
   }
   const check = await withTimeout(probes.github(), CHECK_TIMEOUT_MS, "github").catch(() => null);
@@ -63,9 +67,11 @@ async function uptimeCheck(probes: HealthProbes): Promise<UptimeCheck | null> {
 
 function uptimeStatus(check: UptimeCheck | null, now: number): ServiceStatus {
   const down = (detail: string): ServiceStatus => ({ id: "uptime", status: "down", ms: null, detail });
-  if (!check) return down("Couldn't ask GitHub");
+  const unknown = (detail: string): ServiceStatus => ({ id: "uptime", status: "unknown", ms: null, detail });
+  if (!check) return unknown("Couldn't ask GitHub");
+  // Not on GitHub yet, or not run yet since it was added
+  if (!check.lastRunAt) return unknown("Waiting for its first run");
   if (!check.enabled) return down("Switched off in GitHub");
-  if (!check.lastRunAt) return down("Has not run yet");
   const minutes = Math.round((now - new Date(check.lastRunAt).getTime()) / 60_000);
   if (now - new Date(check.lastRunAt).getTime() > UPTIME_STALE_MS) return down(`Last ran ${minutes} minutes ago`);
   if (check.lastResult === "failure") return down(`The site did not answer ${minutes} minutes ago`);

@@ -12,7 +12,7 @@ The last step of the admin redesign.
 ### Added
 - Alert emails to every admin: "solving is failing" after 3 AI-provider failures in a row or in 10 minutes, and "solving is back" when it works again. Off until `ALERT_EMAILS_ENABLED=true`
 - A daily summary email at 09:00 India time with what came in over the last 24 hours
-- An outside uptime check (GitHub Actions, every 10 minutes) that emails the owner when the site stops answering, with its last run shown on Health
+- An outside uptime check (GitHub Actions, every 15 minutes) that emails the owner when the site stops answering, with its last run shown on Health
 
 ### Changed
 - `GET /health` now checks the database and answers 503 when it can't reach it

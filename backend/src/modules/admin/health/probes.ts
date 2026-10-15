@@ -50,9 +50,11 @@ export function createRealHealthProbes(env: NodeJS.ProcessEnv): HealthProbes {
       });
       await expectOk(response, "Resend");
     },
-    // The repo is public, so this needs no token
+    // The repo is public, so a token is optional. With GITHUB_TOKEN set the
+    // limit is 5,000 calls an hour instead of 60 shared with other Vercel apps.
     async github() {
-      const headers = { Accept: "application/vnd.github+json" };
+      const headers: Record<string, string> = { Accept: "application/vnd.github+json" };
+      if (env.GITHUB_TOKEN) headers.Authorization = `Bearer ${env.GITHUB_TOKEN}`;
       const signal = AbortSignal.timeout(PROBE_TIMEOUT_MS);
       const workflow = await fetch(UPTIME_WORKFLOW, { headers, signal });
       // Not merged yet, or renamed
@@ -60,9 +62,11 @@ export function createRealHealthProbes(env: NodeJS.ProcessEnv): HealthProbes {
       await expectOk(workflow, "GitHub");
       const { state } = (await workflow.json()) as { state: string };
 
-      const runs = await fetch(`${UPTIME_WORKFLOW}/runs?per_page=1&status=completed`, { headers, signal });
+      // Scheduled runs only: a test run by hand, or a cancelled one, says nothing about the site
+      const runs = await fetch(`${UPTIME_WORKFLOW}/runs?per_page=10&status=completed&event=schedule`, { headers, signal });
       await expectOk(runs, "GitHub");
-      const { workflow_runs: [last] = [] } = (await runs.json()) as { workflow_runs?: Array<{ updated_at: string; conclusion: string | null }> };
+      const { workflow_runs: found = [] } = (await runs.json()) as { workflow_runs?: Array<{ updated_at: string; conclusion: string | null }> };
+      const last = found.find((run) => run.conclusion === "success" || run.conclusion === "failure" || run.conclusion === "timed_out");
       return {
         lastRunAt: last?.updated_at ?? null,
         lastResult: last ? (last.conclusion === "success" ? "success" : "failure") : null,

@@ -276,7 +276,7 @@ export type HealthServiceId = "api" | "database" | "gemini" | "backup" | "email"
 
 export interface AdminHealth {
   checkedAt: string;
-  services: Array<{ id: HealthServiceId; status: "up" | "down" | "key_set" | "key_missing"; ms: number | null; detail: string | null }>;
+  services: Array<{ id: HealthServiceId; status: "up" | "down" | "key_set" | "key_missing" | "unknown"; ms: number | null; detail: string | null }>;
   solving: {
     tries24h: number;
     failed24h: number;

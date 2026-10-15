@@ -65,4 +65,12 @@ describe("nextAlert", () => {
     const { record } = run([[0, fail], [1, ok], [12, fail]]);
     expect(record.recent).toEqual([START + 12 * MIN]);
   });
+
+  it("after an hour with no failure, a lone failure starts over instead of emailing again", () => {
+    const failing = run([[0, fail], [1, fail], [2, fail]]).record;
+    // Hours later, mostly cache answers in between, then one AI failure
+    const { sent, record } = run([[180, fail]], failing);
+    expect(sent).toEqual([null]);
+    expect(record).toMatchObject({ status: "ok", consecutive: 1, recent: [START + 180 * MIN] });
+  });
 });

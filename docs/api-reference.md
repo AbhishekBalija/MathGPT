@@ -16,7 +16,7 @@ Authorization: Bearer <access_token>
 
 ### GET /health
 
-Checks that the API runs and the database answers (`select 1`, 3 second limit). The outside uptime check calls it every 10 minutes.
+Checks that the API runs and the database answers (`select 1`, 3 second limit). The outside uptime check calls it every 15 minutes.
 
 **Response (200):**
 
@@ -832,7 +832,7 @@ not thrown.
 - The live checks run at most once a minute; other requests in that minute
   get the same result.
 - `env` lists names only, never values.
-- `uptimeCheck` is the GitHub Actions "Uptime check" workflow, read from GitHub's public API at most every 10 minutes. The `uptime` service is `down` when the workflow is switched off, its last run is over 30 minutes old, or that run failed.
+- `uptimeCheck` is the GitHub Actions "Uptime check" workflow's last scheduled run, read from GitHub's API at most every 10 minutes (every minute after GitHub could not be asked). The `uptime` service is `down` when the workflow is switched off, its last run is over an hour old, or that run failed, and `unknown` when GitHub could not be asked or it has not run yet.
 
 ---
 

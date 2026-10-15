@@ -5,6 +5,9 @@
  * - "failing" after 3 AI-provider failures in a row, or 3 within 10 minutes
  * - while still failing, again at most every 30 minutes
  * - "recovered" on the first solve that works after that
+ * - after an hour with no failure, a failure starts over: most
+ *   answers can come from the cache, so a "back" email may never come, and
+ *   one stray failure hours later must not count as the same outage
  *
  * Our own errors (UNKNOWN_ERROR) never count: they are bugs to fix, not an
  * outage, and Sentry already reports them.
@@ -16,6 +19,8 @@ import { isProviderFailure } from "../solver/error-code";
 export const FAILS_TO_ALERT = 3;
 export const WINDOW_MS = 10 * 60_000;
 export const RESEND_GAP_MS = 30 * 60_000;
+// Longer than RESEND_GAP_MS, so an outage with a failure every half hour still reminds
+export const QUIET_RESET_MS = 60 * 60_000;
 
 export interface AlertRecord {
   status: AlertStatus;
@@ -40,12 +45,16 @@ export function nextAlert(record: AlertRecord, event: AlertEvent, now: number): 
     return { record, send: null };
   }
 
-  const recent = [...record.recent.filter((at) => now - at < WINDOW_MS), now];
-  const consecutive = record.consecutive + 1;
-  const counted = { ...record, recent, consecutive };
+  const lastFailure = Math.max(record.changedAt, ...record.recent);
+  const startsOver = record.status === "failing" && now - lastFailure >= QUIET_RESET_MS;
+  const current: AlertRecord = startsOver ? { status: "ok", recent: [], consecutive: 0, lastSentAt: record.lastSentAt, changedAt: now } : record;
 
-  if (record.status === "failing") {
-    const due = record.lastSentAt === null || now - record.lastSentAt >= RESEND_GAP_MS;
+  const recent = [...current.recent.filter((at) => now - at < WINDOW_MS), now];
+  const consecutive = current.consecutive + 1;
+  const counted = { ...current, recent, consecutive };
+
+  if (current.status === "failing") {
+    const due = current.lastSentAt === null || now - current.lastSentAt >= RESEND_GAP_MS;
     return due ? { record: { ...counted, lastSentAt: now }, send: "failing" } : { record: counted, send: null };
   }
 

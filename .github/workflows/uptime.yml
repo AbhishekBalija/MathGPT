@@ -1,4 +1,4 @@
-# Checks from outside that NeoMath answers, every 10 minutes, and emails the
+# Checks from outside that NeoMath answers, every 15 minutes, and emails the
 # owner when it doesn't. The backend's own alerts can't do this: if the
 # backend or the database is down, nothing inside it runs.
 #
@@ -7,12 +7,15 @@
 # last ran: GitHub switches scheduled jobs off after 60 days with no repo
 # activity, and Health says so when that happens.
 #
+# Every 15, not 10, minutes: /health wakes the database, and Neon's free plan
+# counts the hours it is awake.
+#
 # Repo secrets it needs: RESEND_API, FROM_EMAIL, ALERT_TO (the owner's email).
 name: Uptime check
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/15 * * * *"
   workflow_dispatch:
     inputs:
       url_override:
@@ -37,11 +40,14 @@ jobs:
         run: |
           # One retry after 30 s, so a single slow cold start is not an alert
           check() {
-            curl --fail --silent --show-error --max-time 15 --output /dev/null "$1" \
-              || { sleep 30; curl --fail --silent --show-error --max-time 15 --output /dev/null "$1"; }
+            curl --fail --silent --show-error --max-time 15 --output /dev/null -- "$1" \
+              || { sleep 30; curl --fail --silent --show-error --max-time 15 --output /dev/null -- "$1"; }
           }
           if [ -n "$URL_OVERRIDE" ]; then
-            check "$URL_OVERRIDE"
+            case "$URL_OVERRIDE" in
+              https://*) check "$URL_OVERRIDE" ;;
+              *) echo "url_override must start with https://"; exit 1 ;;
+            esac
           else
             check https://neomath-api.vercel.app/health
             check https://neomath.vercel.app/

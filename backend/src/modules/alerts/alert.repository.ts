@@ -10,6 +10,12 @@ import { alertState } from "../../db/schema";
 import type { AlertRecord } from "./alert-rules";
 
 export const alertRepository = {
+  /** The row as it is, without a lock. Null when it does not exist yet. */
+  async read(kind: string): Promise<Pick<AlertRecord, "status" | "consecutive"> | null> {
+    const [row] = await db.select({ status: alertState.status, consecutive: alertState.consecutive }).from(alertState).where(eq(alertState.kind, kind));
+    return row ?? null;
+  },
+
   /** Applies `change` to the row (made if missing) and saves the result. Returns what `change` returned. */
   async update<T>(kind: string, change: (record: AlertRecord) => { record: AlertRecord; result: T }): Promise<T> {
     return db.transaction(async (tx) => {

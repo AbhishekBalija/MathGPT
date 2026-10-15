@@ -19,6 +19,8 @@ const STATUS_LOOK: Record<Service["status"], { dot: string; label: string }> = {
   key_set: { dot: "bg-emerald-600 dark:bg-emerald-400", label: "Key set" },
   down: { dot: "bg-red-600 dark:bg-red-400", label: "Down" },
   key_missing: { dot: "bg-amber-600 dark:bg-amber-400", label: "Key missing" },
+  // We could not find out, which is not the same as down
+  unknown: { dot: "bg-gray-400 dark:bg-gray-500", label: "Unknown" },
 };
 
 function ServiceRow({ service, open, onToggle }: { service: Service; open: boolean; onToggle: () => void }) {
@@ -40,7 +42,9 @@ function ServiceRow({ service, open, onToggle }: { service: Service; open: boole
       </button>
       {open ? (
         <div className={`px-4 pb-3 pl-10 text-sm ${MUTED}`}>
-          {service.detail ? <p className="mb-1 font-mono text-xs text-red-700 dark:text-red-400">{service.detail}</p> : null}
+          {service.detail ? (
+            <p className={`mb-1 font-mono text-xs ${service.status === "down" ? "text-red-700 dark:text-red-400" : MUTED}`}>{service.detail}</p>
+          ) : null}
           <p>
             <b className="text-gray-900 dark:text-gray-50">If this is down:</b> {info.runbook}
           </p>
