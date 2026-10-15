@@ -161,7 +161,7 @@ export default function Settings() {
 
       <Card title="Maintenance mode" note={settings.maintenance.on ? "On: students can't solve" : "Off"}>
         <div className="flex items-center justify-between gap-4 px-4 pb-3">
-          <p className={`text-sm ${MUTED}`}>Pauses solving for students and shows them this message. You and other team accounts can still solve.</p>
+          <p className={`text-sm ${MUTED}`}>Pauses solving for students and team accounts and shows them this message. Admins can still solve, so you can test a fix.</p>
           <Switch
             label="Maintenance mode"
             on={settings.maintenance.on}

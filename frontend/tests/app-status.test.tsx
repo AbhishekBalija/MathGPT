@@ -25,6 +25,17 @@ describe("maintenance mode in the student app", () => {
   });
 });
 
+describe("maintenance mode for an admin", () => {
+  it("says maintenance is on and what students see, and keeps the Solve button", () => {
+    render(<Composer value="2x = 4" onChange={() => {}} onSolve={() => {}} maintenanceNotice="Back at 6 pm." />);
+
+    const notice = screen.getByRole("status").textContent ?? "";
+    expect(notice).toContain("Maintenance mode is on. Everyone else sees your message:");
+    expect(notice).toContain("Back at 6 pm.");
+    expect(screen.getByRole("button", { name: "Solve" })).toBeTruthy();
+  });
+});
+
 describe("the free problems line", () => {
   it("uses the real daily limit", () => {
     render(<Composer value="" onChange={() => {}} onSolve={() => {}} remaining={2} limit={6} />);

@@ -18,7 +18,7 @@ export interface CurrentUser {
   name: string;
   avatarUrl: string | null;
   isAdmin: boolean;
-  // One of our own accounts; can still solve in maintenance mode
+  // One of our own accounts (admins too), left out of business numbers
   isTeam: boolean;
   emailVerified: boolean;
 }

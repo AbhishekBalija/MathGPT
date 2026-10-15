@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Menu, Plus, X } from "lucide-react";
 import Logo from "../../components/brand/Logo";
 import { solveProblem } from "../../services/solve.service";
-import authService from "../../services/auth.service";
 import { reportSolution } from "../../services/history.service";
 import { useAppDataStore } from "../../stores/appDataStore";
 import { useAppStatus } from "../../stores/appStatusStore";
@@ -72,11 +71,12 @@ export function SolverPage() {
   const view = useChatStore((s) => s.view);
 
   const emailVerified = useAuthStore((s) => s.user?.emailVerified);
-  // Team accounts (admins too) can still solve while an admin has paused solving
-  const isTeam = useAuthStore((s) => Boolean(s.user?.isTeam || s.user?.isAdmin));
+  // Only admins can still solve while solving is paused; team accounts see what students see
+  const isAdmin = useAuthStore((s) => Boolean(s.user?.isAdmin));
   const maintenance = useAppStatus((s) => s.status?.maintenance);
   const loadAppStatus = useAppStatus((s) => s.load);
-  const pausedMessage = maintenance?.on && !isTeam ? maintenance.message : null;
+  const pausedMessage = maintenance?.on && !isAdmin ? maintenance.message : null;
+  const maintenanceNotice = maintenance?.on && isAdmin ? maintenance.message : null;
   // Check on load and whenever the tab comes back; while paused, also every
   // 30 seconds, so the composer returns without a reload when solving resumes
   useEffect(() => {
@@ -87,22 +87,15 @@ export function SolverPage() {
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [loadAppStatus]);
+  // While paused (or, for admins, while the notice shows) check every 30 s,
+  // so the page catches up when maintenance ends without a reload
+  const maintenanceOn = Boolean(pausedMessage || maintenanceNotice);
   useEffect(() => {
-    if (!pausedMessage) return;
+    if (!maintenanceOn) return;
     const timer = setInterval(() => void loadAppStatus(), 30_000);
     return () => clearInterval(timer);
-  }, [pausedMessage, loadAppStatus]);
+  }, [maintenanceOn, loadAppStatus]);
 
-  // Logins from before isTeam existed don't have it saved: ask once
-  const user = useAuthStore((s) => s.user);
-  const setUser = useAuthStore((s) => s.setUser);
-  useEffect(() => {
-    if (!user || user.isTeam !== undefined) return;
-    authService.getCurrentUser().then(
-      ({ user: fresh }) => setUser({ ...user, isAdmin: fresh.isAdmin, isTeam: fresh.isTeam ?? false }),
-      () => {},
-    );
-  }, [user, setUser]);
   const setEmailVerified = useAuthStore((s) => s.setEmailVerified);
   const { history, isInitialized, historyLoading } = useAppDataStore();
 
@@ -333,6 +326,7 @@ export function SolverPage() {
       remaining={remaining}
       limit={dailyLimit}
       pausedMessage={pausedMessage}
+      maintenanceNotice={maintenanceNotice}
     />
   );
 
@@ -437,6 +431,11 @@ export function SolverPage() {
 
         <div ref={composerRef} className="shrink-0">
           {/* While solving is paused the notice shows on phones too, not only after a tap */}
+          {isPhone && maintenanceNotice ? (
+            <p role="status" className="mx-3 mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-gray-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-gray-50">
+              <b className="font-semibold">Maintenance mode is on.</b> Everyone else sees your message instead of the Solve button. You can still solve because you're an admin.
+            </p>
+          ) : null}
           {isPhone && !pausedMessage ? (
             <SlimComposer
               label={input.trim() || (activeSolution ? "Ask another problem" : "Type a problem")}

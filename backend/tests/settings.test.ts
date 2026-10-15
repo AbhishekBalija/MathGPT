@@ -110,7 +110,7 @@ describe("the daily limit setting", () => {
 });
 
 describe("maintenance mode", () => {
-  it("pauses solving for students with the message, but not for team accounts or admins", async () => {
+  it("pauses solving for students and team accounts with the message, but not for admins", async () => {
     const student = await registerVerifiedUser();
     const tester = await registerVerifiedUser();
     await userRepository.setTeam(await idOf(tester.accessToken), true);
@@ -119,7 +119,8 @@ describe("maintenance mode", () => {
     const res = await solve(student.accessToken);
     expect(res.status).toBe(503);
     expect(await res.json()).toMatchObject({ code: "MAINTENANCE", message: "Back at 6 pm." });
-    expect((await solve(tester.accessToken)).status).toBe(200);
+    // Team accounts are paused too, so the owner can see what students see
+    expect((await solve(tester.accessToken)).status).toBe(503);
     expect((await solve(admin.accessToken)).status).toBe(200);
     // Saved solutions still open
     expect((await authedFetch(student.accessToken, "/api/history")).status).toBe(200);

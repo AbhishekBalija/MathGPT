@@ -14,6 +14,8 @@ interface ComposerProps {
   limit?: number | null;
   // Set while an admin has paused solving: shown in place of the input
   pausedMessage?: string | null;
+  // For admins while solving is paused: what students see. The input stays.
+  maintenanceNotice?: string | null;
 }
 
 const MAX_FIELD_HEIGHT = 128;
@@ -33,6 +35,7 @@ export function Composer({
   remaining,
   limit,
   pausedMessage,
+  maintenanceNotice,
 }: ComposerProps) {
   const [keypadOpen, setKeypadOpen] = useState(false);
   const fieldRef = useRef<HTMLTextAreaElement>(null);
@@ -94,6 +97,11 @@ export function Composer({
   return (
     <div className="border-t border-gray-200 px-3 pb-4 pt-3 dark:border-white/10 md:px-6">
       <div className="mx-auto max-w-[720px]">
+        {maintenanceNotice ? (
+          <p role="status" className="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-gray-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-gray-50">
+            <b className="font-semibold">Maintenance mode is on.</b> Everyone else sees your message: "{maintenanceNotice}" You can still solve because you're an admin.
+          </p>
+        ) : null}
         <ReadAs value={value} />
         <div className="flex flex-wrap items-end gap-2 rounded-2xl border border-gray-200 bg-white p-2 focus-within:ring-2 focus-within:ring-brand-600 dark:border-white/10 dark:bg-white/5 dark:focus-within:ring-brand-300 sm:flex-nowrap sm:pl-3">
           <textarea

@@ -49,7 +49,7 @@ A value an Admin changes from the Settings page with no deploy: the Daily Limit,
 _Avoid_: Config, flag
 
 **Maintenance mode**:
-A Setting that pauses solving for students and shows them an Admin's message. Admins and team accounts can still solve. Logging in and opening saved Solutions still work.
+A Setting that pauses solving for students and shows them an Admin's message. Only Admins can still solve, and they see a notice saying it is on; team accounts are paused like students. Logging in and opening saved Solutions still work.
 _Avoid_: Downtime, outage
 
 **Rate Limit**:

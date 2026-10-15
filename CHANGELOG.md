@@ -5,6 +5,14 @@ a new feature bumps the minor number (1.**2**.0), a fix bumps the patch number
 (1.2.**1**), and a change that breaks how people use the app bumps the major
 number (**2**.0.0). The frontend and backend share one version.
 
+## [1.5.0] - 2026-10-15
+
+### Added
+- While maintenance mode is on, admins see a notice above the input with the message students see, so it's clear it's on even though admins can still solve
+
+### Changed
+- Maintenance mode now pauses team accounts too; only admins can still solve. A team account shows exactly what students see
+
 ## [1.4.0] - 2026-10-15
 
 ### Added

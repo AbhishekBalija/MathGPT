@@ -36,7 +36,10 @@ screen in `admin-business-health-settings-v4.html`.
 - Only solving pauses: `503 { code: "MAINTENANCE", message }`.
 - Students can still log in and open saved solutions. The composer shows the
   message in place of the Solve button.
-- Admins and team accounts can still solve, so the owner can test a fix.
+- Only admins can still solve, so the owner can test a fix. Team accounts are
+  paused like students, so the owner can check what students see (changed
+  15 Oct after first use). Admins see a notice above the input with the
+  message students see.
 - A solve already running finishes.
 - No auto-off. While it is on, the Overview's Neo line says "Maintenance mode
   is on: students can't solve" (amber) and the nav shows a "Paused" tag.
