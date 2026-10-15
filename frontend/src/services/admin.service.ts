@@ -124,6 +124,14 @@ export const adminService = {
   },
 
   /**
+   * Real students, who comes back, what they ask and what it costs
+   */
+  getBusiness: async (includeTeam: boolean): Promise<AdminBusiness> => {
+    const response = await api.get<AdminBusiness>(`/admin/business${includeTeam ? "?includeTeam=true" : ""}`);
+    return response.data;
+  },
+
+  /**
    * The numbers next to Failed solves, Reports and Feedback in the nav
    */
   getCounts: async (): Promise<AdminCounts> => {
@@ -310,6 +318,18 @@ export interface AdminOverview {
   needsYou: Array<{ kind: "failed" | "report" | "feedback"; id: string; title: string; subtitle: string; at: string }>;
   funnel: { signedUp: number; verified: number; solved: number; cameBack: number };
   topTopics: Array<{ problemType: string; count: number }>;
+}
+
+// The admin Business screen. Team accounts are left out unless asked for.
+export interface AdminBusiness {
+  numbers: { students: number; activeThisWeek: number; activeRate: number; solvesPerActive: number; limitHits: number };
+  newPerDay: Array<{ day: string; count: number }>;
+  funnel: { signedUp: number; verified: number; solved: number; cameBack: number };
+  // Newest first. weeks[0] is the signup week (always 100), then each week since, up to this one.
+  cohorts: Array<{ weekStart: string; students: number; weeks: number[] }>;
+  cost: { tokensToday: number; avgTokensPerSolve: number };
+  topics: Array<{ problemType: string; count: number }>;
+  hiddenTeam: number;
 }
 
 // Nav counts. Failed solves count problems, not tries.

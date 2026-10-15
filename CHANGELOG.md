@@ -5,6 +5,11 @@ a new feature bumps the minor number (1.**2**.0), a fix bumps the patch number
 (1.2.**1**), and a change that breaks how people use the app bumps the major
 number (**2**.0.0). The frontend and backend share one version.
 
+## [1.2.0] - 2026-10-15
+
+### Added
+- Business page: real students, who is active, solves per active student, daily-limit hits, new students per day, the funnel, weekly cohorts (do students come back?), token cost and top topics. Team accounts are left out unless you tick "Include team accounts"
+
 ## [1.1.0] - 2026-10-15
 
 The admin panel redesign, steps 1 to 5 of 7.
