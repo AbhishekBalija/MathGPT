@@ -55,9 +55,9 @@ describe("admin Business", () => {
     renderBusiness();
 
     expect(await screen.findByText("12 to 18 Oct")).toBeTruthy();
-    // This week's cohort has one cell, which is this week
+    // This week's cohort is only week 0, which is always 100%, so it has no mark
     const row = screen.getByText("12 to 18 Oct").closest("tr");
-    expect(row?.textContent).toContain("100%*");
+    expect(row?.textContent).not.toContain("*");
     // Last week's cohort: week 0 is done, week 1 is this week
     const lastWeek = screen.getByText("5 to 11 Oct").closest("tr");
     expect(lastWeek?.textContent).toContain("100%100%*");

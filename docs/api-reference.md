@@ -580,7 +580,8 @@ Query: `includeTeam=true` to count team accounts too (default: left out).
 ```
 
 - `newPerDay`: the last 7 days, oldest first
-- `limitHits`: student-days with 5 or more AI or cache answers (the daily free limit)
+- `activeThisWeek` and `solvesPerActive` cover this India week, Monday to now
+- `limitHits`: student-days with 5 or more AI answers, the ones that use the daily free limit (cache and instant answers are free)
 - `cohorts`: the last 6 signup weeks, newest first. `weeks[0]` is the signup week and always 100; `weeks[n]` is the percent of that week's students who solved something n weeks later, up to this week. A week with no sign-ups has `weeks: []`
 - `cost` counts every solve, team accounts too, since we pay for them all
 - `hiddenTeam`: how many team accounts exist

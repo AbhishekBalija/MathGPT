@@ -12,6 +12,8 @@ const DAILY_FREE_LIMIT = 5;
 
 const istDate = (column: string) => sql.raw(`(${column} at time zone 'Asia/Kolkata')::date`);
 const istWeek = (column: string) => sql.raw(`date_trunc('week', ${column} at time zone 'Asia/Kolkata')::date`);
+// This India week, Monday to now
+const THIS_WEEK = istWeek("now()");
 
 async function rows<T extends Record<string, unknown>>(query: SQL): Promise<T[]> {
   const result = await db.execute(query);
@@ -29,14 +31,15 @@ export const businessRepository = {
       select
         (select count(*)::int from users u where ${counted(includeTeam)}) as students,
         (select count(distinct s.user_id)::int from solutions s join users u on u.id = s.user_id
-          where ${counted(includeTeam)} and s.created_at > now() - interval '7 days') as active,
+          where ${counted(includeTeam)} and ${istWeek("s.created_at")} = ${THIS_WEEK}) as active,
         (select count(*)::int from solutions s join users u on u.id = s.user_id
-          where ${counted(includeTeam)} and s.created_at > now() - interval '7 days') as solves,
+          where ${counted(includeTeam)} and ${istWeek("s.created_at")} = ${THIS_WEEK}) as solves,
         (select count(*)::int from (
           select e.user_id, ${istDate("e.created_at")}
           from analytics_events e join users u on u.id = e.user_id
           where e.event_name = 'solution_saved'
-            and coalesce(e.properties->>'source', 'ai') in ('ai', 'cache')
+            -- Only AI answers spend a free problem; cache and instant answers are free
+            and coalesce(e.properties->>'source', 'ai') = 'ai'
             and ${counted(includeTeam)}
           group by 1, 2
           having count(*) >= ${DAILY_FREE_LIMIT}

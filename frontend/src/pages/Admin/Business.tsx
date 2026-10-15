@@ -24,7 +24,9 @@ function weekLabel(weekStart: string): string {
 function businessLine(data: AdminBusiness, includeTeam: boolean): { title: string; text: string } {
   const { students, activeThisWeek } = data.numbers;
   if (students === 0) {
-    return { title: "No real students yet.", text: "Only team accounts so far, so there is nothing to read yet." };
+    return includeTeam
+      ? { title: "No accounts yet.", text: "Nothing to read yet." }
+      : { title: "No real students yet.", text: "Only team accounts so far, so there is nothing to read yet." };
   }
   const noun = includeTeam ? (students === 1 ? "account" : "accounts") : students === 1 ? "real student" : "real students";
   return {
@@ -33,9 +35,9 @@ function businessLine(data: AdminBusiness, includeTeam: boolean): { title: strin
   };
 }
 
-function NumberCards({ numbers }: { numbers: AdminBusiness["numbers"] }) {
+function NumberCards({ numbers, includeTeam }: { numbers: AdminBusiness["numbers"]; includeTeam: boolean }) {
   const items = [
-    { label: "Real students", value: String(numbers.students), note: "" },
+    { label: includeTeam ? "Accounts" : "Real students", value: String(numbers.students), note: includeTeam ? "team included" : "" },
     { label: "Active this week", value: String(numbers.activeThisWeek), note: `${numbers.activeRate}%` },
     { label: "Solves per active student", value: String(numbers.solvesPerActive), note: "this week" },
     { label: "Hit the daily limit", value: String(numbers.limitHits), note: numbers.limitHits === 1 ? "time" : "times" },
@@ -81,8 +83,8 @@ function CohortTable({ cohorts }: { cohorts: AdminBusiness["cohorts"] }) {
               <td className="py-2 pr-3">{cohort.students}</td>
               {Array.from({ length: columns }, (_, week) => {
                 const value = cohort.weeks[week];
-                // The last week of every cohort is this week
-                const thisWeek = week === cohort.weeks.length - 1;
+                // The last week of every cohort is this week. Week 0 is 100% anyway, so it needs no mark.
+                const thisWeek = week > 0 && week === cohort.weeks.length - 1;
                 return (
                   <td key={week} className={`py-2 pr-3 ${value === undefined ? MUTED : ""}`}>
                     {value === undefined ? "–" : `${value}%${thisWeek ? "*" : ""}`}
@@ -123,7 +125,7 @@ export default function Business() {
         <h1 className="text-2xl font-bold">Business</h1>
         <label className={`flex min-h-11 items-center gap-2 text-sm ${MUTED}`}>
           <input type="checkbox" checked={includeTeam} onChange={(event) => setIncludeTeam(event.target.checked)} className="size-4" />
-          Include team accounts ({hidden} hidden)
+          Include team accounts ({hidden} {includeTeam ? "shown" : "hidden"})
         </label>
       </div>
       {error ? <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm dark:border-red-400/30 dark:bg-red-400/10">Couldn't load this. {error}</p> : null}
@@ -132,7 +134,7 @@ export default function Business() {
       ) : (
         <>
           <NeoStatus state="fine" title={line.title} text={line.text} />
-          <NumberCards numbers={data.numbers} />
+          <NumberCards numbers={data.numbers} includeTeam={includeTeam} />
           <DayChart title="New students per day" days={data.newPerDay} />
           <div className="grid gap-4 lg:grid-cols-2">
             <Card title="Funnel" note="All time">
