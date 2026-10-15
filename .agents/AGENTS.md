@@ -26,6 +26,12 @@ One git repo, two packages:
 2. MongoDB to Postgres with Drizzle on Neon (fresh tables, no data copy)
 3. Deploy backend to Vercel, retire Motia Cloud
 
+## Versioning
+
+- One SemVer version for the app, in `frontend/package.json` and `backend/package.json` (kept the same)
+- Every PR that changes behaviour bumps it and adds a line to `CHANGELOG.md`: minor for a feature, patch for a fix, major for a breaking change
+- Docs-only and chore PRs need no bump
+
 ## Agent skills
 
 ### Issue tracker
