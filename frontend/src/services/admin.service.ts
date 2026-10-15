@@ -6,6 +6,10 @@ export interface AdminUser {
   name: string;
   email: string;
   isAdmin: boolean;
+  // Our own accounts, left out of business numbers. Admins are always team.
+  isTeam: boolean;
+  solves: number;
+  lastSolvedAt: string | null;
   provider?: string;
   avatar?: string;
   createdAt: string;
@@ -43,8 +47,9 @@ export const adminService = {
   /**
    * Get analytics data
    */
-  getAnalytics: async (): Promise<AnalyticsResponse> => {
-    const response = await api.get<AnalyticsResponse>("/admin/analytics");
+  getAnalytics: async (event?: string): Promise<AnalyticsResponse> => {
+    const query = event ? `?event=${encodeURIComponent(event)}` : "";
+    const response = await api.get<AnalyticsResponse>(`/admin/analytics${query}`);
     return response.data;
   },
 
@@ -123,6 +128,54 @@ export const adminService = {
    */
   getCounts: async (): Promise<AdminCounts> => {
     const response = await api.get<AdminCounts>("/admin/counts");
+    return response.data;
+  },
+
+  /**
+   * Failed solves, grouped by student and problem
+   */
+  getFailed: async (status: FailedStatus): Promise<FailedResponse> => {
+    const response = await api.get<FailedResponse>(`/admin/failed?status=${status}`);
+    return response.data;
+  },
+
+  /**
+   * One failed problem, with every try
+   */
+  getFailedDetail: async (id: string): Promise<FailedDetail> => {
+    const response = await api.get<FailedDetail>(`/admin/failed/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Resolve every try of a failed problem
+   */
+  resolveFailed: async (id: string): Promise<{ resolved: number }> => {
+    const response = await api.post<{ resolved: number }>(`/admin/failed/${id}/resolve`);
+    return response.data;
+  },
+
+  /**
+   * One report, with the full solution and who sent it
+   */
+  getReportDetail: async (id: string): Promise<ReportDetail> => {
+    const response = await api.get<ReportDetail>(`/admin/reports/${id}`);
+    return response.data;
+  },
+
+  /**
+   * One student: what they did and today's limit
+   */
+  getStudent: async (id: string): Promise<StudentDetail> => {
+    const response = await api.get<StudentDetail>(`/admin/students/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Mark an account as one of ours, so it is left out of business numbers
+   */
+  setTeam: async (userId: string, isTeam: boolean): Promise<{ id: string; isTeam: boolean }> => {
+    const response = await api.patch<{ id: string; isTeam: boolean }>(`/admin/users/${userId}/team`, { isTeam });
     return response.data;
   },
 
@@ -264,6 +317,40 @@ export interface AdminCounts {
   feedbackOpen: number;
 }
 
+// Failed solves: one group is one student and one problem, however many tries
+export type FailedStatus = "open" | "resolved" | "all";
+
+export interface FailedGroup {
+  id: string;
+  problem: string;
+  tries: number;
+  firstAt: string;
+  lastAt: string;
+  errorCode: string;
+  ms: number | null;
+  // Null once the student deleted their account
+  student: { id: string; name: string } | null;
+  workedLater: boolean;
+  resolved: boolean;
+}
+
+export interface FailedResponse {
+  groups: FailedGroup[];
+  problems: number;
+  tries: number;
+}
+
+export interface FailureDetails {
+  attempts: Array<{ model: string; error: string }>;
+  promptVersion: string;
+  fullMessage: string;
+}
+
+export interface FailedDetail extends FailedGroup {
+  // Oldest first. Details are null for failures saved before they were kept.
+  attempts: Array<{ at: string; ms: number | null; errorCode: string; details: FailureDetails | null }>;
+}
+
 // Error types
 export interface ErrorItem {
   id: string;
@@ -300,6 +387,17 @@ export interface ReportItem {
   createdAt: string;
 }
 
+export interface ReportDetail extends ReportItem {
+  checkedByCode: boolean;
+  // Null once the student deleted the solution
+  solution: {
+    steps: Array<{ reason: string; block?: { type: string; latex?: string; text?: string } }>;
+    answer: { latex?: string; text?: string };
+  } | null;
+  solvedAt: string | null;
+  student: { id: string; name: string };
+}
+
 export interface ReportsResponse {
   reports: ReportItem[];
 }
@@ -311,6 +409,8 @@ export interface FeedbackItem {
   message: string;
   page: string | null;
   solutionId: string | null;
+  userId: string;
+  name: string;
   email: string;
   done: boolean;
   createdAt: string;
@@ -318,6 +418,24 @@ export interface FeedbackItem {
 
 export interface FeedbackResponse {
   feedback: FeedbackItem[];
+}
+
+// One student, for the admin Students screen
+export interface StudentDetail {
+  id: string;
+  name: string;
+  email: string;
+  provider: string;
+  joinedAt: string;
+  isAdmin: boolean;
+  isTeam: boolean;
+  solves: number;
+  failed: number;
+  reports: number;
+  usedToday: number;
+  dailyLimit: number;
+  // Newest first, at most 20
+  history: Array<{ kind: "solved" | "failed" | "reported" | "joined"; title: string; at: string }>;
 }
 
 // Analytics types

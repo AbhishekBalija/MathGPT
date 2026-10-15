@@ -70,6 +70,10 @@ rights come only from an existing Admin or the create-admin script.
 A record of a failed solve, kept so an Admin can review and mark it resolved.
 _Avoid_: Bug report, incident
 
+**Failed problem**:
+All the Error Logs of one student for one problem, counted as one problem with several **Tries**. The same problem with different spacing is the same Failed problem. It **worked later** when the student solved that problem after the last failed Try. Resolving it resolves every Try.
+_Avoid_: Error group, issue
+
 **Analytics Event**:
 A named record of something that happened (for example a Solution being saved), used for admin statistics.
 _Avoid_: Metric, log
