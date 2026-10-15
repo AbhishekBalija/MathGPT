@@ -135,3 +135,27 @@ describe("POST /admin/reports/:id/unblock", () => {
     expect((await unblock("not-an-id")).status).toBe(404);
   });
 });
+
+describe("GET /admin/reports/:id", () => {
+  it("gives the report with the full solution, who sent it and whether code checked it", async () => {
+    const student = await registerVerifiedUser();
+    const problem = sharedProblem();
+    const solved = await solveAs(student.accessToken, problem);
+    await reportAs(student.accessToken, solved.solution.id, "Step 2 is wrong");
+    const report = (await listReports()).find((entry) => entry.problemText === problem);
+
+    const res = await authedFetch(adminToken, `/admin/reports/${report?.id}`);
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toMatchObject({ problemText: problem, reason: "Step 2 is wrong", cacheStatus: "blocked", checkedByCode: true });
+    expect(body.solution.answer.latex).toBe("x = 2");
+    expect(body.student.name).toBe("Test User");
+    expect(body.solvedAt).toEqual(expect.any(String));
+  });
+
+  it("gives 404 for an unknown report", async () => {
+    expect((await authedFetch(adminToken, "/admin/reports/00000000-0000-4000-8000-000000000000")).status).toBe(404);
+    expect((await authedFetch(adminToken, "/admin/reports/nope")).status).toBe(404);
+  });
+});

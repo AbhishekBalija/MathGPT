@@ -11,6 +11,7 @@
 import { z } from "zod";
 import { getCurrentUser } from "../auth/auth.middleware";
 import { userRepository } from "../users/user.repository";
+import { studentsRepository } from "./students/students.repository";
 import { queryParam, route } from "../../lib/http";
 import { logger } from "../../lib/logger";
 
@@ -35,6 +36,7 @@ export const adminListUsersRoute = route(async (req) => {
     });
 
     const { users, total } = await userRepository.list({ search, page, limit });
+    const solveTotals = await studentsRepository.solveTotals(users.map((u) => u.id));
 
     logger.info("Admin listed users", {
       adminId: admin.id,
@@ -51,6 +53,10 @@ export const adminListUsersRoute = route(async (req) => {
           name: u.name,
           email: u.email,
           isAdmin: u.isAdmin,
+          // Admins always count as team
+          isTeam: u.isTeam || u.isAdmin,
+          solves: solveTotals.get(u.id)?.solves ?? 0,
+          lastSolvedAt: solveTotals.get(u.id)?.lastSolvedAt?.toISOString() ?? null,
           provider: u.provider,
           avatar: u.avatarUrl ?? undefined,
           createdAt: u.createdAt.toISOString(),
