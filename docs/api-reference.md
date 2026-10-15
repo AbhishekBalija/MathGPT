@@ -35,7 +35,7 @@ Checks that the API runs and the database answers (`select 1`, 3 second limit). 
 
 ### POST /auth/register
 
-Register a new user account.
+Register a new user account. While an admin has paused sign-ups in Settings it answers 403 `{ "error": "New sign-ups are paused for now. If you already have an account, log in.", "code": "SIGNUPS_PAUSED" }`.
 
 **Request Body:**
 
@@ -110,7 +110,7 @@ minutes per IP** (429 `RATE_LIMITED` with `retryAfter`).
 
 ### POST /auth/google
 
-Login with Google OAuth.
+Login with Google OAuth. While sign-ups are paused, a Google account with no NeoMath account yet gets 403 `SIGNUPS_PAUSED`; existing students still sign in.
 
 **Request Body:**
 
@@ -292,6 +292,8 @@ Feedback about the app itself (not about one Solution, that is a Report).
 ## Solve Endpoints
 
 ### POST /api/solve
+
+In maintenance mode it answers 503 `{ "error": "<message>", "message": "<message>", "code": "MAINTENANCE" }` for students; admins and team accounts still solve. The daily limit comes from Settings (default 5); admins have none.
 
 Solve a math problem. **Requires auth and a verified email.** Limited to 5
 per minute per User (429 `RATE_LIMITED` with `retryAfter`), separate from the
@@ -496,7 +498,24 @@ Get user profile and usage statistics. **Requires auth.**
 ```
 
 `dailyCredits` drives the "3 of 5 free problems left today" line. Instant
-answers and cache hits do not use a Credit.
+answers and cache hits do not use a Credit. The limit is the Settings value;
+for admins `limit` and `remaining` are `null` (no limit). `resetsAt` is the
+next midnight India time.
+
+---
+
+### GET /api/app-status
+
+Public, no login. Whether solving is paused and whether new sign-ups are open, from admin Settings. The student app reads it on load.
+
+**Response (200):**
+
+```json
+{
+  "maintenance": { "on": false, "message": "Neo is taking a short break to get better. Please try again in a little while." },
+  "signupsOpen": true
+}
+```
 
 ---
 
@@ -574,6 +593,41 @@ Query: `event=<name>` (for example `solution_saved`) for one kind only. Without 
   "totalEvents": 750
 }
 ```
+
+---
+
+### GET /admin/settings
+
+Current settings and the newest 20 changes. **Requires admin.** Each server copy reads settings at most every 15 seconds, so a change applies everywhere within 15 seconds.
+
+**Response (200):**
+
+```json
+{
+  "settings": {
+    "dailyLimit": 5,
+    "signupsOpen": true,
+    "maintenance": { "on": false, "message": "Neo is taking a short break to get better. Please try again in a little while." }
+  },
+  "changes": [
+    { "id": "change_id", "key": "dailyLimit", "oldValue": 5, "newValue": 6, "changedAt": "2026-10-15T11:10:00.000Z", "by": { "id": "user_id", "name": "Abhishek" } }
+  ]
+}
+```
+
+`by` is `null` once that admin's account is deleted.
+
+---
+
+### PATCH /admin/settings
+
+Change any of `dailyLimit` (whole number, 1 to 50), `signupsOpen` (boolean) and `maintenance` (`{ "on": boolean, "message": 1 to 300 characters }`). Only values that really change are saved and logged. **Requires admin.**
+
+**Response (200):** the same shape as `GET /admin/settings`.
+
+| Status | Error                             |
+| ------ | --------------------------------- |
+| 400    | A value is out of range or unknown |
 
 ---
 

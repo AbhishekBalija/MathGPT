@@ -11,6 +11,7 @@ import { limitByIp, limitByUser } from "../modules/rate-limits/rate-limit.middle
 
 import { healthRoute } from "./health.route";
 import { createDailySummaryRoute } from "./internal/daily-summary.route";
+import { appStatusRoute } from "../modules/settings/settings.route";
 
 import { createGoogleOAuthRoute } from "./auth/google-oauth.route";
 import { loginRoute } from "./auth/login.route";
@@ -94,6 +95,8 @@ export function createRouter(services: AppServices) {
 
   // Public
   router.get("/api/public-stats", publicStatsRoute);
+  // Is solving paused, and are sign-ups open: read by the student app on load
+  router.get("/api/app-status", appStatusRoute);
 
   // Admin: one module, behind requireUser and requireAdmin
   router.use("/admin", createAdminRouter(services.healthProbes));

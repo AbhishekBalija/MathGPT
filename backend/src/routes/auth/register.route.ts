@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getSettings, SIGNUPS_PAUSED_MESSAGE } from "../../modules/settings/settings";
 import { AuthService } from "../../modules/auth/auth.service";
 import { routeWithBody } from "../../lib/http";
 import { logger } from "../../lib/logger";
@@ -27,6 +28,11 @@ const RegisterSchema = z.object({
 export function createRegisterRoute(emailSender: EmailSender, humanCheck: HumanCheck) {
   return routeWithBody(RegisterSchema, async (req, { turnstileToken, ...data }) => {
     logger.info("Register attempt for ", { email: data.email });
+
+    // An admin can pause new accounts from Settings (spam, a cost spike)
+    if (!(await getSettings()).signupsOpen) {
+      return { status: 403, body: { error: SIGNUPS_PAUSED_MESSAGE, code: "SIGNUPS_PAUSED" } };
+    }
 
     // Cheap check first: throwaway addresses are a common way to farm accounts
     if (isDisposableEmail(data.email)) {

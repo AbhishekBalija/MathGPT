@@ -7,11 +7,13 @@
 import { findPendingMigrations, readJournal } from "../../../db/migrations-journal";
 import { withTimeout } from "../../../services/ai/failover";
 import { istDay } from "../overview/ist";
+import { DEFAULT_SETTINGS, getSettings, recentSettingChanges } from "../../settings/settings";
 import { healthRepository } from "./health.repository";
 import type { HealthProbes, UptimeCheck } from "./probes";
 
 const CHECK_TIMEOUT_MS = 3000;
 const CACHE_MS = 60_000;
+const HEALTH_SETTING_CHANGES = 5;
 // GitHub allows 60 calls an hour without a token, so ask it at most every 10 minutes
 const UPTIME_CACHE_MS = 10 * 60_000;
 // After GitHub could not be asked, try again sooner
@@ -129,11 +131,13 @@ async function orEmpty<T>(read: Promise<T>, empty: T): Promise<T> {
 
 export async function buildHealthReport(probes: HealthProbes) {
   const now = new Date();
-  const [{ services, uptime }, solving, speed, applied] = await Promise.all([
+  const [{ services, uptime }, solving, speed, applied, settings, settingChanges] = await Promise.all([
     liveServices(probes),
     orEmpty(healthRepository.solving(), { tries24h: 0, failed24h: 0, days: new Map(), byCode: [] }),
     orEmpty(healthRepository.speed(), { avgMs: 0, p90Ms: 0 }),
     orEmpty(healthRepository.appliedMigrations(), []),
+    orEmpty(getSettings(), DEFAULT_SETTINGS),
+    orEmpty(recentSettingChanges(HEALTH_SETTING_CHANGES), []),
   ]);
   const journal = readJournal();
 
@@ -160,6 +164,16 @@ export async function buildHealthReport(probes: HealthProbes) {
       },
       env: REQUIRED_ENV.map((name) => ({ name, set: Boolean(process.env[name]) })),
       uptimeCheck: uptime ?? { lastRunAt: null, lastResult: null, enabled: false },
+      // Names and values only: who made a change stays on the Settings page
+      settings: {
+        current: settings,
+        recentChanges: settingChanges.map((change) => ({
+          key: change.key,
+          oldValue: change.oldValue,
+          newValue: change.newValue,
+          changedAt: change.changedAt.toISOString(),
+        })),
+      },
     },
   };
 }

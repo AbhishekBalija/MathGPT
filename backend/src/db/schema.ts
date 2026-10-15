@@ -286,3 +286,33 @@ export const alertState = pgTable(
   },
   (table) => [check("alert_state_status_valid", sql`${table.status} in ('ok', 'failing')`)]
 );
+
+// One row per admin setting (e.g. "dailyLimit"). A missing row means the
+// default in modules/settings/settings.ts, so a new setting needs no migration.
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").$type<unknown>().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+});
+
+// Every change to a setting: who, when, and the value before and after. Kept forever.
+export const settingChanges = pgTable(
+  "setting_changes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    key: text("key").notNull(),
+    oldValue: jsonb("old_value").$type<unknown>().notNull(),
+    newValue: jsonb("new_value").$type<unknown>().notNull(),
+    changedBy: uuid("changed_by").references(() => users.id, { onDelete: "set null" }),
+    changedAt: timestamp("changed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("setting_changes_changed_at_idx").on(table.changedAt.desc()),
+    index("setting_changes_changed_by_idx").on(table.changedBy),
+  ]
+);

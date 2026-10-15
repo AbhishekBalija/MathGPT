@@ -7,7 +7,7 @@
     "dev": "bun --watch src/server.ts",
     "start": "bun src/server.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --exclude tests/admin-totals.test.ts && vitest run tests/admin-totals.test.ts",
+    "test": "vitest run --exclude tests/admin-totals.test.ts --exclude tests/settings.test.ts && vitest run tests/admin-totals.test.ts && vitest run tests/settings.test.ts",
     "test:coverage": "vitest run --coverage",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

@@ -6,7 +6,6 @@
 
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../../db/client";
-import { DAILY_FREE_LIMIT } from "../../users/daily-limit";
 
 const istDate = (column: string) => sql.raw(`(${column} at time zone 'Asia/Kolkata')::date`);
 const istWeek = (column: string) => sql.raw(`date_trunc('week', ${column} at time zone 'Asia/Kolkata')::date`);
@@ -24,7 +23,8 @@ function counted(includeTeam: boolean): SQL {
 }
 
 export const businessRepository = {
-  async numbers(includeTeam: boolean): Promise<{ students: number; activeThisWeek: number; solvesThisWeek: number; limitHits: number; hiddenTeam: number }> {
+  /** `dailyLimit` is the current Settings value, for counting limit hits. */
+  async numbers(includeTeam: boolean, dailyLimit: number): Promise<{ students: number; activeThisWeek: number; solvesThisWeek: number; limitHits: number; hiddenTeam: number }> {
     const [row] = await rows<Record<string, number>>(sql`
       select
         (select count(*)::int from users u where ${counted(includeTeam)}) as students,
@@ -40,7 +40,7 @@ export const businessRepository = {
             and coalesce(e.properties->>'source', 'ai') = 'ai'
             and ${counted(includeTeam)}
           group by 1, 2
-          having count(*) >= ${DAILY_FREE_LIMIT}
+          having count(*) >= ${dailyLimit}
         ) hits) as limit_hits,
         (select count(*)::int from users u where u.is_admin or u.is_team) as hidden_team
     `);

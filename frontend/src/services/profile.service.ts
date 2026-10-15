@@ -17,8 +17,9 @@ export interface UserStats {
 
 export interface DailyCredits {
   used: number;
-  limit: number;
-  remaining: number;
+  // Both null for admins, who have no daily limit
+  limit: number | null;
+  remaining: number | null;
   resetsAt: string;
 }
 

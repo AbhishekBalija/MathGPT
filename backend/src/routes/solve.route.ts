@@ -10,7 +10,8 @@
  */
 
 import { z, ZodError } from "zod";
-import { DAILY_FREE_LIMIT, isNewDailyLimitDay, nextDailyLimitReset } from "../modules/users/daily-limit";
+import { isNewDailyLimitDay, limitFor, nextDailyLimitReset } from "../modules/users/daily-limit";
+import { getSettings } from "../modules/settings/settings";
 import type { SolveAlerts } from "../modules/alerts/solve-alerts";
 import { randomUUID } from "node:crypto";
 import {
@@ -133,6 +134,16 @@ export function createSolveRoute(solver: MathSolver, alerts: SolveAlerts) {
     // Mounted behind requireUser, so the User is already loaded
     const user = getCurrentUser(req);
     const userId = user.id;
+
+    // MAINTENANCE MODE - solving is paused for students; team accounts can
+    // still solve, so a fix can be tested
+    const settings = await getSettings();
+    if (settings.maintenance.on && !user.isTeam) {
+      return {
+        status: 503 as const,
+        body: { error: settings.maintenance.message, message: settings.maintenance.message, code: "MAINTENANCE" },
+      };
+    }
 
     // RATE LIMITING - 5 requests per minute per User, shared by every server instance
     const rateLimit = await rateLimitRepository.hit(
@@ -286,25 +297,26 @@ export function createSolveRoute(solver: MathSolver, alerts: SolveAlerts) {
     try {
       const fullUser = await userRepository.findById(userId);
       if (fullUser) {
+        const dailyLimit = limitFor(fullUser, settings);
         // Reset the daily counter on a new India day
         if (isNewDailyLimitDay(fullUser.lastCreditReset)) {
           await userRepository.resetDailyCredits(userId);
-        } else if ((fullUser.dailyCreditsUsed || 0) >= DAILY_FREE_LIMIT) {
+        } else if (dailyLimit !== null && (fullUser.dailyCreditsUsed || 0) >= dailyLimit) {
           // User has exceeded daily limit
           const tomorrow = nextDailyLimitReset();
 
           logger.info("Daily limit exceeded", {
             userId,
             dailyCreditsUsed: fullUser.dailyCreditsUsed,
-            limit: DAILY_FREE_LIMIT,
+            limit: dailyLimit,
           });
 
           return {
             status: 429 as const,
             body: {
-              error: `Daily limit reached (${DAILY_FREE_LIMIT} free problems/day). Come back tomorrow!`,
+              error: `Daily limit reached (${dailyLimit} free problems/day). Come back tomorrow!`,
               resetAt: tomorrow.toISOString(),
-              dailyLimit: DAILY_FREE_LIMIT,
+              dailyLimit,
             },
           };
         }
