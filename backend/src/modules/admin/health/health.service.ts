@@ -8,10 +8,16 @@ import { findPendingMigrations, readJournal } from "../../../db/migrations-journ
 import { withTimeout } from "../../../services/ai/failover";
 import { istDay } from "../overview/ist";
 import { healthRepository } from "./health.repository";
-import type { HealthProbes } from "./probes";
+import type { HealthProbes, UptimeCheck } from "./probes";
 
 const CHECK_TIMEOUT_MS = 3000;
 const CACHE_MS = 60_000;
+// GitHub allows 60 calls an hour without a token, so ask it at most every 10 minutes
+const UPTIME_CACHE_MS = 10 * 60_000;
+// After GitHub could not be asked, try again sooner
+const UPTIME_RETRY_MS = 60_000;
+// The workflow runs every 15 minutes, and GitHub often starts it late or skips one
+const UPTIME_STALE_MS = 60 * 60_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // What the API needs to run, by name. The values are never read out.
@@ -29,20 +35,47 @@ export const REQUIRED_ENV = [
   "APP_URL",
 ] as const;
 
-export type ServiceId = "api" | "database" | "gemini" | "backup" | "email" | "turnstile" | "sentry";
+export type ServiceId = "api" | "database" | "gemini" | "backup" | "email" | "turnstile" | "sentry" | "uptime";
 
 export interface ServiceStatus {
   id: ServiceId;
-  status: "up" | "down" | "key_set" | "key_missing";
+  // "unknown" when we could not find out, which is not the same as down
+  status: "up" | "down" | "key_set" | "key_missing" | "unknown";
   ms: number | null;
   detail: string | null;
 }
 
-let cached: { at: number; services: ServiceStatus[] } | null = null;
+let cached: { at: number; services: ServiceStatus[]; uptime: UptimeCheck | null } | null = null;
+let uptimeCached: { at: number; check: UptimeCheck | null } | null = null;
 
 /** Forgets the last live checks, so the next request runs them again. */
 export function resetHealthCache(): void {
   cached = null;
+  uptimeCached = null;
+}
+
+// Null when GitHub could not be asked
+async function uptimeCheck(probes: HealthProbes): Promise<UptimeCheck | null> {
+  const keepFor = uptimeCached?.check ? UPTIME_CACHE_MS : UPTIME_RETRY_MS;
+  if (uptimeCached && Date.now() - uptimeCached.at < keepFor) {
+    return uptimeCached.check;
+  }
+  const check = await withTimeout(probes.github(), CHECK_TIMEOUT_MS, "github").catch(() => null);
+  uptimeCached = { at: Date.now(), check };
+  return check;
+}
+
+function uptimeStatus(check: UptimeCheck | null, now: number): ServiceStatus {
+  const down = (detail: string): ServiceStatus => ({ id: "uptime", status: "down", ms: null, detail });
+  const unknown = (detail: string): ServiceStatus => ({ id: "uptime", status: "unknown", ms: null, detail });
+  if (!check) return unknown("Couldn't ask GitHub");
+  // Not on GitHub yet, or not run yet since it was added
+  if (!check.lastRunAt) return unknown("Waiting for its first run");
+  if (!check.enabled) return down("Switched off in GitHub");
+  const minutes = Math.round((now - new Date(check.lastRunAt).getTime()) / 60_000);
+  if (now - new Date(check.lastRunAt).getTime() > UPTIME_STALE_MS) return down(`Last ran ${minutes} minutes ago`);
+  if (check.lastResult === "failure") return down(`The site did not answer ${minutes} minutes ago`);
+  return { id: "uptime", status: "up", ms: null, detail: null };
 }
 
 async function timed(id: ServiceId, check: () => Promise<void>): Promise<ServiceStatus> {
@@ -60,14 +93,15 @@ function keyCheck(id: ServiceId, name: string): ServiceStatus {
   return { id, status: process.env[name] ? "key_set" : "key_missing", ms: null, detail: null };
 }
 
-async function liveServices(probes: HealthProbes): Promise<ServiceStatus[]> {
+async function liveServices(probes: HealthProbes): Promise<{ services: ServiceStatus[]; uptime: UptimeCheck | null }> {
   if (cached && Date.now() - cached.at < CACHE_MS) {
-    return cached.services;
+    return cached;
   }
-  const [database, gemini, email] = await Promise.all([
+  const [database, gemini, email, uptime] = await Promise.all([
     timed("database", () => healthRepository.ping()),
     timed("gemini", () => probes.gemini()),
     timed("email", () => probes.email()),
+    uptimeCheck(probes),
   ]);
   const services: ServiceStatus[] = [
     // This answer is the API answering
@@ -78,9 +112,10 @@ async function liveServices(probes: HealthProbes): Promise<ServiceStatus[]> {
     email,
     keyCheck("turnstile", "TURNSTILE_SECRET_KEY"),
     keyCheck("sentry", "SENTRY_DSN"),
+    uptimeStatus(uptime, Date.now()),
   ];
-  cached = { at: Date.now(), services };
-  return services;
+  cached = { at: Date.now(), services, uptime };
+  return cached;
 }
 
 // When the database is down, the numbers are empty and the Database row says why
@@ -94,7 +129,7 @@ async function orEmpty<T>(read: Promise<T>, empty: T): Promise<T> {
 
 export async function buildHealthReport(probes: HealthProbes) {
   const now = new Date();
-  const [services, solving, speed, applied] = await Promise.all([
+  const [{ services, uptime }, solving, speed, applied] = await Promise.all([
     liveServices(probes),
     orEmpty(healthRepository.solving(), { tries24h: 0, failed24h: 0, days: new Map(), byCode: [] }),
     orEmpty(healthRepository.speed(), { avgMs: 0, p90Ms: 0 }),
@@ -124,6 +159,7 @@ export async function buildHealthReport(probes: HealthProbes) {
         pending: findPendingMigrations(journal, applied),
       },
       env: REQUIRED_ENV.map((name) => ({ name, set: Boolean(process.env[name]) })),
+      uptimeCheck: uptime ?? { lastRunAt: null, lastResult: null, enabled: false },
     },
   };
 }

@@ -5,6 +5,18 @@ a new feature bumps the minor number (1.**2**.0), a fix bumps the patch number
 (1.2.**1**), and a change that breaks how people use the app bumps the major
 number (**2**.0.0). The frontend and backend share one version.
 
+## [1.3.0] - 2026-10-15
+
+The last step of the admin redesign.
+
+### Added
+- Alert emails to every admin: "solving is failing" after 3 AI-provider failures in a row or in 10 minutes, and "solving is back" when it works again. Off until `ALERT_EMAILS_ENABLED=true`
+- A daily summary email at 09:00 India time with what came in over the last 24 hours
+- An outside uptime check (GitHub Actions, every 15 minutes) that emails the owner when the site stops answering, with its last run shown on Health
+
+### Changed
+- `GET /health` now checks the database and answers 503 when it can't reach it
+
 ## [1.2.0] - 2026-10-15
 
 ### Added

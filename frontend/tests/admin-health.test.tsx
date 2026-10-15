@@ -21,6 +21,7 @@ function health(overrides: Partial<AdminHealth> = {}): AdminHealth {
       { id: "email", status: "up", ms: 120, detail: null },
       { id: "turnstile", status: "key_set", ms: null, detail: null },
       { id: "sentry", status: "key_missing", ms: null, detail: null },
+      { id: "uptime", status: "up", ms: null, detail: null },
     ],
     solving: {
       tries24h: 9,
@@ -36,6 +37,7 @@ function health(overrides: Partial<AdminHealth> = {}): AdminHealth {
         { name: "DATABASE_URL", set: true },
         { name: "SENTRY_DSN", set: false },
       ],
+      uptimeCheck: { lastRunAt: "2026-10-14T17:15:00.000Z", lastResult: "success", enabled: true },
     },
     ...overrides,
   };
@@ -58,7 +60,7 @@ describe("admin Health", () => {
     renderHealth();
 
     expect(await screen.findByText("2 of 9 tries failed in the last 24 hours")).toBeTruthy();
-    for (const name of ["API", "Database", "Gemini", "Backup model", "Email", "Robot check", "Error tracking"]) {
+    for (const name of ["API", "Database", "Gemini", "Backup model", "Email", "Robot check", "Error tracking", "Uptime check"]) {
       expect(screen.getByRole("button", { name: new RegExp(name) })).toBeTruthy();
     }
     // Something failed today and the Sentry key is missing
@@ -71,6 +73,17 @@ describe("admin Health", () => {
 
     expect(await screen.findByText("A key is missing.")).toBeTruthy();
     expect(screen.getByText("Error tracking: key missing.")).toBeTruthy();
+  });
+
+  it("tells you how to turn the uptime check back on", async () => {
+    const off = health();
+    off.services = off.services.map((s) => (s.id === "uptime" ? { ...s, status: "down", detail: "Switched off in GitHub" } : s));
+    getHealth.mockResolvedValue(off);
+    renderHealth();
+
+    fireEvent.click(await screen.findByRole("button", { name: /Uptime check/ }));
+
+    expect(screen.getByText(/GitHub → Actions → Uptime check → Enable workflow/)).toBeTruthy();
   });
 
   it("opens a service's runbook", async () => {
@@ -126,6 +139,7 @@ describe("buildHealthReport", () => {
     expect(report).toContain("Frontend: 5b0eedd");
     expect(report).toContain("Migrations: 11 applied, latest 0010_admin_redesign, none missing");
     expect(report).toContain("Env not set: SENTRY_DSN");
+    expect(report).toContain("Uptime check: on, last ran 2026-10-14T17:15:00.000Z, success");
     expect(report).not.toMatch(/@/);
   });
 });

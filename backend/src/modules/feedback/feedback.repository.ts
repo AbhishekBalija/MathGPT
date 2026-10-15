@@ -1,4 +1,4 @@
-import { count, desc, eq } from "drizzle-orm";
+import { count, desc, eq, gt } from "drizzle-orm";
 import { db } from "../../db/client";
 import { isUuid } from "../../lib/ids";
 import { feedback, users, type FeedbackKind } from "../../db/schema";
@@ -49,6 +49,12 @@ export const feedbackRepository = {
       .where(options.includeDone ? undefined : eq(feedback.done, false))
       .orderBy(desc(feedback.createdAt))
       .limit(options.limit);
+  },
+
+  /** How many came in since a moment. */
+  async countSince(since: Date): Promise<number> {
+    const [row] = await db.select({ total: count() }).from(feedback).where(gt(feedback.createdAt, since));
+    return row?.total ?? 0;
   },
 
   /** Marks it handled. Returns false if there is no such Feedback. */

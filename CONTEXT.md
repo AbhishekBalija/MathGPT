@@ -74,6 +74,10 @@ _Avoid_: Bug report, incident
 All the Error Logs of one student for one problem, counted as one problem with several **Tries**. The same problem with different spacing is the same Failed problem. It **worked later** when the student solved that problem after the last failed Try. Resolving it resolves every Try.
 _Avoid_: Error group, issue
 
+**Alert**:
+An email to every Admin when solving starts failing (3 AI-provider failures in a row, or 3 within 10 minutes) and again when it is back. Our own errors never trigger one. The **daily summary** is a separate email each morning with what came in over the last 24 hours.
+_Avoid_: Notification, alarm
+
 **Analytics Event**:
 A named record of something that happened (for example a Solution being saved), used for admin statistics.
 _Avoid_: Metric, log

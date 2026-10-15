@@ -216,6 +216,12 @@ export const userRepository = {
     return { users: rows, total: totals?.total ?? 0 };
   },
 
+  /** Every Admin's email, for alert emails. */
+  async adminEmails(): Promise<string[]> {
+    const rows = await db.select({ email: users.email }).from(users).where(eq(users.isAdmin, true));
+    return rows.map((row) => row.email);
+  },
+
   async findRecent(limit: number): Promise<User[]> {
     return db.select().from(users).orderBy(desc(users.createdAt)).limit(limit);
   },

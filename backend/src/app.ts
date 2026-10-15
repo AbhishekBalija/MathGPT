@@ -9,6 +9,7 @@
 import express from "express";
 import { createApp } from "./create-app";
 import { createRealHealthProbes } from "./modules/admin/health/probes";
+import { createSolveAlerts } from "./modules/alerts/solve-alerts";
 import { logger } from "./lib/logger";
 import { requireEnv } from "./lib/env";
 import { initSentry } from "./lib/sentry";
@@ -39,11 +40,14 @@ function chooseEmailSender(): EmailSender {
   );
 }
 
+const emailSender = chooseEmailSender();
+
 const api = createApp({
   solver: geminiMathSolver,
-  emailSender: chooseEmailSender(),
+  emailSender,
   humanCheck: createTurnstileCheck(process.env),
   healthProbes: createRealHealthProbes(process.env),
+  alerts: createSolveAlerts(emailSender, { env: process.env, origin: process.env.APP_URL || "https://neomath.vercel.app" }),
 });
 
 // A thin outer app so this file is a real Express entry. Vercel sits in front

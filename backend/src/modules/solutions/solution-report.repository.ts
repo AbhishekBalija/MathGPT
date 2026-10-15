@@ -1,4 +1,4 @@
-import { count, desc, eq } from "drizzle-orm";
+import { count, desc, eq, gt } from "drizzle-orm";
 import { db } from "../../db/client";
 import { isUuid } from "../../lib/ids";
 import { solutionCache, solutionReports, solutions, users, type CacheStatus } from "../../db/schema";
@@ -93,6 +93,12 @@ export const solutionReportRepository = {
       .from(solutionReports)
       .where(eq(solutionReports.id, id));
     return row ?? null;
+  },
+
+  /** How many reports came in since a moment. */
+  async countSince(since: Date): Promise<number> {
+    const [row] = await db.select({ total: count() }).from(solutionReports).where(gt(solutionReports.createdAt, since));
+    return row?.total ?? 0;
   },
 
   /** Reports whose answer is still blocked from the shared cache. */

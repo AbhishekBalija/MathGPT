@@ -272,11 +272,11 @@ export const adminService = {
 };
 
 // The admin Health screen
-export type HealthServiceId = "api" | "database" | "gemini" | "backup" | "email" | "turnstile" | "sentry";
+export type HealthServiceId = "api" | "database" | "gemini" | "backup" | "email" | "turnstile" | "sentry" | "uptime";
 
 export interface AdminHealth {
   checkedAt: string;
-  services: Array<{ id: HealthServiceId; status: "up" | "down" | "key_set" | "key_missing"; ms: number | null; detail: string | null }>;
+  services: Array<{ id: HealthServiceId; status: "up" | "down" | "key_set" | "key_missing" | "unknown"; ms: number | null; detail: string | null }>;
   solving: {
     tries24h: number;
     failed24h: number;
@@ -288,6 +288,8 @@ export interface AdminHealth {
     backendCommit: string;
     migrations: { applied: number; latest: string; pending: string[] };
     env: Array<{ name: string; set: boolean }>;
+    // The outside check in GitHub Actions that emails you when the site is down
+    uptimeCheck: { lastRunAt: string | null; lastResult: "success" | "failure" | null; enabled: boolean };
   };
 }
 

@@ -10,6 +10,7 @@ import { createAdminRouter } from "../modules/admin/admin.router";
 import { limitByIp, limitByUser } from "../modules/rate-limits/rate-limit.middleware";
 
 import { healthRoute } from "./health.route";
+import { createDailySummaryRoute } from "./internal/daily-summary.route";
 
 import { createGoogleOAuthRoute } from "./auth/google-oauth.route";
 import { loginRoute } from "./auth/login.route";
@@ -35,6 +36,11 @@ export function createRouter(services: AppServices) {
   const router = Router();
 
   router.get("/health", healthRoute);
+
+  // Vercel cron (GET), or by hand (POST). Needs CRON_SECRET.
+  const dailySummary = createDailySummaryRoute(services.emailSender, process.env.APP_URL || "https://neomath.vercel.app");
+  router.get("/internal/daily-summary", dailySummary);
+  router.post("/internal/daily-summary", dailySummary);
 
   // Auth
   // Per-IP limits stop one client from farming accounts or guessing passwords (ADR-0003)
@@ -68,7 +74,7 @@ export function createRouter(services: AppServices) {
     limitByIp("solve", 100, 60 * 60),
     requireUser,
     requireVerifiedEmail,
-    createSolveRoute(services.solver)
+    createSolveRoute(services.solver, services.alerts)
   );
   router.get("/api/history", requireUser, historyRoute);
   // The frontend calls DELETE /api/history; /api/clear-history is the older path

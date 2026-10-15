@@ -16,7 +16,7 @@ Authorization: Bearer <access_token>
 
 ### GET /health
 
-Check if the API is running.
+Checks that the API runs and the database answers (`select 1`, 3 second limit). The outside uptime check calls it every 15 minutes.
 
 **Response (200):**
 
@@ -26,6 +26,8 @@ Check if the API is running.
   "timestamp": "2025-12-22T00:00:00.000Z"
 }
 ```
+
+**Response (503):** `{ "status": "unhealthy", "timestamp": "..." }`, with no error details, since this endpoint is public.
 
 ---
 
@@ -498,6 +500,22 @@ answers and cache hits do not use a Credit.
 
 ---
 
+## Internal Endpoints
+
+### GET or POST /internal/daily-summary
+
+Emails every Admin what came in over the last 24 hours: open failed problems with a try in that time, new reports and new feedback. Nothing is sent when nothing came in. Vercel's cron calls it daily at 03:30 UTC (09:00 India time).
+
+**Headers:** `Authorization: Bearer <CRON_SECRET>`. Without `CRON_SECRET` set on the server, it always answers 401.
+
+**Response (200):** `{ "sentTo": 2 }`
+
+| Status | Error       |
+| ------ | ----------- |
+| 401    | Not allowed |
+
+---
+
 ## Admin Endpoints
 
 > **Note**: All admin endpoints require a normal login with an Admin account (`isAdmin: true`): 401 without a login, 403 for non-Admins. There is no separate admin passcode.
@@ -801,7 +819,8 @@ not thrown.
   "live": {
     "backendCommit": "c43d379",
     "migrations": { "applied": 11, "latest": "0010_admin_redesign", "pending": [] },
-    "env": [{ "name": "JWT_SECRET", "set": true }]
+    "env": [{ "name": "JWT_SECRET", "set": true }],
+    "uptimeCheck": { "lastRunAt": "2026-10-15T09:20:00Z", "lastResult": "success", "enabled": true }
   }
 }
 ```
@@ -813,6 +832,7 @@ not thrown.
 - The live checks run at most once a minute; other requests in that minute
   get the same result.
 - `env` lists names only, never values.
+- `uptimeCheck` is the GitHub Actions "Uptime check" workflow's last scheduled run, read from GitHub's API at most every 10 minutes (every minute after GitHub could not be asked). The `uptime` service is `down` when the workflow is switched off, its last run is over an hour old, or that run failed, and `unknown` when GitHub could not be asked or it has not run yet.
 
 ---
 

@@ -6,6 +6,7 @@
  */
 
 import type { HealthProbes } from "./modules/admin/health/probes";
+import type { SolveAlerts } from "./modules/alerts/solve-alerts";
 import cors from "cors";
 import express, {
   type ErrorRequestHandler,
@@ -72,6 +73,8 @@ export interface AppServices {
   humanCheck: HumanCheck;
   // Live checks of Gemini and Resend for the admin Health screen
   healthProbes: HealthProbes;
+  // Emails the admins when solving starts failing and when it is back
+  alerts: SolveAlerts;
 }
 
 export function createApp(services: AppServices) {
