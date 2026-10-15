@@ -87,11 +87,14 @@ export function SolverPage() {
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [loadAppStatus]);
+  // While paused (or, for admins, while the notice shows) check every 30 s,
+  // so the page catches up when maintenance ends without a reload
+  const maintenanceOn = Boolean(pausedMessage || maintenanceNotice);
   useEffect(() => {
-    if (!pausedMessage) return;
+    if (!maintenanceOn) return;
     const timer = setInterval(() => void loadAppStatus(), 30_000);
     return () => clearInterval(timer);
-  }, [pausedMessage, loadAppStatus]);
+  }, [maintenanceOn, loadAppStatus]);
 
   const setEmailVerified = useAuthStore((s) => s.setEmailVerified);
   const { history, isInitialized, historyLoading } = useAppDataStore();
@@ -428,6 +431,11 @@ export function SolverPage() {
 
         <div ref={composerRef} className="shrink-0">
           {/* While solving is paused the notice shows on phones too, not only after a tap */}
+          {isPhone && maintenanceNotice ? (
+            <p role="status" className="mx-3 mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-gray-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-gray-50">
+              <b className="font-semibold">Maintenance mode is on.</b> Students can't solve. You still can, as an admin.
+            </p>
+          ) : null}
           {isPhone && !pausedMessage ? (
             <SlimComposer
               label={input.trim() || (activeSolution ? "Ask another problem" : "Type a problem")}
