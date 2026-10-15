@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // Hoisted, because vi.mock runs before the rest of the file
 const { getOverview, getHealth } = vi.hoisted(() => ({ getOverview: vi.fn(), getHealth: vi.fn() }));
 vi.mock("../src/services/admin.service", () => ({ default: { getOverview, getHealth } }));
+const appStatus = vi.hoisted(() => ({ value: null as null | { maintenance: { on: boolean; message: string }; signupsOpen: boolean } }));
+vi.mock("../src/stores/appStatusStore", () => ({ useAppStatus: () => ({ status: appStatus.value, load: vi.fn() }) }));
 
 import Overview from "../src/pages/Admin/Overview";
 import type { AdminOverview } from "../src/services/admin.service";
@@ -106,6 +108,16 @@ describe("admin Overview", () => {
 
     expect(await screen.findByText("Something is down")).toBeTruthy();
     expect(screen.getByText(`Solving is failing since ${formatAdminTime(since)}.`)).toBeTruthy();
+  });
+
+  it("says so while maintenance mode is on, so it isn't forgotten", async () => {
+    appStatus.value = { maintenance: { on: true, message: "Back soon." }, signupsOpen: true };
+    getOverview.mockResolvedValue(overview());
+    renderOverview();
+
+    expect(await screen.findByText("Maintenance mode is on: students can't solve.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open Settings" }).getAttribute("href")).toBe("/admin/settings");
+    appStatus.value = null;
   });
 
   it("puts a service that is down in Neo's line, even when nothing else needs you", async () => {

@@ -7,7 +7,7 @@ import { SlimComposer } from "../src/features/solver/composer/SlimComposer";
 function Harness(props: { initial?: string; onSolve?: (p: string, v: "all" | "hint") => void; remaining?: number; disabled?: boolean }) {
   const [value, setValue] = useState(props.initial ?? "");
   return (
-    <Composer value={value} onChange={setValue} onSolve={props.onSolve ?? (() => {})} remaining={props.remaining} disabled={props.disabled} />
+    <Composer value={value} onChange={setValue} onSolve={props.onSolve ?? (() => {})} remaining={props.remaining} limit={5} disabled={props.disabled} />
   );
 }
 const field = () => screen.getByLabelText("Your math problem") as HTMLTextAreaElement;

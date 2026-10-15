@@ -9,6 +9,7 @@ import Feedback from "./Feedback";
 import Health from "./Health";
 import Overview from "./Overview";
 import Reports from "./Reports";
+import Settings from "./Settings";
 import Students from "./Students";
 
 /**
@@ -35,6 +36,7 @@ export function adminRoutes() {
         <Route path="reports/:id?" element={<Reports />} />
         <Route path="feedback/:id?" element={<Feedback />} />
         <Route path="students/:id?" element={<Students />} />
+        <Route path="settings" element={<Settings />} />
         <Route path="errors" element={<Navigate to="/admin/failed" replace />} />
         <Route path="users" element={<Navigate to="/admin/students" replace />} />
         <Route path="analytics" element={<Navigate to="/admin/events" replace />} />

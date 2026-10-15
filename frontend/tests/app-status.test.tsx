@@ -51,3 +51,15 @@ describe("paused sign-ups", () => {
     expect(submit.disabled).toBe(true);
   });
 });
+
+describe("solve errors from Settings", async () => {
+  const { toSolveError } = await import("../src/utils/errorMessages");
+
+  it("shows the admin's maintenance message, not a generic error", () => {
+    expect(toSolveError({ status: 503, code: "MAINTENANCE", message: "Back at 6 pm." })).toEqual({ message: "Back at 6 pm.", noAction: true });
+  });
+
+  it("names the real daily limit", () => {
+    expect(toSolveError({ status: 429, dailyLimit: 8, resetAt: "x" }).message).toBe("You've used today's 8 free problems. Come back tomorrow.");
+  });
+});
