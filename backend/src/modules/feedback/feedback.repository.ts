@@ -17,6 +17,8 @@ export interface FeedbackForAdmin {
   message: string;
   page: string | null;
   solutionId: string | null;
+  userId: string;
+  name: string;
   email: string;
   done: boolean;
   createdAt: Date;
@@ -36,6 +38,8 @@ export const feedbackRepository = {
         message: feedback.message,
         page: feedback.page,
         solutionId: feedback.solutionId,
+        userId: users.id,
+        name: users.name,
         email: users.email,
         done: feedback.done,
         createdAt: feedback.createdAt,

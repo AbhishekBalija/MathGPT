@@ -280,7 +280,7 @@ describe("what each solve records for the admin", () => {
   }
 
   async function savedEventsOf(adminToken: string, userId: string) {
-    const { recentEvents } = await (await authedFetch(adminToken, "/admin/analytics")).json();
+    const { recentEvents } = await (await authedFetch(adminToken, "/admin/analytics?event=solution_saved")).json();
     return recentEvents
       .filter((event: { userId?: string }) => event.userId === userId)
       .map((event: { properties: Record<string, unknown> }) => event.properties);

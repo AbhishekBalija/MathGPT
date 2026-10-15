@@ -532,7 +532,9 @@ Get dashboard statistics. **Requires admin.**
 
 ### GET /admin/analytics
 
-Get analytics data for admin dashboard. **Requires admin.**
+Event counts by type and the newest 50 events. **Requires admin.**
+
+Query: `event=<name>` (for example `solution_saved`) for one kind only. Without it, or with a name that isn't letters and underscores, every kind is listed.
 
 **Response (200):**
 
@@ -579,6 +581,9 @@ List users with pagination and search. **Requires admin.**
       "name": "John Doe",
       "email": "john@example.com",
       "isAdmin": false,
+      "isTeam": false,
+      "solves": 4,
+      "lastSolvedAt": "2026-10-14T17:19:00.000Z",
       "provider": "email",
       "createdAt": "2025-12-01T00:00:00.000Z"
     }
@@ -879,7 +884,7 @@ are still not served). This applies to every report on the same answer.
 
 ### GET /admin/feedback
 
-Feedback from Users, newest first, with the sender's email. **Requires admin.**
+Feedback from Users, newest first, with the sender's name, id and email. **Requires admin.**
 
 Query: `includeDone=true` to include done items, `limit` (1 to 200, default 50).
 
@@ -894,6 +899,8 @@ Query: `includeDone=true` to include done items, `limit` (1 to 200, default 50).
       "message": "Add a graph of the answer",
       "page": "/app",
       "solutionId": null,
+      "userId": "user_id",
+      "name": "Asha",
       "email": "student@example.com",
       "done": false,
       "createdAt": "2026-10-14T17:00:00.000Z"
@@ -913,6 +920,143 @@ Mark Feedback as read and handled. **Requires admin.**
 | Status | Error              |
 | ------ | ------------------ |
 | 404    | Feedback not found |
+
+---
+
+### GET /admin/failed
+
+Failed problems: one row per student and problem, newest first. Retries of the same problem are one row with several tries. **Requires admin.**
+
+Query: `status=open|resolved|all` (default `open`). At most 200 rows; `problems` and `tries` count all of them.
+
+**Response (200):**
+
+```json
+{
+  "groups": [
+    {
+      "id": "newest_error_log_id",
+      "problem": "(logx)^2/x",
+      "tries": 3,
+      "firstAt": "2026-10-10T16:37:00.000Z",
+      "lastAt": "2026-10-10T16:43:00.000Z",
+      "errorCode": "AI_TIMEOUT",
+      "ms": 8400,
+      "student": { "id": "user_id", "name": "Shashi" },
+      "workedLater": false,
+      "resolved": false
+    }
+  ],
+  "problems": 5,
+  "tries": 7
+}
+```
+
+`student` is `null` once the student deleted their account. `workedLater` is true when they solved the same problem after the last failed try.
+
+---
+
+### GET /admin/failed/:id
+
+One failed problem, by any of its error log ids, with every try oldest first. **Requires admin.**
+
+**Response (200):** the group above plus
+
+```json
+{
+  "attempts": [
+    {
+      "at": "2026-10-10T16:37:00.000Z",
+      "ms": 8400,
+      "errorCode": "AI_TIMEOUT",
+      "details": {
+        "attempts": [{ "model": "gemini-2.5-flash", "error": "timed out after 25000ms" }],
+        "promptVersion": "v2026-10-09",
+        "fullMessage": "All models failed: gemini-2.5-flash: timed out after 25000ms"
+      }
+    }
+  ]
+}
+```
+
+`details` is `null` for failures saved before details were kept.
+
+| Status | Error                 |
+| ------ | --------------------- |
+| 404    | Failed solve not found |
+
+---
+
+### POST /admin/failed/:id/resolve
+
+Resolves every open try of the failed problem. **Requires admin.**
+
+**Response (200):** `{ "resolved": 3 }`
+
+| Status | Error                 |
+| ------ | --------------------- |
+| 404    | Failed solve not found |
+
+---
+
+### GET /admin/reports/:id
+
+One report, with the full solution, who sent it and whether code checked the answer. **Requires admin.**
+
+**Response (200):**
+
+```json
+{
+  "id": "report_id",
+  "problemText": "If y = log(sec x + tan x), find dy/dx",
+  "answerText": "\\sec x",
+  "reason": "Step 2 is wrong",
+  "cacheStatus": "blocked",
+  "checkedByCode": false,
+  "solution": { "formatVersion": 2, "steps": [], "answer": { "latex": "\\sec x" } },
+  "solvedAt": "2026-10-14T16:33:00.000Z",
+  "student": { "id": "user_id", "name": "Abhi" },
+  "createdAt": "2026-10-14T16:34:00.000Z"
+}
+```
+
+`solution` and `solvedAt` are `null` once the student deleted the solution.
+
+| Status | Error            |
+| ------ | ---------------- |
+| 404    | Report not found |
+
+---
+
+### GET /admin/students/:id
+
+One student: who they are, what they did and today's free limit. **Requires admin.**
+
+**Response (200):**
+
+```json
+{
+  "id": "user_id",
+  "name": "Shashi",
+  "email": "shashi@example.com",
+  "provider": "google",
+  "joinedAt": "2026-10-10T10:00:00.000Z",
+  "isAdmin": false,
+  "isTeam": false,
+  "solves": 4,
+  "failed": 5,
+  "reports": 0,
+  "usedToday": 1,
+  "dailyLimit": 5,
+  "history": [{ "kind": "solved", "title": "Integrate x^2 dx", "at": "2026-10-14T17:19:00.000Z" }]
+}
+```
+
+`history` is the newest 20 of `solved`, `failed`, `reported` and `joined`.
+
+| Status | Error             |
+| ------ | ----------------- |
+| 404    | Student not found |
 
 ---
 
