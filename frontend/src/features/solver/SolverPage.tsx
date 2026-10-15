@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Menu, Plus, X } from "lucide-react";
 import Logo from "../../components/brand/Logo";
 import { solveProblem } from "../../services/solve.service";
-import authService from "../../services/auth.service";
 import { reportSolution } from "../../services/history.service";
 import { useAppDataStore } from "../../stores/appDataStore";
 import { useAppStatus } from "../../stores/appStatusStore";
@@ -72,11 +71,12 @@ export function SolverPage() {
   const view = useChatStore((s) => s.view);
 
   const emailVerified = useAuthStore((s) => s.user?.emailVerified);
-  // Team accounts (admins too) can still solve while an admin has paused solving
-  const isTeam = useAuthStore((s) => Boolean(s.user?.isTeam || s.user?.isAdmin));
+  // Only admins can still solve while solving is paused; team accounts see what students see
+  const isAdmin = useAuthStore((s) => Boolean(s.user?.isAdmin));
   const maintenance = useAppStatus((s) => s.status?.maintenance);
   const loadAppStatus = useAppStatus((s) => s.load);
-  const pausedMessage = maintenance?.on && !isTeam ? maintenance.message : null;
+  const pausedMessage = maintenance?.on && !isAdmin ? maintenance.message : null;
+  const maintenanceNotice = maintenance?.on && isAdmin ? maintenance.message : null;
   // Check on load and whenever the tab comes back; while paused, also every
   // 30 seconds, so the composer returns without a reload when solving resumes
   useEffect(() => {
@@ -93,16 +93,6 @@ export function SolverPage() {
     return () => clearInterval(timer);
   }, [pausedMessage, loadAppStatus]);
 
-  // Logins from before isTeam existed don't have it saved: ask once
-  const user = useAuthStore((s) => s.user);
-  const setUser = useAuthStore((s) => s.setUser);
-  useEffect(() => {
-    if (!user || user.isTeam !== undefined) return;
-    authService.getCurrentUser().then(
-      ({ user: fresh }) => setUser({ ...user, isAdmin: fresh.isAdmin, isTeam: fresh.isTeam ?? false }),
-      () => {},
-    );
-  }, [user, setUser]);
   const setEmailVerified = useAuthStore((s) => s.setEmailVerified);
   const { history, isInitialized, historyLoading } = useAppDataStore();
 
@@ -333,6 +323,7 @@ export function SolverPage() {
       remaining={remaining}
       limit={dailyLimit}
       pausedMessage={pausedMessage}
+      maintenanceNotice={maintenanceNotice}
     />
   );
 

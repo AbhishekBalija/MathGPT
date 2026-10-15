@@ -293,7 +293,7 @@ Feedback about the app itself (not about one Solution, that is a Report).
 
 ### POST /api/solve
 
-In maintenance mode it answers 503 `{ "error": "<message>", "message": "<message>", "code": "MAINTENANCE" }` for students; admins and team accounts still solve. The daily limit comes from Settings (default 5); admins have none.
+In maintenance mode it answers 503 `{ "error": "<message>", "message": "<message>", "code": "MAINTENANCE" }` for everyone but admins (team accounts too); admins still solve. The daily limit comes from Settings (default 5); admins have none.
 
 Solve a math problem. **Requires auth and a verified email.** Limited to 5
 per minute per User (429 `RATE_LIMITED` with `retryAfter`), separate from the

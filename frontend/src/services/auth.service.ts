@@ -7,7 +7,7 @@ export interface User {
   name: string;
   avatar?: string;
   isAdmin?: boolean;
-  // Our own accounts (admins too): can still solve in maintenance mode
+  // Our own accounts (admins too), left out of business numbers
   isTeam?: boolean;
   role?: "admin" | "user";
   // Only Verified Users can solve. Missing on sessions saved before this field existed.

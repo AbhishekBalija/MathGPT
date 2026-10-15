@@ -34,7 +34,7 @@ export interface PublicUser {
   name: string;
   avatar?: string;
   isAdmin: boolean;
-  // One of our own accounts (admins too): can still solve in maintenance mode
+  // One of our own accounts (admins too), left out of business numbers
   isTeam: boolean;
   emailVerified: boolean;
 }

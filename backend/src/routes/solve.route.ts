@@ -135,10 +135,10 @@ export function createSolveRoute(solver: MathSolver, alerts: SolveAlerts) {
     const user = getCurrentUser(req);
     const userId = user.id;
 
-    // MAINTENANCE MODE - solving is paused for students; team accounts can
-    // still solve, so a fix can be tested
+    // MAINTENANCE MODE - solving is paused for everyone but admins, so an
+    // admin can test a fix and a team account shows what students see
     const settings = await getSettings();
-    if (settings.maintenance.on && !user.isTeam) {
+    if (settings.maintenance.on && !user.isAdmin) {
       return {
         status: 503 as const,
         body: { error: settings.maintenance.message, message: settings.maintenance.message, code: "MAINTENANCE" },
