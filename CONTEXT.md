@@ -114,3 +114,7 @@ _Avoid_: Report (that is about one Solution), ticket, support request
 **Team account**:
 One of our own accounts (the owner, a tester). Every Admin is one, and an Admin can mark any other User as one. Team accounts are left out of student and business numbers.
 _Avoid_: Internal user, staff
+
+**Monitor Snapshot**:
+A read-only summary of how the app is doing right now (status, solves, failures by error code, Problem Guard rejections, open counts, service health, Settings), as numbers only, with no names, emails or problem text. Fetched from `/internal/monitor` with its own secret, so Claude can watch the app without an Admin login.
+_Avoid_: Dashboard, stats endpoint

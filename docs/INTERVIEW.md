@@ -390,3 +390,11 @@ lists that were too broad while the guard was being built.
 Each check would be an AI call, and saving AI calls is the reason the guard
 exists. Cheap rules catch the obvious cases for free, and the solving AI is
 still the backstop for anything subtle that gets past them.
+
+### Intermediate: Why give a monitoring tool its own read-only secret instead of an admin login?
+
+Least privilege: give each caller only the access its job needs. An admin
+login can change Settings and make other admins; watching the app only
+needs to read numbers. A separate secret can be revoked without breaking
+anything else, and the route returns counts only, so a leaked secret
+exposes no student data.

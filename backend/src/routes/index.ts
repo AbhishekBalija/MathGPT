@@ -29,6 +29,7 @@ import { profileRoute } from "./profile.route";
 import { publicStatsRoute } from "./public-stats.route";
 import { getSolutionRoute } from "./solution.route";
 import { createSolveRoute } from "./solve.route";
+import { createMonitorRoute } from "./internal/monitor.route";
 import { reportSolutionRoute } from "./report-solution.route";
 import { sendFeedbackRoute } from "../modules/feedback/send-feedback.route";
 
@@ -42,6 +43,9 @@ export function createRouter(services: AppServices) {
   const dailySummary = createDailySummaryRoute(services.emailSender, process.env.APP_URL || "https://neomath.vercel.app");
   router.get("/internal/daily-summary", dailySummary);
   router.post("/internal/daily-summary", dailySummary);
+
+  // Read-only numbers for Claude to watch the app. Needs MONITOR_SECRET.
+  router.get("/internal/monitor", limitByIp("monitor", 30, 60), createMonitorRoute(services.healthProbes));
 
   // Auth
   // Per-IP limits stop one client from farming accounts or guessing passwords (ADR-0003)
