@@ -236,7 +236,7 @@ export function SolverPage() {
       }
 
       // The problem stays in the field and in pendingProblem, so nothing is lost
-      after.setSolveError(toSolveError(result.failure ?? { status: 500 }));
+      after.setSolveError(toSolveError(result.failure ?? { status: 500 }, problem));
       // Solving was paused since the page loaded: show the message in the composer too
       if (result.failure?.code === "MAINTENANCE") void loadAppStatus();
     },
@@ -378,6 +378,7 @@ export function SolverPage() {
                     onRetry={retry}
                     onEdit={solveError.needsEdit ? focusComposer : undefined}
                     noAction={solveError.noAction}
+                    helpline={solveError.helpline}
                   />
                 ) : null}
 

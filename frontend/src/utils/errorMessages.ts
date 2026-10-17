@@ -16,7 +16,17 @@ export interface SolveError {
   needsEdit?: true;
   // Nothing to retry or edit (for example a saved solution that cannot be read)
   noAction?: true;
+  // A student who may be in distress gets a tap-to-call helpline instead of an edit
+  helpline?: Helpline;
 }
+
+export interface Helpline {
+  name: string;
+  phone: string;
+}
+
+// India's free government mental health line, open all day and night
+const TELE_MANAS: Helpline = { name: "Tele-MANAS", phone: "14416" };
 
 // What we know about a failed /api/solve call. No `status` means no reply at all.
 export interface SolveFailure {
@@ -28,6 +38,8 @@ export interface SolveFailure {
   dailyLimit?: number;
   // The admin's message while solving is paused (503 MAINTENANCE)
   message?: string;
+  // Why the Problem Guard turned the problem away (422 NOT_MATH)
+  reason?: string;
 }
 
 export const SOLVE_ERROR_COPY = {
@@ -42,7 +54,56 @@ export const SOLVE_ERROR_COPY = {
   network: "No internet right now.",
 } as const;
 
-export function toSolveError(failure: SolveFailure): SolveError {
+// ---- Problem Guard replies ----
+// One reply per Rejection Reason (backend/src/modules/solver/guard). A reason
+// missing here gets the general not-math line, so add new ones here too.
+
+type GuardReason =
+  | "wellbeing"
+  | "unsafe"
+  | "empty"
+  | "personal_info"
+  | "greeting"
+  | "off_topic"
+  | "number"
+  | "missing_problem"
+  | "incomplete"
+  | "not_math";
+
+export const GUARD_REPLIES: Record<GuardReason, string> = {
+  wellbeing:
+    "That sounds really hard, and you're not alone. You can talk to someone kind right now, for free: call Tele-MANAS on 14416, any time.",
+  unsafe: "I can't help with that. I'm here for math. Send me a math problem.",
+  empty: "Type a math problem first.",
+  personal_info: "Please don't share personal details like phone numbers here. Send a math problem instead.",
+  greeting: "Hi! Send me a math problem and I'll solve it step by step.",
+  off_topic: "I only help with math. Send just the math part, like 3x + 5 = 20.",
+  number: "That's just a number. What should I do with it?",
+  missing_problem: "I can't see the question. Type or paste the full problem.",
+  incomplete: "Part of the problem looks missing. Check both sides of the = sign.",
+  not_math: SOLVE_ERROR_COPY.notMath,
+};
+
+function isGuardReason(reason: string): reason is GuardReason {
+  return Object.hasOwn(GUARD_REPLIES, reason);
+}
+
+// Some replies read better with the student's own text in them
+function guardReply(reason: string | undefined, problem: string | undefined): string {
+  if (!reason || !isGuardReason(reason)) return SOLVE_ERROR_COPY.notMath;
+  const text = problem?.trim() ?? "";
+
+  if (reason === "number" && /^-?\d+(\.\d+)?$/.test(text)) {
+    return `That's just a number. What should I do with it? Try "is ${text} prime" or "${text} × 3".`;
+  }
+  if (reason === "incomplete" && text && !text.includes("=")) {
+    return "Part of the problem looks missing. Add the numbers around the + or −.";
+  }
+  return GUARD_REPLIES[reason];
+}
+
+// `problem` is what the student sent, so a reply can quote it back
+export function toSolveError(failure: SolveFailure, problem?: string): SolveError {
   const { status, code, retryAfter } = failure;
 
   if (status === undefined) return { message: SOLVE_ERROR_COPY.network };
@@ -58,7 +119,10 @@ export function toSolveError(failure: SolveFailure): SolveError {
   }
 
   // 422 or a NOT_MATH code: the text is not a math problem
-  if (status === 422 || code === "NOT_MATH") return { message: SOLVE_ERROR_COPY.notMath, needsEdit: true };
+  if (status === 422 || code === "NOT_MATH") {
+    if (failure.reason === "wellbeing") return { message: GUARD_REPLIES.wellbeing, helpline: TELE_MANAS };
+    return { message: guardReply(failure.reason, problem), needsEdit: true };
+  }
 
   // 400 or an UNSOLVABLE code: the problem itself could not be read
   if (status === 400 || code === "UNSOLVABLE") return { message: SOLVE_ERROR_COPY.unsolvable };

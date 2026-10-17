@@ -48,6 +48,8 @@ interface ErrorBody {
   dailyLimit?: number;
   // The admin's maintenance message (503 MAINTENANCE)
   message?: string;
+  // Why the Problem Guard turned the problem away (422 NOT_MATH)
+  reason?: string;
 }
 
 /**
@@ -101,6 +103,7 @@ export async function solveProblem(request: SolveRequest): Promise<SolveResult> 
       resetAt: body.resetAt,
       dailyLimit: body.dailyLimit,
       message: body.message,
+      reason: body.reason,
     };
 
     if (body.code === "EMAIL_NOT_VERIFIED") {

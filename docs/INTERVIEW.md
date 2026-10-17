@@ -368,3 +368,25 @@ asked once. Checking every unchecked answer straight away would nearly double
 the cost of word problems and proofs for no benefit. Waiting for a second ask
 means we only pay for the check when sharing can actually pay it back.
 
+
+### Intermediate: How do you keep an input filter easy to grow without breaking real input?
+
+The Problem Guard reads the text once into a small "shape" (numbers, words,
+operators, the sides of `=`), then runs an ordered list of small rules. The
+first rule that matches wins, so the order decides which reply a student
+sees. It's the chain-of-responsibility idea, kept as a plain array: adding a
+case means adding one rule file or one word, never touching the route.
+
+### Intermediate: What is a table-driven test, and why use one for the guard?
+
+All cases live in one table: "must block, with this reason" rows and "must
+pass" rows. One test loops over the table. The must-pass rows are the
+important half: real problems that look close to blocked ones ("a bomb of
+mass 12 kg explodes", "a story book costs ₹120"). They caught several word
+lists that were too broad while the guard was being built.
+
+### Basic: Why not use a small AI model to decide "is this math?"
+
+Each check would be an AI call, and saving AI calls is the reason the guard
+exists. Cheap rules catch the obvious cases for free, and the solving AI is
+still the backstop for anything subtle that gets past them.

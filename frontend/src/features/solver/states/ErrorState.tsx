@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import NeoMascot from "../../../components/brand/NeoMascot";
+import type { Helpline } from "../../../utils/errorMessages";
 
 interface ErrorStateProps {
   message: string;
@@ -9,6 +10,8 @@ interface ErrorStateProps {
   onEdit?: () => void;
   // Hide the button: there is nothing to retry or edit
   noAction?: boolean;
+  // Show a tap-to-call helpline in place of the button
+  helpline?: Helpline;
 }
 
 // 40 seconds -> "0:40"
@@ -23,7 +26,7 @@ export function ErrorState(props: ErrorStateProps) {
   return <ErrorBody key={props.retryAfter} {...props} />;
 }
 
-function ErrorBody({ message, retryAfter, onRetry, onEdit, noAction }: ErrorStateProps) {
+function ErrorBody({ message, retryAfter, onRetry, onEdit, noAction, helpline }: ErrorStateProps) {
   const [left, setLeft] = useState(retryAfter ?? 0);
 
   const waiting = left > 0;
@@ -45,7 +48,9 @@ function ErrorBody({ message, retryAfter, onRetry, onEdit, noAction }: ErrorStat
           {message}
         </b>
         <span aria-live="off" className="text-sm text-gray-600 dark:text-gray-400">
-          {waiting ? (
+          {helpline ? (
+            "Send a math problem whenever you're ready."
+          ) : waiting ? (
             <>
               Take a breath. You can try again in <span className="tabular-nums">{formatClock(left)}</span>. Your
               problem is still here.
@@ -55,7 +60,15 @@ function ErrorBody({ message, retryAfter, onRetry, onEdit, noAction }: ErrorStat
           )}
         </span>
       </div>
-      {noAction ? null : (
+      {helpline ? (
+        // Opens the phone's dialer, so help is one tap away
+        <a
+          href={`tel:${helpline.phone}`}
+          className="flex min-h-11 items-center rounded-xl bg-gray-900 px-4 text-sm font-semibold text-white dark:bg-white dark:text-gray-900"
+        >
+          Call {helpline.phone}
+        </a>
+      ) : noAction ? null : (
         <button
           type="button"
           onClick={onEdit ?? onRetry}
