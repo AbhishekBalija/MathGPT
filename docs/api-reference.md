@@ -533,6 +533,42 @@ Emails every Admin what came in over the last 24 hours: open failed problems wit
 | ------ | ----------- |
 | 401    | Not allowed |
 
+### GET /internal/monitor
+
+The Monitor Snapshot: how the app is doing right now, as numbers only, so Claude can watch the app without an Admin login. Read-only. Never contains names, emails, problem text or feedback text.
+
+**Headers:** `Authorization: Bearer <MONITOR_SECRET>` (its own secret, not `CRON_SECRET`). Without `MONITOR_SECRET` set on the server, it always answers 401. Limited to 30 calls a minute per IP.
+
+**Response (200):**
+
+```json
+{
+  "status": { "state": "fine", "failingSince": null },
+  "app": { "version": "1.7.0", "commit": "2de4de1" },
+  "today": { "solves": 42, "aiUsage": [{ "source": "ai", "model": "gemini-2.5-flash", "count": 30 }] },
+  "last24h": {
+    "tries": 51,
+    "failed": 3,
+    "failures": [{ "errorCode": "TIMEOUT", "model": "gemini-2.5-flash", "count": 3 }],
+    "guardRejections": { "number": 4, "greeting": 2 }
+  },
+  "students": { "real": 120, "activeThisWeek": 35 },
+  "waiting": { "failedProblems": 2, "blockedReports": 0, "unreadFeedback": 1 },
+  "services": [{ "id": "database", "status": "up", "ms": 12, "detail": null }],
+  "uptimeCheck": { "lastRunAt": "2026-10-18T06:00:00.000Z", "lastResult": "success", "enabled": true },
+  "pendingMigrations": [],
+  "settings": { "dailyLimit": 5, "signupsOpen": true, "maintenance": { "on": false, "message": "..." } },
+  "speed": { "avgMs": 6200, "p90Ms": 11000 }
+}
+```
+
+`state` follows the admin Overview: `down` while solving is failing, `attention` while something waits for an Admin, otherwise `fine`.
+
+| Status | Error             |
+| ------ | ----------------- |
+| 401    | Not allowed       |
+| 429    | Too many requests |
+
 ---
 
 ## Admin Endpoints

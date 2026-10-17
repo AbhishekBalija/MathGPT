@@ -5,6 +5,11 @@ a new feature bumps the minor number (1.**2**.0), a fix bumps the patch number
 (1.2.**1**), and a change that breaks how people use the app bumps the major
 number (**2**.0.0). The frontend and backend share one version.
 
+## [1.7.0] - 2026-10-18
+
+### Added
+- A read-only `/internal/monitor` route with a Monitor Snapshot: status, solves, failures by error code and model, Problem Guard rejections, open counts, service health and Settings. Numbers only, no student details. It has its own `MONITOR_SECRET`, so Claude can watch the app without an admin login (#127)
+
 ## [1.6.0] - 2026-10-17
 
 ### Added
