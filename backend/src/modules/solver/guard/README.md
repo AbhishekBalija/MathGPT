@@ -7,8 +7,10 @@ spends no Credit, makes no AI call and is never saved.
 
 ## How it works
 
-1. `problem-shape.ts` reads the text once into a **Problem Shape**: the
-   numbers, words, operators and the two sides of any `=`.
+1. `problem-shape.ts` cleans the text once (full-width "８８７" becomes
+   "887", invisible characters and keycap emoji like "8️⃣" are removed),
+   then reads it into a **Problem Shape**: the numbers (in any script's
+   digits), words, emoji, operators and the two sides of any `=`.
 2. `check-problem.ts` runs the rules below in order. The first rule that
    matches wins.
 3. The solve route answers `422` with `code: "NOT_MATH"` and the `reason`.
@@ -22,12 +24,15 @@ spends no Credit, makes no AI call and is never saved.
 | 2 | `rules/unsafe.ts` | `unsafe` | drugs, making weapons, sexual content, threats |
 | 3 | `rules/empty.ts` | `empty` | nothing typed |
 | 4 | `rules/personal-info.ts` | `personal_info` | phone numbers, emails, links, ID numbers |
-| 5 | `rules/greeting.ts` | `greeting` | "hi", "thanks", "ok" |
+| 5 | `rules/greeting.ts` | `greeting` | "hi", "thanks", "ok", "नमस्ते", only emoji ("👋") |
 | 6 | `rules/off-topic.ts` | `off_topic` | essays, jokes, code, general knowledge, tricks |
 | 7 | `rules/number.ts` | `number` | "887", "₹500", "50%", "10:30" |
 | 8 | `rules/missing-problem.ts` | `missing_problem` | "solve this", "q3", "ex 5.2 q4" |
-| 9 | `rules/incomplete.ts` | `incomplete` | "= 5", "x =", "1 +" |
-| 10 | `rules/not-math.ts` | `not_math` | anything else with no math in it |
+| 9 | `rules/incomplete.ts` | `incomplete` | "= 5", "x =", "1 +", a lone "√" |
+| 10 | `rules/not-math.ts` | `not_math` | no math at all, or only symbols ("<>", "@#$%") |
+
+Problems written in another script (Hindi, Kannada, Tamil...) are never
+turned away by `not_math`: its word list is English only, so the AI decides.
 
 The guard only catches the obvious cases. The AI still turns away anything
 subtle that gets past it.

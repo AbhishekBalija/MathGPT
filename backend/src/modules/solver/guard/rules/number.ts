@@ -1,6 +1,6 @@
 /**
  * NUMBER: only a value, with nothing to do with it: "887", "-5", "₹500",
- * "50%", "5 kg", "10:30", "15/10/2026".
+ * "50%", "5 kg", "30°", "10:30", "15/10/2026".
  * Reply: "That's just a number. What should I do with it?"
  *
  * Anything with a real operation between two numbers ("887 + 1", "1/2",
@@ -11,7 +11,7 @@ import type { GuardRule } from "../check-problem";
 import type { Token } from "../problem-shape";
 
 // Marks that can sit around a lone value without asking anything
-const HARMLESS_MARKS = new Set(["(", ")", "?", ".", "₹", "$", "%", ":"]);
+const HARMLESS_MARKS = new Set(["(", ")", "?", ".", "₹", "$", "%", ":", "°"]);
 
 // Currency and unit words that can follow or come before a lone value
 const UNIT_WORDS = new Set([

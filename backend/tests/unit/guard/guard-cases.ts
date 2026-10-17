@@ -33,7 +33,7 @@ export const MUST_BLOCK: Record<RejectionReason, string[]> = {
     "i will kill you",
     "fuck you neo",
   ],
-  empty: ["", "   ", "\n\t"],
+  empty: ["", "   ", "\n\t", "\u200b", "\u200b\u200b ", "\ufeff\u2060"],
   personal_info: [
     "9845012345",
     "98450-12345",
@@ -47,8 +47,12 @@ export const MUST_BLOCK: Record<RejectionReason, string[]> = {
     "www.example.com",
     "check example.com",
     "1234 5678 9012",
+    // Full-width digits from some phone keyboards
+    "９８４５０１２３４５",
   ],
-  greeting: ["hi", "Hello!", "hiii", "hey there", "good morning", "namaste", "thanks", "thank you so much", "ok", "okay bye"],
+  greeting: ["hi", "Hello!", "hiii", "hey there", "good morning", "namaste", "thanks", "thank you so much", "ok", "okay bye",
+    // Emoji, emoticons, other scripts and full-width letters
+    "😀", "👍", "👋", "🙏", "🔥🔥🔥", "😭😭", "🇮🇳", "👨‍👩‍👧", "hi 👋", ":)", "^_^", "ｈｉ", "नमस्ते", "ನಮಸ್ಕಾರ"],
   missing_problem: [
     "solve this",
     "Solve it please",
@@ -116,8 +120,14 @@ export const MUST_BLOCK: Record<RejectionReason, string[]> = {
     "12.5 cm",
     "10:30",
     "15/10/2026",
+    // Full-width digits, a hidden zero-width space, keycap emoji digits and degrees
+    "８８７",
+    "೮೮೭",
+    "887\u200b",
+    "8️⃣8️⃣7️⃣",
+    "30°",
   ],
-  incomplete: ["1 −", "+", "= ?", "= 5", "x =", "1+", "x -", "* 5", "^2", "3x + 5 ="],
+  incomplete: ["1 −", "+", "= ?", "= 5", "x =", "1+", "x -", "* 5", "^2", "3x + 5 =", "√", "∫", "∑"],
   not_math: [
     "...",
     "()",
@@ -126,6 +136,14 @@ export const MUST_BLOCK: Record<RejectionReason, string[]> = {
     "math",
     "aaaaaa",
     "asdfgh",
+    // Only symbols, nothing to work with
+    "@#$%",
+    "!!!",
+    "???",
+    "~~~",
+    "{}[]",
+    "<>",
+    "∞",
     // "finder" and "meant" contain "find" and "mean" but are not math words
     "the finder meant well",
   ],
@@ -169,6 +187,30 @@ export const MUST_PASS: string[] = [
   "2x + 3x",
   "x + 2",
   "1/0",
+  // Unicode math symbols, Greek letters, superscripts and subscripts
+  "x ∈ ℝ",
+  "f: ℝ → ℝ",
+  "A ∪ B where A = {1, 2}",
+  "α + β = 90°",
+  "x² + 2x + 1 = 0",
+  "½ + ¼",
+  "sin 30°",
+  "∂f/∂x",
+  "lim x→0 sin x/x",
+  "2 · 3",
+  "x ≠ 0",
+  "∑ i from 1 to 10",
+  "∫₀¹ x dx",
+  "ﬁnd the sum of 2 and 3",
+  "５ + ３",
+  // Emoji math
+  "🍎 = 5, 🍎 + 🍎 = ?",
+  "5 🍎 + 3 🍎",
+  // Problems written in Hindi, Kannada and Tamil words: the AI decides
+  "दो और तीन का योग",
+  "ಎರಡು ಮತ್ತು ಮೂರು ಸೇರಿಸಿ",
+  "மூன்று கூட்டல் நான்கு",
+  "राम के पास 5 सेब हैं, 3 और मिले",
   // Everyday word problems that use words close to off-topic ones
   "a cricketer scored 45 runs in 5 overs, find the average",
   "linear programming: maximise z = 3x + 2y",

@@ -10,6 +10,7 @@ number (**2**.0.0). The frontend and backend share one version.
 ### Added
 - A Problem Guard checks every problem before Neo spends any AI on it. Lone numbers, unfinished problems ("= 5"), greetings, "solve this" with no question, phone numbers and emails, off-topic asks (essays, jokes, code) and unsafe text each get their own short reply, cost no free problem and are never saved (#122)
 - A student who writes something like "i want to die" gets a kind reply and a tap-to-call button for the free Tele-MANAS helpline (14416) instead of "not math"
+- The guard understands emoji, full-width digits, hidden characters, Unicode math symbols (∈ → ≠ ∑) and Hindi, Kannada and Tamil text: emoji-only messages get the greeting, and problems written in other scripts always reach Neo
 - Each turned-away problem is counted for the admin by reason (never the text itself)
 
 ### Fixed

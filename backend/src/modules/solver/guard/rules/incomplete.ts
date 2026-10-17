@@ -1,5 +1,6 @@
 /**
- * INCOMPLETE: part of the problem is missing: "= 5", "x =", "1 +", "* 5".
+ * INCOMPLETE: part of the problem is missing: "= 5", "x =", "1 +", "* 5",
+ * or a lone "√" or "∫" with nothing to work on.
  * Reply: "Part of the problem looks missing."
  *
  * "5 + 3 = ?" is fine: the "?" means "find it".
@@ -12,12 +13,16 @@ import type { ProblemShape } from "../problem-shape";
 // of a number is a sign ("-5"), so only these may not start a problem.
 const NEEDS_LEFT_SIDE = new Set(["*", "/", "×", "÷", "^"]);
 
+// Signs that need something after them
+const NEEDS_RIGHT_SIDE = new Set(["√", "∛", "∫", "∑", "∏"]);
+
 function hasEmptySideOfEquals(shape: ProblemShape): boolean {
   return shape.sides.length > 1 && shape.sides.some((side) => side.length === 0);
 }
 
 function endsWithOperator(shape: ProblemShape): boolean {
-  return shape.tokens.at(-1)?.kind === "operator";
+  const last = shape.tokens.at(-1);
+  return last !== undefined && (last.kind === "operator" || NEEDS_RIGHT_SIDE.has(last.text));
 }
 
 function startsWithOperator(shape: ProblemShape): boolean {

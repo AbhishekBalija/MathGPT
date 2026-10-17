@@ -4,13 +4,19 @@
  *
  * This is the last rule and it is loose on purpose: one digit, math symbol
  * or math word is enough to let the Problem through, and the AI makes the
- * real decision.
+ * real decision. Words in another script (Hindi, Kannada, Tamil...) are let
+ * through too, because the word list below is English only.
+ *
+ * Only symbols with nothing to work on ("<>", "∞", "@#$%") are turned away.
  */
 
 import type { GuardRule } from "../check-problem";
 
-// A digit or a math symbol
-const MATH_CHARACTER = /[0-9+\-×÷*/=^√∫πθ<>≤≥]/;
+// A digit, any Unicode math symbol (+ = < ∈ → ≠ √ ∫ ∑ ...) or a Greek letter (π θ α)
+const MATH_CHARACTER = /[0-9\-*/^]|\p{Sm}|\p{Script=Greek}/u;
+
+// A letter from any script except English letters
+const OTHER_SCRIPT = /(?!\p{Script=Latin})\p{L}/u;
 
 // Math words, whole words only, with an optional plural "s". Add new ones
 // to the group they fit, so "how many sides does a hexagon have" or
@@ -35,5 +41,11 @@ const MATH_WORD = new RegExp(`\\b(${MATH_WORDS.join("|")})s?\\b`, "i");
 
 export const notMath: GuardRule = {
   reason: "not_math",
-  blocks: (shape) => !MATH_CHARACTER.test(shape.text) && !MATH_WORD.test(shape.text),
+  blocks: (shape) => {
+    // A number, a word or an emoji ("🍎 + 🍎 = ?") gives the problem something to work on
+    const nothingToWorkOn = shape.tokens.every((token) => token.kind === "other" || token.kind === "operator");
+    if (nothingToWorkOn) return true;
+    if (OTHER_SCRIPT.test(shape.text)) return false;
+    return !MATH_CHARACTER.test(shape.text) && !MATH_WORD.test(shape.text);
+  },
 };
