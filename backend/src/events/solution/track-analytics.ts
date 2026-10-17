@@ -16,6 +16,8 @@ export interface AnalyticsEventData {
     source?: "ai" | "cache" | "instant";
     model?: string | null;
     promptVersion?: string;
+    // Why the Problem Guard turned a Problem away (never the text itself)
+    reason?: string;
     userId?: string;
   };
   timestamp?: string;

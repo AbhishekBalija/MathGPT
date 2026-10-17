@@ -125,10 +125,24 @@ describe("POST /api/solve", () => {
     const body = await res.json();
     expect(body.error).toBe(NOT_MATH_MESSAGE);
     expect(body.code).toBe("NOT_MATH");
+    expect(body.reason).toBe("off_topic");
     expect(solveSpy).not.toHaveBeenCalled();
     const profile = await (await authedFetch(accessToken, "/api/profile")).json();
     expect(profile.dailyCredits).toMatchObject({ used: 0 });
     solveSpy.mockRestore();
+  });
+
+  it("turns away a phone number before the instant answer, and saves nothing", async () => {
+    const { accessToken } = await registerVerifiedUser();
+
+    const res = await solveAs(accessToken, { problem: "98450-12345" });
+
+    expect(res.status).toBe(422);
+    expect(await res.json()).toMatchObject({ code: "NOT_MATH", reason: "personal_info" });
+    const history = await (await authedFetch(accessToken, "/api/history")).json();
+    expect(history.history).toEqual([]);
+    const profile = await (await authedFetch(accessToken, "/api/profile")).json();
+    expect(profile.dailyCredits).toMatchObject({ used: 0 });
   });
 
   it("returns the same 422 when the AI says it is not math, and spends the credit", async () => {
@@ -137,7 +151,7 @@ describe("POST /api/solve", () => {
     const res = await solveAs(accessToken, { problem: `2 ${FAKE_NOT_MATH}` });
 
     expect(res.status).toBe(422);
-    expect(await res.json()).toMatchObject({ error: NOT_MATH_MESSAGE, code: "NOT_MATH" });
+    expect(await res.json()).toMatchObject({ error: NOT_MATH_MESSAGE, code: "NOT_MATH", reason: "not_math" });
     // The AI was called, so the credit is used
     const profile = await (await authedFetch(accessToken, "/api/profile")).json();
     expect(profile.dailyCredits).toMatchObject({ used: 1 });

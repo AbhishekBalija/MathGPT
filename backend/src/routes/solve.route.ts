@@ -20,7 +20,8 @@ import {
   NotMathError,
   UnsolvableProblemError,
 } from "../services/ai/solver-errors";
-import { looksLikeMath } from "../modules/solver/guard/looks-like-math";
+import { checkProblem } from "../modules/solver/guard/check-problem";
+import type { RejectionReason } from "../modules/solver/guard/check-problem";
 import { cacheKey, solutionCache } from "../modules/solver/cache/solution-cache";
 import { putInCache, secondModelCheck, solveWithCodeCheck } from "../modules/solver/cache/share-checked";
 import { METHOD_ID_PATTERN, PROMPT_VERSION } from "../services/ai/prompts";
@@ -68,6 +69,18 @@ function trackSaved(
         promptVersion: PROMPT_VERSION,
         userId,
       },
+      timestamp: new Date().toISOString(),
+    })
+  );
+}
+
+// One "problem_rejected" event per guard rejection, with the reason only,
+// so the admin can see what the guard blocks without storing the text
+function trackRejected(userId: string, reason: RejectionReason): void {
+  runInBackground("track-analytics", () =>
+    trackAnalytics({
+      event: "problem_rejected",
+      properties: { reason, userId },
       timestamp: new Date().toISOString(),
     })
   );
@@ -168,11 +181,14 @@ export function createSolveRoute(solver: MathSolver, alerts: SolveAlerts) {
       };
     }
 
-    // MATH-ONLY GUARD - text with no math in it never reaches the AI and
-    // costs no Credit
-    if (!looksLikeMath(problem)) {
-      logger.info("Problem does not look like math", { userId });
-      return notMathResponse();
+    // PROBLEM GUARD - a lone number, a phone number, an essay request and
+    // so on never reach the instant answer or the AI, cost no Credit and
+    // are never saved. See modules/solver/guard/README.md
+    const guard = checkProblem(problem);
+    if (!guard.ok) {
+      logger.info("Problem Guard turned a Problem away", { userId, reason: guard.reason });
+      trackRejected(userId, guard.reason);
+      return notMathResponse(guard.reason);
     }
 
     // INSTANT ANSWER - plain arithmetic is solved here, with no AI and no
@@ -492,7 +508,7 @@ export function createSolveRoute(solver: MathSolver, alerts: SolveAlerts) {
             error: updateError instanceof Error ? updateError.message : "Unknown",
           });
         }
-        return notMathResponse();
+        return notMathResponse("not_math");
       }
 
       // Handle unsolvable problems with 400, not 500
@@ -585,9 +601,11 @@ export function createSolveRoute(solver: MathSolver, alerts: SolveAlerts) {
 }
 
 // Same reply for the guard and for the AI saying "not math"
-function notMathResponse() {
+// The reason tells the frontend which reply to show; error stays the
+// generic line for older clients
+function notMathResponse(reason: RejectionReason) {
   return {
     status: 422 as const,
-    body: { error: NOT_MATH_MESSAGE, code: "NOT_MATH" },
+    body: { error: NOT_MATH_MESSAGE, code: "NOT_MATH", reason },
   };
 }

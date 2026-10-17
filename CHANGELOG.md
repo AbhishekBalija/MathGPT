@@ -5,6 +5,17 @@ a new feature bumps the minor number (1.**2**.0), a fix bumps the patch number
 (1.2.**1**), and a change that breaks how people use the app bumps the major
 number (**2**.0.0). The frontend and backend share one version.
 
+## [1.6.0] - 2026-10-17
+
+### Added
+- A Problem Guard checks every problem before Neo spends any AI on it. Lone numbers, unfinished problems ("= 5"), greetings, "solve this" with no question, phone numbers and emails, off-topic asks (essays, jokes, code) and unsafe text each get their own short reply, cost no free problem and are never saved (#122)
+- A student who writes something like "i want to die" gets a kind reply and a tap-to-call button for the free Tele-MANAS helpline (14416) instead of "not math"
+- Each turned-away problem is counted for the admin by reason (never the text itself)
+
+### Fixed
+- "98450-12345" (a phone number) got an instant answer and was saved to History
+- "a die is rolled" and other dice, coin and card problems were turned away as not math
+
 ## [1.5.0] - 2026-10-15
 
 ### Added

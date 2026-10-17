@@ -35,6 +35,19 @@ _Avoid_: Thread, conversation, session
 **History**:
 The list of a user's past Solutions, newest first.
 
+**Problem Guard**:
+The free check every Problem passes before an instant answer, the cache or the AI. It either lets the Problem through or turns it away with a Rejection Reason. A turned-away Problem spends no Credit and is never saved.
+_Avoid_: Filter, validator, "is this math?" check
+
+**Problem Shape**:
+What the Problem Guard reads from the text once, before any rule runs: its numbers, letters, words, operators and the two sides of any `=`. Rules ask questions about the Shape, never about the raw text.
+
+**Guard Rule**:
+One named check inside the Problem Guard, such as "only a number" or "asks about something other than math". Rules run in a fixed order and the first match wins.
+
+**Rejection Reason**:
+Which Guard Rule turned a Problem away (for example `number`, `off_topic`, `wellbeing`). The student sees a reply written for that reason.
+
 ## Usage limits
 
 **Credit**:

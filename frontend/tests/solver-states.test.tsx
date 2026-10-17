@@ -48,6 +48,13 @@ describe("ErrorState", () => {
     render(<ErrorState message="No internet right now." onRetry={() => {}} />);
     expect((screen.getByRole("button", { name: "Try again" }) as HTMLButtonElement).disabled).toBe(false);
   });
+  it("offers a tap-to-call helpline instead of an edit for a student in distress", () => {
+    const error = toSolveError({ status: 422, code: "NOT_MATH", reason: "wellbeing" });
+    render(<ErrorState message={error.message} helpline={error.helpline} onRetry={() => {}} onEdit={() => {}} />);
+    expect(screen.getByRole("link", { name: "Call 14416" }).getAttribute("href")).toBe("tel:14416");
+    expect(screen.queryByRole("button", { name: "Edit problem" })).toBeNull();
+    expect(screen.queryByText("Your problem is still here.")).toBeNull();
+  });
   it("clears its timer on unmount", () => {
     const { unmount } = render(<ErrorState message="Wait" retryAfter={10} onRetry={() => {}} />);
     unmount();
