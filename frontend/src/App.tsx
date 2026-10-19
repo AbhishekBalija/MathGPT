@@ -8,6 +8,7 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import VerifyEmail from "./pages/VerifyEmail";
+import Welcome from "./pages/Welcome";
 import AppLayout from "./pages/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -28,6 +29,14 @@ const App = () => {
           element={
             <ProtectedRoute>
               <VerifyEmail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/welcome"
+          element={
+            <ProtectedRoute>
+              <Welcome />
             </ProtectedRoute>
           }
         />
