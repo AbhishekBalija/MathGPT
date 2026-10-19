@@ -15,68 +15,120 @@ beforeEach(() => {
   vi.mocked(classService.skip).mockReset().mockResolvedValue(savedUser);
 });
 
-function pick(name: string) {
-  fireEvent.click(screen.getByRole("radio", { name: new RegExp(name) }));
+// Radios: roles, single classes and board chips
+function pick(name: string | RegExp) {
+  fireEvent.click(screen.getByRole("radio", { name }));
+}
+function tick(name: RegExp) {
+  fireEvent.click(screen.getByRole("checkbox", { name }));
+}
+const press = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
+const heading = (name: string) => screen.getByRole("heading", { name });
+
+// A role row's name includes its line ("Student I'm learning math")
+function asRole(role: "Student" | "Parent" | "Teacher") {
+  pick(new RegExp(`^${role}`));
+  press("Continue");
 }
 
 describe("ClassSteps", () => {
-  it("keeps Continue disabled until a class is picked", () => {
+  it("starts with who is using NeoMath, and Continue waits for a pick", () => {
     render(<ClassSteps onSaved={vi.fn()} />);
-    const next = screen.getByRole("button", { name: "Continue" });
-    expect((next as HTMLButtonElement).disabled).toBe(true);
-    pick("Class 6–8");
-    expect((next as HTMLButtonElement).disabled).toBe(false);
+    expect(heading("Who's using NeoMath?")).toBeInTheDocument();
+    const next = screen.getByRole("button", { name: "Continue" }) as HTMLButtonElement;
+    expect(next.disabled).toBe(true);
+    pick(/^Student/);
+    expect(next.disabled).toBe(false);
   });
 
-  it("leads a school class to the board chips, and State board shows the state list", async () => {
+  it("asks a student one class, then the board, and saves it", async () => {
     const onSaved = vi.fn();
     render(<ClassSteps onSaved={onSaved} />);
-    pick("Class 9–10");
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    asRole("Student");
 
-    expect(screen.getByRole("heading", { name: "Which board is your school?" })).toBeTruthy();
+    expect(heading("Which class are you in?")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: /Class 6–8/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Class 9–10/ }));
+    press("Continue");
+
+    expect(heading("Which board is your school?")).toBeInTheDocument();
     pick("State board");
-    const state = screen.getByLabelText("Which state?") as HTMLSelectElement;
-    expect(state.options[0]?.textContent).toBe("Karnataka");
+    expect((screen.getByLabelText("Which state?") as HTMLSelectElement).options[0]?.textContent).toBe("Karnataka");
+    press("Done");
 
-    fireEvent.click(screen.getByRole("button", { name: "Done" }));
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith(savedUser));
     expect(classService.save).toHaveBeenCalledWith({
-      range: "class_9_10",
-      helping: false,
+      role: "student",
+      ranges: ["class_9_10"],
       board: "state",
       state: "Karnataka",
     });
   });
 
-  it("leads College to the university box, and Done saves with it empty", async () => {
+  it("asks a parent about their child", async () => {
     render(<ClassSteps onSaved={vi.fn()} />);
-    pick("College & above");
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-
-    expect(screen.getByLabelText("University or college")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Done" }));
-    await waitFor(() => expect(classService.save).toHaveBeenCalledWith({ range: "college", helping: false }));
-  });
-
-  it("changes the question for a parent or teacher and saves helping", async () => {
-    render(<ClassSteps onSaved={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "I'm a parent or teacher" }));
-    expect(screen.getByRole("heading", { name: "Which class are you helping with?" })).toBeTruthy();
-
-    pick("Class 1–5");
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    asRole("Parent");
+    expect(heading("Which class is your child in?")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: /Class 1–5/ }));
+    press("Continue");
+    expect(heading("Which board is their school?")).toBeInTheDocument();
     pick("CBSE");
-    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    press("Done");
     await waitFor(() =>
-      expect(classService.save).toHaveBeenCalledWith({ range: "class_1_5", helping: true, board: "cbse" })
+      expect(classService.save).toHaveBeenCalledWith({ role: "parent", ranges: ["class_1_5"], board: "cbse" })
     );
   });
 
-  it("skips on the class step", async () => {
+  it("lets a teacher pick several classes", async () => {
+    render(<ClassSteps onSaved={vi.fn()} />);
+    asRole("Teacher");
+    expect(heading("Which classes do you teach?")).toBeInTheDocument();
+    tick(/Class 6–8/);
+    tick(/Class 9–10/);
+    expect((screen.getByRole("checkbox", { name: /Class 6–8/ }) as HTMLInputElement).checked).toBe(true);
+    press("Continue");
+    pick("CBSE");
+    press("Done");
+    await waitFor(() =>
+      expect(classService.save).toHaveBeenCalledWith({ role: "teacher", ranges: ["class_6_8", "class_9_10"], board: "cbse" })
+    );
+  });
+
+  it("asks only for the university when College is the only class", async () => {
+    render(<ClassSteps onSaved={vi.fn()} />);
+    asRole("Student");
+    fireEvent.click(screen.getByRole("radio", { name: /College & above/ }));
+    press("Continue");
+    expect(heading("Which university or college?")).toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: "CBSE" })).toBeNull();
+    press("Done");
+    await waitFor(() => expect(classService.save).toHaveBeenCalledWith({ role: "student", ranges: ["college"] }));
+  });
+
+  it("asks a teacher with school and college for both", async () => {
+    render(<ClassSteps onSaved={vi.fn()} />);
+    asRole("Teacher");
+    tick(/Class 11–12/);
+    tick(/College & above/);
+    press("Continue");
+    expect(heading("Where do you teach?")).toBeInTheDocument();
+    pick("CBSE");
+    fireEvent.change(screen.getByLabelText("University or college"), { target: { value: "VTU" } });
+    press("Done");
+    await waitFor(() =>
+      expect(classService.save).toHaveBeenCalledWith({
+        role: "teacher",
+        ranges: ["class_11_12", "college"],
+        board: "cbse",
+        institution: "VTU",
+      })
+    );
+  });
+
+  it("skips everything on the role step", async () => {
     const onSkip = vi.fn();
     render(<ClassSteps onSaved={vi.fn()} onSkip={onSkip} />);
-    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+    press("Skip");
     await waitFor(() => expect(onSkip).toHaveBeenCalledWith(savedUser));
     expect(classService.save).not.toHaveBeenCalled();
   });
@@ -85,41 +137,54 @@ describe("ClassSteps", () => {
     vi.mocked(classService.skip).mockRejectedValue(new Error("offline"));
     const onSkip = vi.fn();
     render(<ClassSteps onSaved={vi.fn()} onSkip={onSkip} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
-
+    press("Skip");
     await waitFor(() => expect(onSkip).toHaveBeenCalledWith(null));
   });
 
-  it("saves the class without a board when the board step is skipped", async () => {
+  it("keeps the role when the class step is skipped", async () => {
     const onSaved = vi.fn();
     render(<ClassSteps onSaved={onSaved} onSkip={vi.fn()} />);
-    pick("Class 1–5");
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
-
+    asRole("Parent");
+    press("Skip");
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith(savedUser));
-    expect(classService.save).toHaveBeenCalledWith({ range: "class_1_5", helping: false });
+    expect(classService.save).toHaveBeenCalledWith({ role: "parent" });
+  });
+
+  it("keeps the role and class when the board step is skipped", async () => {
+    render(<ClassSteps onSaved={vi.fn()} onSkip={vi.fn()} />);
+    asRole("Student");
+    fireEvent.click(screen.getByRole("radio", { name: /Class 1–5/ }));
+    press("Continue");
+    press("Skip");
+    await waitFor(() => expect(classService.save).toHaveBeenCalledWith({ role: "student", ranges: ["class_1_5"] }));
     expect(classService.skip).not.toHaveBeenCalled();
   });
 
-  it("starts from the saved answer when given one", () => {
+  it("starts from a saved answer", () => {
     render(
       <ClassSteps
         onSaved={vi.fn()}
-        initial={{ range: "class_6_8", helping: false, board: "cbse", state: null, institution: null }}
+        initial={{ role: "teacher", ranges: ["class_6_8", "class_9_10"], board: "cbse", state: null, institution: null }}
       />
     );
-    expect((screen.getByRole("radio", { name: /Class 6–8/ }) as HTMLInputElement).checked).toBe(true);
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect((screen.getByRole("radio", { name: /Teacher/ }) as HTMLInputElement).checked).toBe(true);
+    press("Continue");
+    expect((screen.getByRole("checkbox", { name: /Class 9–10/ }) as HTMLInputElement).checked).toBe(true);
+    press("Continue");
     expect((screen.getByRole("radio", { name: "CBSE" }) as HTMLInputElement).checked).toBe(true);
   });
 
-  it("goes back from the board step to the class step", () => {
-    render(<ClassSteps onSaved={vi.fn()} />);
-    pick("Class 6–8");
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    fireEvent.click(screen.getByRole("button", { name: "Back" }));
-    expect(screen.getByRole("heading", { name: "Which class are you in?" })).toBeTruthy();
+  it("goes back one step at a time", () => {
+    const onBackFromFirst = vi.fn();
+    render(<ClassSteps onSaved={vi.fn()} onBackFromFirst={onBackFromFirst} />);
+    asRole("Student");
+    fireEvent.click(screen.getByRole("radio", { name: /Class 6–8/ }));
+    press("Continue");
+    press("Back");
+    expect(heading("Which class are you in?")).toBeInTheDocument();
+    press("Back");
+    expect(heading("Who's using NeoMath?")).toBeInTheDocument();
+    press("Back");
+    expect(onBackFromFirst).toHaveBeenCalled();
   });
 });

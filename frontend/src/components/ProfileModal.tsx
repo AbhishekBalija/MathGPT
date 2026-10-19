@@ -117,11 +117,11 @@ const ProfileModal = () => {
                 </div>
               </div>
 
-              {/* The Onboarding answer, changeable here (#39) */}
+              {/* The Onboarding answer, led by the role, changeable here (#39) */}
               <div className="flex items-center justify-between gap-3 rounded-2xl border border-gray-200 dark:border-white/10 p-3">
                 <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
-                    Your class
+                    You
                   </p>
                   <p className="font-semibold text-gray-900 dark:text-white">{describeClass(user?.classInfo)}</p>
                 </div>

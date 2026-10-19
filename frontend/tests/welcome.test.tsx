@@ -91,14 +91,14 @@ describe("Onboarding redirect", () => {
 });
 
 describe("Welcome page", () => {
-  it("opens the class step from Let's go", () => {
+  it("opens the role step from Let's go", () => {
     signIn({ ...student, onboarding: "needed" });
     renderAt("/welcome");
 
     expect(screen.getByText("Hi, I'm Neo!")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Let's go" }));
 
-    expect(screen.getByRole("heading", { name: "Which class are you in?" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Who's using NeoMath?" })).toBeInTheDocument();
   });
 
   it("skips from the hello screen and opens the app", async () => {

@@ -165,3 +165,58 @@ body {
 .animate-grid-bead-h {
   animation: grid-bead-horiz 4s linear infinite;
 }
+
+/* Onboarding motion (#39). Quiet and fast: transform and opacity only, and
+   none of it plays when the phone asks for less motion. Buttons work the
+   moment a step appears; nothing waits for these. */
+@media (prefers-reduced-motion: no-preference) {
+  /* Each step slides 24px in from the side it came from */
+  .ob-step-forward {
+    animation: ob-in-right 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .ob-step-back {
+    animation: ob-in-left 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  /* Rows and chips arrive one after another (each sets its own delay) */
+  .ob-item {
+    animation: ob-rise 200ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+  /* The picked radio dot or tick pops in */
+  .ob-pop {
+    animation: ob-pop 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .ob-bar {
+    transition: transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  /* Buttons, rows and chips dip a little while pressed */
+  .ob-press {
+    transition: transform 100ms ease-out;
+  }
+  .ob-press:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+}
+
+@keyframes ob-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+@keyframes ob-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+@keyframes ob-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes ob-pop {
+  from {
+    transform: scale(0);
+  }
+}

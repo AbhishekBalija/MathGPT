@@ -60,7 +60,7 @@ const Welcome = () => {
               </p>
               <NeoMascot className="mt-4 w-32" />
               <p className="mt-5 max-w-72 text-sm text-gray-600 dark:text-gray-400">
-                Two quick questions, so your steps fit your class. It takes 10 seconds.
+                A few quick questions, so your steps fit your class. It takes 10 seconds.
               </p>
             </div>
             <div className="border-t border-gray-200 pt-3 dark:border-white/10">

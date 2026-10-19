@@ -12,7 +12,7 @@ vi.mock("../src/services/class.service", () => ({
   classService: { save: vi.fn(), skip: vi.fn() },
 }));
 
-const cbse: ClassInfo = { range: "class_6_8", helping: false, board: "cbse", state: null, institution: null };
+const cbse: ClassInfo = { role: "student", ranges: ["class_6_8"], board: "cbse", state: null, institution: null };
 const student: User = { id: "u1", email: "asha@example.com", name: "Asha", onboarding: "done" };
 
 function open(classInfo: ClassInfo | null) {
@@ -34,9 +34,10 @@ beforeEach(() => vi.mocked(classService.save).mockReset());
 afterEach(() => cleanup());
 
 describe("Profile popup", () => {
-  it("shows the class line, the solved count and the join month", () => {
+  it("shows the line led by the role, the solved count and the join month", () => {
     open(cbse);
-    expect(screen.getByText("Class 6–8 · CBSE")).toBeInTheDocument();
+    expect(screen.getByText("You")).toBeInTheDocument();
+    expect(screen.getByText("Student · Class 6–8 · CBSE")).toBeInTheDocument();
     expect(screen.getByText("24")).toBeInTheDocument();
     expect(screen.getByText("Oct 2026")).toBeInTheDocument();
   });
@@ -49,18 +50,24 @@ describe("Profile popup", () => {
   it("opens the class steps from Change, and saving returns with the new line", async () => {
     vi.mocked(classService.save).mockResolvedValue({
       ...student,
-      classInfo: { ...cbse, range: "class_9_10", board: "icse" },
+      classInfo: { ...cbse, ranges: ["class_9_10"], board: "icse" },
     });
     open(cbse);
 
     fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     fireEvent.click(screen.getByRole("radio", { name: /Class 9–10/ }));
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     fireEvent.click(screen.getByRole("radio", { name: "ICSE / ISC" }));
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
 
-    await waitFor(() => expect(screen.getByText("Class 9–10 · ICSE / ISC")).toBeInTheDocument());
-    expect(useAuthStore.getState().user?.classInfo?.range).toBe("class_9_10");
+    await waitFor(() => expect(screen.getByText("Student · Class 9–10 · ICSE / ISC")).toBeInTheDocument());
+    expect(useAuthStore.getState().user?.classInfo?.ranges).toEqual(["class_9_10"]);
+  });
+
+  it("lists a teacher's classes", () => {
+    open({ role: "teacher", ranges: ["class_6_8", "class_9_10"], board: "cbse", state: null, institution: null });
+    expect(screen.getByText("Teacher · Class 6–8, 9–10 · CBSE")).toBeInTheDocument();
   });
 
   it("has no problem-type bars", () => {

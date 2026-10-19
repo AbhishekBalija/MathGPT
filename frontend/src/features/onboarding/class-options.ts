@@ -3,26 +3,35 @@
  * The values match the API (backend/src/modules/users/class-info.ts).
  */
 
+export type Role = "student" | "parent" | "teacher";
 export type ClassRange = "class_1_5" | "class_6_8" | "class_9_10" | "class_11_12" | "college";
 export type Board = "cbse" | "icse" | "state" | "ib" | "cambridge" | "other";
 
-/** A student's saved answer, as the API sends it. */
+/** A saved answer, as the API sends it. */
 export interface ClassInfo {
-  range: ClassRange;
-  helping: boolean;
+  role: Role;
+  // One for a student or parent, one or more for a teacher; empty if skipped
+  ranges: ClassRange[];
   board: Board | null;
   state: string | null;
   institution: string | null;
 }
 
-/** What the class and board steps send to the API. */
+/** What the onboarding steps send to the API. */
 export interface ClassAnswer {
-  range: ClassRange;
-  helping: boolean;
+  role: Role;
+  ranges?: ClassRange[];
   board?: Board;
   state?: string;
   institution?: string;
 }
+
+// Plain rows: a name and one line, no icons
+export const ROLES: { value: Role; label: string; line: string }[] = [
+  { value: "student", label: "Student", line: "I'm learning math" },
+  { value: "parent", label: "Parent", line: "I help my child with homework" },
+  { value: "teacher", label: "Teacher", line: "I teach a class" },
+];
 
 // Each range shows a real problem from that stage, so a young child can
 // find their row without reading the label
@@ -96,15 +105,25 @@ function boardLabel(board: Board): string {
   return BOARDS.find((option) => option.value === board)?.label ?? board;
 }
 
-/** The one-line summary shown in the Profile, e.g. "Class 6–8 · CBSE". */
+// ["class_6_8", "class_9_10"] -> "Class 6–8, 9–10"
+function rangesLabel(ranges: ClassRange[]): string {
+  return ranges
+    .map((range, index) => {
+      const label = rangeLabel(range);
+      const previous = index > 0 ? rangeLabel(ranges[index - 1] as ClassRange) : "";
+      return previous.startsWith("Class ") && label.startsWith("Class ") ? label.slice("Class ".length) : label;
+    })
+    .join(", ");
+}
+
+/** The one-line summary in the Profile, e.g. "Teacher · Class 6–8, 9–10 · CBSE". */
 export function describeClass(info: ClassInfo | null | undefined): string {
   if (!info) return "Not set yet";
 
-  const parts = [rangeLabel(info.range)];
+  const parts = [ROLES.find((role) => role.value === info.role)?.label ?? info.role];
+  if (info.ranges.length > 0) parts.push(rangesLabel(info.ranges));
   if (info.board) parts.push(boardLabel(info.board));
   if (info.board === "state" && info.state) parts.push(info.state);
   if (info.institution) parts.push(info.institution);
-
-  const line = parts.join(" · ");
-  return info.helping ? `Helping with ${line}` : line;
+  return parts.join(" · ");
 }
