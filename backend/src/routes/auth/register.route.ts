@@ -80,6 +80,8 @@ export function createRegisterRoute(emailSender: EmailSender, humanCheck: HumanC
           id: user.user.id,
           email: user.user.email,
           emailVerified: user.user.emailVerified,
+          onboarding: user.user.onboarding,
+          classInfo: user.user.classInfo,
         },
       },
     };

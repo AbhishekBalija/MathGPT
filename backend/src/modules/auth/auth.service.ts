@@ -11,6 +11,7 @@ import {
   userRepository,
   type User,
 } from "../users/user.repository";
+import { needsOnboarding, toClassInfo, type ClassInfo } from "../users/class-info";
 import { EmailVerificationService } from "./email-verification.service";
 
 // No fallbacks: a default secret in the source code would let anyone forge tokens
@@ -37,6 +38,9 @@ export interface PublicUser {
   // One of our own accounts (admins too), left out of business numbers
   isTeam: boolean;
   emailVerified: boolean;
+  // "needed" until the student answers or skips the Onboarding questions
+  onboarding: "needed" | "done";
+  classInfo: ClassInfo | null;
 }
 
 export function toPublicUser(user: User): PublicUser {
@@ -48,6 +52,8 @@ export function toPublicUser(user: User): PublicUser {
     isAdmin: user.isAdmin,
     isTeam: user.isTeam || user.isAdmin,
     emailVerified: user.emailVerifiedAt !== null,
+    onboarding: needsOnboarding(user) ? "needed" : "done",
+    classInfo: toClassInfo(user),
   };
 }
 
