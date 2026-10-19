@@ -223,3 +223,27 @@
 - [ ] **Step 2:** Screenshot Hello, Class, Board (State board picked), College, Profile on phone and desktop, light and dark, with the API faked as in the Problem Guard PR. Look at each; fix anything off.
 - [ ] **Step 3:** Bump to 1.9.0, CHANGELOG "Added: after sign-up Neo asks the student's class and board once; the Profile shows and changes it (#39)".
 - [ ] **Step 4: Commit** and open the PR with the screenshots (base `feat/onboarding-backend` until that merges).
+
+---
+
+## Revision 2 (19 Oct): role step, teachers pick several classes, quiet motion
+
+The spec now asks the Role first and stores a list of Class ranges. Tasks 1–9
+above are done; these change them in place on the same two branches.
+
+### R1: Backend (`feat/onboarding-backend`)
+- Migration `0013_onboarding_roles`: add `role` (text, check student/parent/teacher) and `class_ranges` (text[] not null default `{}`, check `<@` the five values); drop `class_range` and `helping` (empty on preview and production, checked 19 Oct)
+- `class-info.ts`: `Role`, `ROLES`; `classAnswerSchema` = `{ role, ranges?, board?, state?, institution? }` with the spec's rules; `ClassInfo` = `{ role, ranges, board, state, institution }`; `toClassInfo` null when `role` is null; `needsOnboarding` = no role and no skip
+- `userRepository.setClass` writes `role` and `classRanges`
+- Tests: update `tests/unit/class-info.test.ts` and `tests/onboarding.test.ts` to the spec's Testing list (red first)
+
+### R2: Frontend steps (`feat/onboarding-page`)
+- `class-options.ts`: `Role`, `ROLES`, new `ClassInfo`/`ClassAnswer`, `describeClass` led by the role ("Teacher · Class 6–8, 9–10 · CBSE")
+- `ClassSteps`: role step first (plain rows, radio), class step per role (teacher multi with checkboxes), board step for school / college / both; skip rules per step; Profile starts at the role step
+- Tests: `class-options`, `class-steps`, `profile-modal` updated red first
+
+### R3: Motion
+- CSS keyframes in `index.css` under `motion-safe`: step slide 240ms 24px, bar `scaleX` 300ms, dot/tick pop 160ms, rows 30ms stagger 200ms, press 97% 100ms. No Neo motion (#132)
+
+### R4: Check and ship
+- Full suites, screenshots (role, teacher multi, mixed board step, Profile), update #130/#131 bodies, migration commands for 0013
