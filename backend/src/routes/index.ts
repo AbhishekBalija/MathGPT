@@ -26,6 +26,7 @@ import { clearHistoryRoute } from "./clear-history.route";
 import { deleteSolutionRoute } from "./delete-solution.route";
 import { historyRoute } from "./history.route";
 import { profileRoute } from "./profile.route";
+import { saveClassRoute, skipClassRoute } from "./profile-class.route";
 import { publicStatsRoute } from "./public-stats.route";
 import { getSolutionRoute } from "./solution.route";
 import { createSolveRoute } from "./solve.route";
@@ -96,6 +97,9 @@ export function createRouter(services: AppServices) {
   );
   router.post("/api/feedback", requireUser, limitByUser("feedback", 5, 60 * 60), sendFeedbackRoute);
   router.get("/api/profile", requireUser, profileRoute);
+  // Onboarding: the student's Class range and Board, or that they skipped
+  router.put("/api/profile/class", requireUser, saveClassRoute);
+  router.post("/api/profile/class/skip", requireUser, skipClassRoute);
 
   // Public
   router.get("/api/public-stats", publicStatsRoute);

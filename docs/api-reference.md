@@ -157,10 +157,18 @@ Get current authenticated user. **Requires auth.**
     "name": "John Doe",
     "avatar": "https://...",
     "isAdmin": false,
-    "emailVerified": false
+    "isTeam": false,
+    "emailVerified": false,
+    "onboarding": "needed",
+    "classInfo": null
   }
 }
 ```
+
+`onboarding` is `"needed"` until the student answers or skips the Onboarding
+questions, then `"done"`. `classInfo` is their answer, or `null`:
+`{ "role": "teacher", "ranges": ["class_6_8", "class_9_10"], "board": "cbse", "state": null, "institution": null }`.
+Login, sign-up and Google sign-in send the same two fields.
 
 Returns **401** `{ "error": "Authentication required" }` when the token is
 missing, invalid, expired, or belongs to a User that no longer exists.
@@ -501,6 +509,39 @@ Get user profile and usage statistics. **Requires auth.**
 answers and cache hits do not use a Credit. The limit is the Settings value;
 for admins `limit` and `remaining` are `null` (no limit). `resetsAt` is the
 next midnight India time.
+
+---
+
+### PUT /api/profile/class
+
+Saves the Onboarding answer: the Role, Class ranges and Board, or the
+university. **Requires auth.** Every field is written, so a change clears what
+no longer applies.
+
+**Request Body:**
+
+```json
+{ "role": "student", "ranges": ["class_9_10"], "board": "state", "state": "Karnataka" }
+```
+
+- `role` (required): `student`, `parent` or `teacher`
+- `ranges` (optional, may be empty): `class_1_5`, `class_6_8`, `class_9_10`, `class_11_12`, `college`. A student or parent sends one; a teacher one to five, no repeats
+- `board` (optional, only with a school range): `cbse`, `icse`, `state`, `ib`, `cambridge` or `other`
+- `state`: required when `board` is `state`, otherwise not allowed (at most 40 characters)
+- `institution` (optional, only with `college`): at most 120 characters, trimmed; empty becomes `null`
+
+**Response (200):** `{ "user": { ... } }`, the same user as `GET /auth/me`.
+
+| Status | Error |
+| ------ | ----- |
+| 400    | `{ "error": "...", "code": "INVALID_CLASS" }` |
+| 401    | Authentication required |
+
+### POST /api/profile/class/skip
+
+Notes that the student skipped Onboarding, so they aren't asked again.
+**Requires auth.** A second skip keeps the first time, and an answer already
+saved stays. **Response (200):** `{ "user": { ... } }`.
 
 ---
 

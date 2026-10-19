@@ -28,6 +28,18 @@ _Avoid_: Answer (on its own), output
 The category a Problem is classified into, such as algebra or calculus.
 _Avoid_: Category, topic
 
+**Role**:
+Who is using NeoMath: a Student, a Parent (answering for the child they help) or a Teacher. Asked first at Onboarding.
+_Avoid_: User type, account type, persona
+
+**Class range**:
+Which stage of school or college is involved, picked from five: Class 1–5, Class 6–8, Class 9–10, Class 11–12 (PU, Diploma) or College & above. A Student or Parent picks one; a Teacher can pick several. Saved with the **Board** (CBSE, ICSE / ISC, a State board, IB, Cambridge or Other) for school, or the university for college.
+_Avoid_: Grade, level, standard, year
+
+**Onboarding**:
+The questions asked once after sign-up: Role, then Class range, then Board or university. It can be skipped; skipping or giving a Role makes it done. The answers can be changed later from the Profile.
+_Avoid_: Setup, survey, welcome wizard
+
 **Chat**:
 One conversation in the user's sidebar. Today each Chat holds one Solution.
 _Avoid_: Thread, conversation, session

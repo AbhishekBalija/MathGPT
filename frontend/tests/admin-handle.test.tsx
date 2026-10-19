@@ -330,7 +330,8 @@ describe("Events", () => {
     renderAt("/admin/events/e1", "events", <Events />);
 
     const panel = await screen.findByRole("complementary", { name: "Details" });
-    expect(within(panel).getByText(/"model": "gemini-2.5-flash"/)).toBeTruthy();
+    // The panel appears before its details load; wait for them (slow CI runners)
+    expect(await within(panel).findByText(/"model": "gemini-2.5-flash"/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole("link", { name: /^solve_error\s*\d+$/ }));
     await waitFor(() => expect(screen.queryByText("calculus_integral · 14,900 ms")).toBeNull());

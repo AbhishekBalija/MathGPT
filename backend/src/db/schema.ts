@@ -21,6 +21,10 @@ import type { ProblemType, SolutionStep } from "../types/solve.types";
 import type { SolutionV2Content } from "../modules/solutions/solution-v2.schema";
 
 export type AuthProvider = "email" | "google";
+// The three Roles, five Class ranges and six Boards a student picks from (see CONTEXT.md)
+export type Role = "student" | "parent" | "teacher";
+export type ClassRange = "class_1_5" | "class_6_8" | "class_9_10" | "class_11_12" | "college";
+export type Board = "cbse" | "icse" | "state" | "ib" | "cambridge" | "other";
 
 export const users = pgTable(
   "users",
@@ -44,6 +48,19 @@ export const users = pgTable(
       .notNull()
       .defaultNow(),
     totalCreditsUsed: integer("total_credits_used").notNull().default(0),
+    // Onboarding: the Role, Class ranges and Board asked once after sign-up (#39).
+    // All empty until the student answers; a skip only sets onboarding_skipped_at.
+    role: text("role").$type<Role>(),
+    // One range for a student or parent, one or more for a teacher
+    classRanges: text("class_ranges").array().$type<ClassRange[]>().notNull().default(sql`'{}'::text[]`),
+    // Only with a school range
+    board: text("board").$type<Board>(),
+    // Only when board is "state"
+    boardState: text("board_state"),
+    // Only with College & above: the university or college, as typed
+    institution: text("institution"),
+    classSetAt: timestamp("class_set_at", { withTimezone: true }),
+    onboardingSkippedAt: timestamp("onboarding_skipped_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -54,6 +71,15 @@ export const users = pgTable(
   (table) => [
     check("users_email_lowercase", sql`${table.email} = lower(${table.email})`),
     check("users_provider_valid", sql`${table.provider} in ('email', 'google')`),
+    check("users_role_valid", sql`${table.role} is null or ${table.role} in ('student', 'parent', 'teacher')`),
+    check(
+      "users_class_ranges_valid",
+      sql`${table.classRanges} <@ array['class_1_5', 'class_6_8', 'class_9_10', 'class_11_12', 'college']::text[]`
+    ),
+    check(
+      "users_board_valid",
+      sql`${table.board} is null or ${table.board} in ('cbse', 'icse', 'state', 'ib', 'cambridge', 'other')`
+    ),
   ]
 );
 
