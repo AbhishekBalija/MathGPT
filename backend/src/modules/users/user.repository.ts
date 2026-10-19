@@ -9,6 +9,7 @@ import { count, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { db } from "../../db/client";
 import { isUuid as isUserId } from "../../lib/ids";
 import type { DbExecutor } from "../../db/transaction";
+import type { ClassAnswer } from "./class-info";
 import { users, type AuthProvider, type UserRow } from "../../db/schema";
 
 export type User = UserRow;
@@ -122,6 +123,43 @@ export const userRepository = {
         emailVerifiedAt: sql`coalesce(${users.emailVerifiedAt}, now())`,
         updatedAt: new Date(),
       })
+      .where(eq(users.id, id))
+      .returning();
+    return user ?? null;
+  },
+
+  /**
+   * Saves a student's Onboarding answer. Every answer column is written, so
+   * switching between school and college clears what no longer applies.
+   */
+  async setClass(id: string, answer: ClassAnswer): Promise<User | null> {
+    if (!isUserId(id)) {
+      return null;
+    }
+    const [user] = await db
+      .update(users)
+      .set({
+        classRange: answer.range,
+        helping: answer.helping,
+        board: answer.board ?? null,
+        boardState: answer.state ?? null,
+        institution: answer.institution ?? null,
+        classSetAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return user ?? null;
+  },
+
+  /** Notes that the student skipped Onboarding. A second skip keeps the first time. */
+  async skipOnboarding(id: string): Promise<User | null> {
+    if (!isUserId(id)) {
+      return null;
+    }
+    const [user] = await db
+      .update(users)
+      .set({ onboardingSkippedAt: sql`coalesce(${users.onboardingSkippedAt}, now())`, updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
     return user ?? null;
