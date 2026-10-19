@@ -130,7 +130,7 @@ export const userRepository = {
 
   /**
    * Saves a student's Onboarding answer. Every answer column is written, so
-   * switching between school and college clears what no longer applies.
+   * a change (school to college, student to teacher) clears what no longer applies.
    */
   async setClass(id: string, answer: ClassAnswer): Promise<User | null> {
     if (!isUserId(id)) {
@@ -139,8 +139,8 @@ export const userRepository = {
     const [user] = await db
       .update(users)
       .set({
-        classRange: answer.range,
-        helping: answer.helping,
+        role: answer.role,
+        classRanges: answer.ranges,
         board: answer.board ?? null,
         boardState: answer.state ?? null,
         institution: answer.institution ?? null,

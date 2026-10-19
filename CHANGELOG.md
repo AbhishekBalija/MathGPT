@@ -8,7 +8,7 @@ number (**2**.0.0). The frontend and backend share one version.
 ## [1.8.0] - 2026-10-19
 
 ### Added
-- The API saves a student's Class range and Board (or university), or that they skipped, so Neo can ask once after sign-up. Every auth response says whether onboarding is still needed (#39)
+- The API saves who is using NeoMath (student, parent or teacher), their Class ranges (a teacher can give several) and Board or university, or that they skipped, so Neo can ask once after sign-up. Every auth response says whether onboarding is still needed (#39)
 
 ## [1.7.0] - 2026-10-18
 
