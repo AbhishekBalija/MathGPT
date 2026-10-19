@@ -157,10 +157,18 @@ Get current authenticated user. **Requires auth.**
     "name": "John Doe",
     "avatar": "https://...",
     "isAdmin": false,
-    "emailVerified": false
+    "isTeam": false,
+    "emailVerified": false,
+    "onboarding": "needed",
+    "classInfo": null
   }
 }
 ```
+
+`onboarding` is `"needed"` until the student answers or skips the Onboarding
+questions, then `"done"`. `classInfo` is their answer, or `null`:
+`{ "range": "class_6_8", "helping": false, "board": "cbse", "state": null, "institution": null }`.
+Login, sign-up and Google sign-in send the same two fields.
 
 Returns **401** `{ "error": "Authentication required" }` when the token is
 missing, invalid, expired, or belongs to a User that no longer exists.
@@ -501,6 +509,39 @@ Get user profile and usage statistics. **Requires auth.**
 answers and cache hits do not use a Credit. The limit is the Settings value;
 for admins `limit` and `remaining` are `null` (no limit). `resetsAt` is the
 next midnight India time.
+
+---
+
+### PUT /api/profile/class
+
+Saves the student's Onboarding answer: their Class range and Board, or their
+university. **Requires auth.** Every field is written, so switching between
+school and college clears what no longer applies.
+
+**Request Body:**
+
+```json
+{ "range": "class_9_10", "helping": false, "board": "state", "state": "Karnataka" }
+```
+
+- `range`: `class_1_5`, `class_6_8`, `class_9_10`, `class_11_12` or `college`
+- `helping`: `true` for a parent or teacher
+- `board` (school ranges only, optional): `cbse`, `icse`, `state`, `ib`, `cambridge` or `other`
+- `state`: required when `board` is `state`, otherwise not allowed (at most 40 characters)
+- `institution` (college only, optional): at most 120 characters, trimmed; empty becomes `null`
+
+**Response (200):** `{ "user": { ... } }`, the same user as `GET /auth/me`.
+
+| Status | Error |
+| ------ | ----- |
+| 400    | `{ "error": "...", "code": "INVALID_CLASS" }` |
+| 401    | Authentication required |
+
+### POST /api/profile/class/skip
+
+Notes that the student skipped Onboarding, so they aren't asked again.
+**Requires auth.** A second skip keeps the first time, and an answer already
+saved stays. **Response (200):** `{ "user": { ... } }`.
 
 ---
 

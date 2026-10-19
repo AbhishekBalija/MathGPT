@@ -5,6 +5,11 @@ a new feature bumps the minor number (1.**2**.0), a fix bumps the patch number
 (1.2.**1**), and a change that breaks how people use the app bumps the major
 number (**2**.0.0). The frontend and backend share one version.
 
+## [1.8.0] - 2026-10-19
+
+### Added
+- The API saves a student's Class range and Board (or university), or that they skipped, so Neo can ask once after sign-up. Every auth response says whether onboarding is still needed (#39)
+
 ## [1.7.0] - 2026-10-18
 
 ### Added
