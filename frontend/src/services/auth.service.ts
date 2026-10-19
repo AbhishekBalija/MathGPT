@@ -1,4 +1,5 @@
 import api from "./api";
+import type { ClassInfo } from "../features/onboarding/class-options";
 
 // Types for auth responses
 export interface User {
@@ -12,6 +13,10 @@ export interface User {
   role?: "admin" | "user";
   // Only Verified Users can solve. Missing on sessions saved before this field existed.
   emailVerified?: boolean;
+  // Onboarding (#39). Missing on sessions saved before these existed, which
+  // counts as "don't ask" until /auth/me says otherwise
+  onboarding?: "needed" | "done";
+  classInfo?: ClassInfo | null;
 }
 
 export interface AuthResponse {
