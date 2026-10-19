@@ -15,9 +15,10 @@ interface ClassStepsProps {
   // A saved answer to start from (the Profile's Change button)
   initial?: ClassInfo | null;
   onSaved: (user: User) => void;
-  // Shows Skip. Skip on the class step skips Onboarding; on the board step it
-  // keeps the class and leaves the board empty
-  onSkip?: (user: User) => void;
+  // Shows Skip. Skip on the class step skips Onboarding (null if that call
+  // failed, so the caller can still move on); on the board step it keeps the
+  // class and leaves the board empty
+  onSkip?: (user: User | null) => void;
   // Shows a back arrow on the class step too (the Profile goes back to itself)
   onBackFromFirst?: () => void;
 }
@@ -72,8 +73,11 @@ export function ClassSteps({
 
   function skip() {
     if (!onSkip) return;
-    if (step === 1) void run(() => classService.skip(), onSkip);
-    else void run(() => classService.save(answer(false)), onSaved);
+    if (step === 1) {
+      classService.skip().then(onSkip, () => onSkip(null));
+      return;
+    }
+    void run(() => classService.save(answer(false)), onSaved);
   }
 
   const showBack = step === 2 || onBackFromFirst !== undefined;
@@ -133,7 +137,7 @@ export function ClassSteps({
               {RANGES.map((option) => (
                 <label
                   key={option.value}
-                  className={`flex min-h-13 cursor-pointer items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 dark:bg-white/5 ${
+                  className={`flex min-h-13 cursor-pointer items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-600 dark:bg-white/5 dark:has-[:focus-visible]:ring-brand-300 ${
                     range === option.value
                       ? "border-2 border-gray-900 dark:border-gray-50"
                       : "border-gray-200 dark:border-white/10"
@@ -182,7 +186,7 @@ export function ClassSteps({
               {BOARDS.map((option) => (
                 <label
                   key={option.value}
-                  className={`flex min-h-12 cursor-pointer items-center justify-center rounded-2xl px-3 text-center text-sm font-semibold ${
+                  className={`flex min-h-12 cursor-pointer items-center justify-center rounded-2xl px-3 text-center text-sm font-semibold has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-600 dark:has-[:focus-visible]:ring-brand-300 ${
                     board === option.value
                       ? "bg-gray-900 text-white dark:bg-gray-50 dark:text-gray-900"
                       : "bg-gray-100 text-gray-900 dark:bg-white/10 dark:text-gray-50"
@@ -208,7 +212,7 @@ export function ClassSteps({
                 <select
                   value={state}
                   onChange={(event) => setState(event.target.value)}
-                  className="min-h-12 w-full rounded-2xl border border-gray-200 bg-white px-3 text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-50"
+                  className="min-h-12 w-full rounded-2xl border border-gray-200 bg-white px-3 text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-50 dark:[color-scheme:dark]"
                 >
                   {INDIAN_STATES.map((name) => (
                     <option key={name}>{name}</option>

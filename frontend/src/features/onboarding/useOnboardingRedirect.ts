@@ -2,18 +2,9 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import authService from "../../services/auth.service";
 import { useAuthStore } from "../../stores/authStore";
+import { welcomeShownThisVisit } from "./welcome-shown";
 
-// Set by the welcome page, so a student who goes back to the app isn't sent there again this visit
-export const WELCOME_SHOWN_KEY = "neomath-welcome-shown";
-
-function shownThisVisit(): boolean {
-  try {
-    return sessionStorage.getItem(WELCOME_SHOWN_KEY) !== null;
-  } catch {
-    // Private mode can block storage; then the welcome page may show again, which is harmless
-    return false;
-  }
-}
+export { WELCOME_SHOWN_KEY } from "./welcome-shown";
 
 /**
  * For the app layout: refreshes the User from /auth/me once, so accounts from
@@ -41,7 +32,7 @@ export function useOnboardingRedirect(): void {
 
   useEffect(() => {
     // A session saved before this shipped has no field: wait for /auth/me instead of guessing
-    if (onboarding !== "needed" || shownThisVisit()) return;
+    if (onboarding !== "needed" || welcomeShownThisVisit()) return;
     navigate("/welcome", { replace: true });
   }, [onboarding, navigate]);
 }

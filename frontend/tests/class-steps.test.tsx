@@ -81,6 +81,16 @@ describe("ClassSteps", () => {
     expect(classService.save).not.toHaveBeenCalled();
   });
 
+  it("still lets the student go when skipping fails", async () => {
+    vi.mocked(classService.skip).mockRejectedValue(new Error("offline"));
+    const onSkip = vi.fn();
+    render(<ClassSteps onSaved={vi.fn()} onSkip={onSkip} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+
+    await waitFor(() => expect(onSkip).toHaveBeenCalledWith(null));
+  });
+
   it("saves the class without a board when the board step is skipped", async () => {
     const onSaved = vi.fn();
     render(<ClassSteps onSaved={onSaved} onSkip={vi.fn()} />);

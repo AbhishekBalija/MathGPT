@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import authService, { type User } from "../services/auth.service";
+import { forgetWelcomeShown } from "../features/onboarding/welcome-shown";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -151,6 +152,8 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem("token");
         // Also clear stored data from the old admin passcode (removed in #20)
         localStorage.removeItem("admin-storage");
+        // The next person on this phone still gets the welcome questions
+        forgetWelcomeShown();
 
         set({
           isAuthenticated: false,
@@ -165,14 +168,16 @@ export const useAuthStore = create<AuthState>()(
 
       setLoading: (loading) => set({ isLoading: loading }),
 
-      clearAuth: () =>
+      clearAuth: () => {
+        forgetWelcomeShown();
         set({
           isAuthenticated: false,
           isLoading: false,
           user: null,
           token: null,
           refreshToken: null,
-        }),
+        });
+      },
     }),
     {
       name: "auth-storage",

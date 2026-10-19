@@ -113,3 +113,21 @@ describe("Welcome page", () => {
     expect(useAuthStore.getState().user?.onboarding).toBe("done");
   });
 });
+
+describe("Shared devices", () => {
+  it("forgets that /welcome was shown when someone logs out", async () => {
+    sessionStorage.setItem(WELCOME_SHOWN_KEY, "1");
+    signIn({ ...student, onboarding: "done" });
+    vi.spyOn(authService, "logout").mockResolvedValue({ message: "ok" });
+
+    await useAuthStore.getState().logout();
+
+    expect(sessionStorage.getItem(WELCOME_SHOWN_KEY)).toBeNull();
+  });
+
+  it("forgets it when the session is cleared too", () => {
+    sessionStorage.setItem(WELCOME_SHOWN_KEY, "1");
+    useAuthStore.getState().clearAuth();
+    expect(sessionStorage.getItem(WELCOME_SHOWN_KEY)).toBeNull();
+  });
+});

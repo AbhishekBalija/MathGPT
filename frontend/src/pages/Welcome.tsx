@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import NeoMascot from "../components/brand/NeoMascot";
 import { ClassSteps } from "../features/onboarding/ClassSteps";
-import { WELCOME_SHOWN_KEY } from "../features/onboarding/useOnboardingRedirect";
+import { markWelcomeShown } from "../features/onboarding/welcome-shown";
 import type { User } from "../services/auth.service";
 import { classService } from "../services/class.service";
 import { useAuthStore } from "../stores/authStore";
@@ -18,11 +18,7 @@ const Welcome = () => {
   const [stage, setStage] = useState<"hello" | "steps">("hello");
 
   useEffect(() => {
-    try {
-      sessionStorage.setItem(WELCOME_SHOWN_KEY, "1");
-    } catch {
-      // Storage blocked: the page may show again this visit, which is harmless
-    }
+    markWelcomeShown();
   }, []);
 
   if (user?.onboarding === "done" && stage === "hello") {
@@ -78,7 +74,12 @@ const Welcome = () => {
             </div>
           </>
         ) : (
-          <ClassSteps onSaved={finish} onSkip={finish} onBackFromFirst={() => setStage("hello")} />
+          <ClassSteps
+            onSaved={finish}
+            // A failed skip still opens the app: solving is never blocked
+            onSkip={(updated) => (updated ? finish(updated) : navigate("/app", { replace: true }))}
+            onBackFromFirst={() => setStage("hello")}
+          />
         )}
       </main>
     </div>
