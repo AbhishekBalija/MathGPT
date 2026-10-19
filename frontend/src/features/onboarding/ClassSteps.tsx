@@ -80,7 +80,7 @@ export function ClassSteps({
   const canFinish = isSchool ? board !== null : true;
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex min-h-full flex-1 flex-col">
       <div className="flex items-center gap-3 py-3">
         {showBack ? (
           <button

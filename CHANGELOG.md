@@ -5,6 +5,15 @@ a new feature bumps the minor number (1.**2**.0), a fix bumps the patch number
 (1.2.**1**), and a change that breaks how people use the app bumps the major
 number (**2**.0.0). The frontend and backend share one version.
 
+## [1.9.0] - 2026-10-19
+
+### Added
+- After sign-up, Neo asks the student's class (five ranges, each with a real example problem) and their board or university, once. Skip is always there and never blocks solving. Parents and teachers can answer for the child they help (#39)
+- The Profile popup has a new look and shows "Your class" with a Change button
+
+### Removed
+- The problem-type bars in the Profile (most solves showed as "Other")
+
 ## [1.8.0] - 2026-10-19
 
 ### Added

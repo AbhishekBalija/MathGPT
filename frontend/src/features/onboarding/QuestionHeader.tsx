@@ -11,8 +11,9 @@ interface QuestionHeaderProps {
  */
 export function QuestionHeader({ question, why }: QuestionHeaderProps) {
   return (
-    <div className="relative mb-4">
-      <h1 className="pr-20 text-2xl font-bold leading-tight tracking-tight text-gray-900 dark:text-gray-50">
+    // The right padding keeps both lines clear of Neo, however the question wraps
+    <div className="relative mb-4 min-h-16 pr-20">
+      <h1 className="text-2xl font-bold leading-tight tracking-tight text-gray-900 dark:text-gray-50">
         {question}
       </h1>
       <p className="mt-1.5 text-sm text-gray-600 dark:text-gray-400">{why}</p>
